@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Shield, Upload, Link2, Phone, ArrowLeft, CheckCircle, ChevronRight } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Shield, Upload, Link2, Phone, ArrowLeft, CheckCircle, ChevronRight, Image, X } from 'lucide-react';
 import { Button } from '../components/Button';
+import { supabase } from '../lib/supabaseClient';
 
-/* ─── Types ──────────────────────────────────────────────────────────────── */
+/* ─── Types ───────────────────────────────────────────────────────────────── */
 
 interface NavigationProps {
     onBack: () => void;
@@ -32,23 +33,15 @@ function OptionCard({ icon, title, description, selected, onClick }: OptionCardP
             ].join(' ')}
         >
             <div className="flex items-start gap-4">
-                {/* Icon */}
-                <div
-                    className={[
-                        'shrink-0 w-11 h-11 rounded-lg flex items-center justify-center transition-colors duration-200',
-                        selected ? 'bg-[#C9A84C]/15 text-[#A8853C]' : 'bg-slate-100 text-slate-500 group-hover:bg-[#C9A84C]/10 group-hover:text-[#A8853C]',
-                    ].join(' ')}
-                >
+                <div className={[
+                    'shrink-0 w-11 h-11 rounded-lg flex items-center justify-center transition-colors duration-200',
+                    selected ? 'bg-[#C9A84C]/15 text-[#A8853C]' : 'bg-slate-100 text-slate-500 group-hover:bg-[#C9A84C]/10 group-hover:text-[#A8853C]',
+                ].join(' ')}>
                     {icon}
                 </div>
-
-                {/* Text */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                        <p className={[
-                            'font-semibold text-base',
-                            selected ? 'text-[#0B1E36]' : 'text-slate-700',
-                        ].join(' ')}>
+                        <p className={['font-semibold text-base', selected ? 'text-[#0B1E36]' : 'text-slate-700'].join(' ')}>
                             {title}
                         </p>
                         {selected && <CheckCircle className="w-5 h-5 text-[#C9A84C] shrink-0" aria-hidden="true" />}
@@ -60,7 +53,7 @@ function OptionCard({ icon, title, description, selected, onClick }: OptionCardP
     );
 }
 
-/* ─── Step indicator ─────────────────────────────────────────────────────── */
+/* ─── Step indicator ──────────────────────────────────────────────────────── */
 
 function StepIndicator({ step, total }: { step: number; total: number }) {
     return (
@@ -70,7 +63,7 @@ function StepIndicator({ step, total }: { step: number; total: number }) {
                     key={i}
                     className={[
                         'h-1 rounded-full transition-all duration-300',
-                        i < step ? 'bg-[#C9A84C] w-8' : i === step - 1 ? 'bg-[#C9A84C] w-8' : 'bg-slate-200 w-4',
+                        i < step ? 'bg-[#C9A84C] w-8' : 'bg-slate-200 w-4',
                     ].join(' ')}
                     aria-hidden="true"
                 />
@@ -79,14 +72,14 @@ function StepIndicator({ step, total }: { step: number; total: number }) {
     );
 }
 
-/* ─── Main page ───────────────────────────────────────────────────────────── */
+/* ─── Options config ──────────────────────────────────────────────────────── */
 
 const OPTIONS = [
     {
         id: 'screenshot',
         icon: <Upload className="w-5 h-5" />,
         title: 'Upload a screenshot',
-        description: 'Send us a screenshot of a suspicious message, email, or website.',
+        description: 'Send a screenshot of a suspicious message, email, or website.',
     },
     {
         id: 'link',
@@ -102,34 +95,164 @@ const OPTIONS = [
     },
 ];
 
+/* ─── Main page ───────────────────────────────────────────────────────────── */
+
 export function GetProtectionPage({ onBack }: NavigationProps) {
+    const [step, setStep] = useState<1 | 2>(1);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [submitted, setSubmitted] = useState(false);
 
+    // Step 2 inputs
+    const [file, setFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [linkValue, setLinkValue] = useState('');
+    const [contactValue, setContactValue] = useState('');
+
+    // UI states
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     // Click tracking
-    const trackEvent = (event: string, data: Record<string, string>) => {
+    function trackEvent(event: string, data: Record<string, string>) {
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('slp_track', { detail: { event, ...data } }));
             console.info('[SLP Track]', event, data);
         }
-    };
-
-    function handleSubmit() {
-        if (!selectedOption) return;
-        trackEvent('get_protection_submit', { option: selectedOption });
-        setSubmitted(true);
     }
 
     function handleOptionSelect(id: string) {
         setSelectedOption(id);
-        trackEvent('get_protection_option_selected', { option: id });
+        setSubmitError(null);
     }
 
-    // ── Confirmation screen ──────────────────────────────────────────────────
+    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const chosen = e.target.files?.[0] ?? null;
+        setFile(chosen);
+        setSubmitError(null);
+        if (chosen) {
+            const url = URL.createObjectURL(chosen);
+            setPreviewUrl(url);
+        } else {
+            setPreviewUrl(null);
+        }
+    }
+
+    function clearFile() {
+        setFile(null);
+        setPreviewUrl(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+
+    function handleContinue() {
+        if (!selectedOption) return;
+        trackEvent('get_protection_option_selected', { option: selectedOption });
+        setStep(2);
+    }
+
+    /* ── Supabase submit handler ─────────────────────────────────────────── */
+
+    async function handleSubmit() {
+        setSubmitError(null);
+        setIsSubmitting(true);
+
+        try {
+            const messageValue = selectedOption === 'link' ? linkValue
+                : selectedOption === 'contact' ? contactValue
+                    : null;
+
+            // A) Create submission row to get id
+            const { data: row, error: insertError } = await supabase
+                .from('submissions')
+                .insert({ message: messageValue, status: 'new' })
+                .select('id')
+                .single();
+
+            if (insertError || !row) {
+                throw new Error(insertError?.message ?? 'Failed to create submission. Please try again.');
+            }
+
+            const submissionId: string = row.id;
+            let imagePath: string | null = null;
+            let imageUrl: string | null = null;
+
+            // B+C) Upload file if screenshot option
+            if (selectedOption === 'screenshot' && file) {
+                const timestamp = Date.now();
+                const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                const path = `submissions/${submissionId}/${timestamp}-${safeName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('uploads')
+                    .upload(path, file, { cacheControl: '3600', upsert: false });
+
+                if (uploadError) {
+                    throw new Error(`Image upload failed: ${uploadError.message}`);
+                }
+
+                imagePath = path;
+
+                // C) Get public URL
+                const { data: urlData } = supabase.storage.from('uploads').getPublicUrl(path);
+                imageUrl = urlData.publicUrl;
+            }
+
+            // D) Update row with image details
+            const { error: updateError } = await supabase
+                .from('submissions')
+                .update({ image_path: imagePath, image_url: imageUrl })
+                .eq('id', submissionId);
+
+            if (updateError) {
+                // Non-fatal — row was saved, just log
+                console.error('[SLP] Failed to update image_url on row:', updateError.message);
+            }
+
+            trackEvent('get_protection_submit', { option: selectedOption ?? 'unknown', submission_id: submissionId });
+
+            // E) Success
+            setSubmitted(true);
+
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+            console.error('[SLP] Submission error:', err);
+            setSubmitError(msg);
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    // Is the submit button ready?
+    const canSubmit = !isSubmitting && (
+        selectedOption === 'screenshot' ? file !== null
+            : selectedOption === 'link' ? linkValue.trim().length > 0
+                : selectedOption === 'contact' ? contactValue.trim().length > 0
+                    : false
+    );
+
+    /* ── Shared nav bar ───────────────────────────────────────────────────── */
+    const Navbar = (
+        <nav className="bg-[#112540] border-b border-white/10 px-6 md:px-10 py-4 flex items-center justify-between">
+            <button
+                onClick={step === 2 && !submitted ? () => setStep(1) : onBack}
+                className="flex items-center gap-2 text-slate-300 hover:text-white text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] rounded"
+                aria-label={step === 2 && !submitted ? 'Go back to option selection' : 'Return to home page'}
+            >
+                <ArrowLeft className="w-4 h-4" />
+                {step === 2 && !submitted ? 'Back' : 'Back to home'}
+            </button>
+            <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
+                <span className="text-white text-sm font-semibold tracking-wide">Second Look Protect</span>
+            </div>
+        </nav>
+    );
+
+    /* ── Confirmation screen ──────────────────────────────────────────────── */
     if (submitted) {
         return (
             <div className="min-h-screen bg-[#F9F9F7] flex flex-col">
-                {/* Nav */}
                 <nav className="bg-[#112540] border-b border-white/10 px-6 py-4">
                     <button
                         onClick={onBack}
@@ -140,8 +263,6 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                         Back to home
                     </button>
                 </nav>
-
-                {/* Confirmation */}
                 <main className="flex-1 flex items-center justify-center px-6 py-16">
                     <div className="max-w-md w-full text-center">
                         <div className="w-20 h-20 rounded-full bg-[#C9A84C]/15 flex items-center justify-center mx-auto mb-8">
@@ -169,86 +290,219 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
         );
     }
 
-    // ── Main onboarding flow ─────────────────────────────────────────────────
+    /* ── Step 1: Select option ────────────────────────────────────────────── */
+    if (step === 1) {
+        return (
+            <div className="min-h-screen bg-[#F9F9F7] flex flex-col">
+                {Navbar}
+                <main className="flex-1 flex items-start justify-center px-6 py-12 md:py-20">
+                    <div className="w-full max-w-xl">
+                        <div className="mb-8"><StepIndicator step={1} total={2} /></div>
+                        <div className="mb-10">
+                            <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-3">
+                                Step 1 of 2 — Choose your check type
+                            </p>
+                            <h1 className="text-[#0B1E36] mb-3" style={{ fontFamily: "'Merriweather', serif" }}>
+                                Start Protection in 60 Seconds
+                            </h1>
+                            <p className="text-slate-500 text-base leading-relaxed max-w-prose">
+                                Select how you would like to submit for review. No registration required.
+                            </p>
+                        </div>
+                        <div className="space-y-3 mb-10" role="radiogroup" aria-label="Submission type">
+                            {OPTIONS.map((opt) => (
+                                <React.Fragment key={opt.id}>
+                                    <OptionCard
+                                        icon={opt.icon}
+                                        title={opt.title}
+                                        description={opt.description}
+                                        selected={selectedOption === opt.id}
+                                        onClick={() => handleOptionSelect(opt.id)}
+                                    />
+                                </React.Fragment>
+                            ))}
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            <Button
+                                onClick={handleContinue}
+                                disabled={!selectedOption}
+                                size="lg"
+                                className={[
+                                    'w-full justify-center font-semibold transition-all duration-200 border-0',
+                                    selectedOption
+                                        ? 'bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] active:scale-[0.98]'
+                                        : 'bg-slate-200 text-slate-400 cursor-not-allowed',
+                                ].join(' ')}
+                                aria-label="Continue to step 2"
+                            >
+                                Continue <ChevronRight className="w-5 h-5" />
+                            </Button>
+                            <p className="text-center text-slate-400 text-xs">Your submission is treated with full confidentiality.</p>
+                        </div>
+                        <div className="mt-10 pt-8 border-t border-slate-200 flex flex-wrap justify-center gap-6 text-slate-400 text-xs">
+                            <span>✓ ICO Registered</span>
+                            <span>✓ UK-Based Specialists</span>
+                            <span>✓ Human-Reviewed</span>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
+    /* ── Step 2: Submit details ───────────────────────────────────────────── */
     return (
         <div className="min-h-screen bg-[#F9F9F7] flex flex-col">
-            {/* Nav */}
-            <nav className="bg-[#112540] border-b border-white/10 px-6 md:px-10 py-4 flex items-center justify-between">
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 text-slate-300 hover:text-white text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] rounded"
-                    aria-label="Return to home page"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back
-                </button>
-                <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
-                    <span className="text-white text-sm font-semibold tracking-wide">Second Look Protect</span>
-                </div>
-            </nav>
-
-            {/* Main */}
+            {Navbar}
             <main className="flex-1 flex items-start justify-center px-6 py-12 md:py-20">
                 <div className="w-full max-w-xl">
+                    <div className="mb-8"><StepIndicator step={2} total={2} /></div>
 
-                    {/* Step indicator */}
-                    <div className="mb-8">
-                        <StepIndicator step={1} total={2} />
-                    </div>
-
-                    {/* Header */}
                     <div className="mb-10">
                         <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-3">
-                            Step 1 of 2 — Choose your check type
+                            Step 2 of 2 — Provide details
                         </p>
                         <h1 className="text-[#0B1E36] mb-3" style={{ fontFamily: "'Merriweather', serif" }}>
-                            Start Protection in 60 Seconds
+                            {selectedOption === 'screenshot' ? 'Upload your screenshot'
+                                : selectedOption === 'link' ? 'Paste the suspicious link'
+                                    : 'Enter the contact to verify'}
                         </h1>
                         <p className="text-slate-500 text-base leading-relaxed max-w-prose">
-                            Select how you would like to submit for review. No registration required to start.
+                            {selectedOption === 'screenshot'
+                                ? 'Upload the screenshot you want verified. Accepted: JPG, PNG, WEBP, GIF.'
+                                : selectedOption === 'link'
+                                    ? 'Paste the full URL (starting with https://) that you would like us to check.'
+                                    : 'Enter the phone number, email address, or contact name you want us to verify.'}
                         </p>
                     </div>
 
-                    {/* Options */}
-                    <div className="space-y-3 mb-10" role="radiogroup" aria-label="Submission type">
-                        {OPTIONS.map((opt) => (
-                            <React.Fragment key={opt.id}>
-                                <OptionCard
-                                    icon={opt.icon}
-                                    title={opt.title}
-                                    description={opt.description}
-                                    selected={selectedOption === opt.id}
-                                    onClick={() => handleOptionSelect(opt.id)}
-                                />
-                            </React.Fragment>
-                        ))}
-                    </div>
+                    {/* ── Screenshot upload ── */}
+                    {selectedOption === 'screenshot' && (
+                        <div className="mb-8">
+                            {!file ? (
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={[
+                                        'w-full border-2 border-dashed border-slate-300 rounded-xl p-10',
+                                        'flex flex-col items-center justify-center gap-3 cursor-pointer',
+                                        'hover:border-[#C9A84C]/50 hover:bg-[#C9A84C]/3 transition-all duration-200',
+                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C]',
+                                    ].join(' ')}
+                                    aria-label="Click to select an image file"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                                        <Image className="w-6 h-6 text-slate-400" />
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-slate-600 font-medium text-sm">Click to upload image</p>
+                                        <p className="text-slate-400 text-xs mt-1">JPG, PNG, WEBP, GIF · Max 10MB</p>
+                                    </div>
+                                </button>
+                            ) : (
+                                <div className="relative rounded-xl overflow-hidden border-2 border-[#C9A84C]/30 bg-white">
+                                    <img
+                                        src={previewUrl ?? ''}
+                                        alt="Preview of uploaded screenshot"
+                                        className="w-full max-h-64 object-contain"
+                                    />
+                                    <button
+                                        onClick={clearFile}
+                                        className="absolute top-3 right-3 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow hover:bg-white transition-colors"
+                                        aria-label="Remove selected image"
+                                    >
+                                        <X className="w-4 h-4 text-slate-600" />
+                                    </button>
+                                    <div className="px-4 py-3 border-t border-slate-100">
+                                        <p className="text-slate-600 text-sm font-medium truncate">{file.name}</p>
+                                        <p className="text-slate-400 text-xs">{(file.size / 1024).toFixed(0)} KB</p>
+                                    </div>
+                                </div>
+                            )}
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="sr-only"
+                                aria-label="Image file input"
+                            />
+                        </div>
+                    )}
 
-                    {/* CTA */}
+                    {/* ── Link input ── */}
+                    {selectedOption === 'link' && (
+                        <div className="mb-8">
+                            <label htmlFor="link-input" className="block text-slate-700 font-medium text-sm mb-2">
+                                Suspicious URL
+                            </label>
+                            <input
+                                id="link-input"
+                                type="url"
+                                placeholder="https://example.com/suspicious-page"
+                                value={linkValue}
+                                onChange={(e) => { setLinkValue(e.target.value); setSubmitError(null); }}
+                                className={[
+                                    'w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 text-slate-700 text-base',
+                                    'focus:outline-none focus:border-[#C9A84C] transition-colors duration-200',
+                                    'placeholder:text-slate-400',
+                                ].join(' ')}
+                                autoComplete="off"
+                                spellCheck={false}
+                            />
+                        </div>
+                    )}
+
+                    {/* ── Contact input ── */}
+                    {selectedOption === 'contact' && (
+                        <div className="mb-8">
+                            <label htmlFor="contact-input" className="block text-slate-700 font-medium text-sm mb-2">
+                                Phone number, email, or contact name
+                            </label>
+                            <input
+                                id="contact-input"
+                                type="text"
+                                placeholder="+44 7700 000000 or name@example.com"
+                                value={contactValue}
+                                onChange={(e) => { setContactValue(e.target.value); setSubmitError(null); }}
+                                className={[
+                                    'w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 text-slate-700 text-base',
+                                    'focus:outline-none focus:border-[#C9A84C] transition-colors duration-200',
+                                    'placeholder:text-slate-400',
+                                ].join(' ')}
+                            />
+                        </div>
+                    )}
+
+                    {/* ── Error message ── */}
+                    {submitError && (
+                        <div
+                            role="alert"
+                            className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm"
+                        >
+                            {submitError}
+                        </div>
+                    )}
+
+                    {/* ── Submit ── */}
                     <div className="flex flex-col gap-3">
                         <Button
                             onClick={handleSubmit}
-                            disabled={!selectedOption}
+                            disabled={!canSubmit}
                             size="lg"
                             className={[
                                 'w-full justify-center font-semibold transition-all duration-200 border-0',
-                                selectedOption
+                                canSubmit
                                     ? 'bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] active:scale-[0.98]'
                                     : 'bg-slate-200 text-slate-400 cursor-not-allowed',
                             ].join(' ')}
-                            aria-label="Continue to submit your check"
+                            aria-label="Submit your check for review"
+                            aria-busy={isSubmitting}
                         >
-                            Continue
-                            <ChevronRight className="w-5 h-5" aria-hidden="true" />
+                            {isSubmitting ? 'Submitting…' : 'Submit for Review'}
                         </Button>
-
-                        <p className="text-center text-slate-400 text-xs">
-                            Your submission is treated with full confidentiality.
-                        </p>
+                        <p className="text-center text-slate-400 text-xs">Your submission is treated with full confidentiality.</p>
                     </div>
 
-                    {/* Trust strip */}
                     <div className="mt-10 pt-8 border-t border-slate-200 flex flex-wrap justify-center gap-6 text-slate-400 text-xs">
                         <span>✓ ICO Registered</span>
                         <span>✓ UK-Based Specialists</span>
