@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Shield, Upload, Link2, Phone, ArrowLeft, CheckCircle, ChevronRight, Image, X } from 'lucide-react';
 import { Button } from '../components/Button';
-import { supabase } from '../lib/supabaseClient';
+import { getSupabase } from '../lib/supabaseClient';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -158,6 +158,8 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
         setIsSubmitting(true);
 
         try {
+            const supabase = getSupabase(); // lazy — throws friendly error if env vars missing
+
             const messageValue = selectedOption === 'link' ? linkValue
                 : selectedOption === 'contact' ? contactValue
                     : null;
