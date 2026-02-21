@@ -1,360 +1,675 @@
-import { Shield, CheckCircle, Search, Lock, AlertTriangle, Phone, Star, ArrowRight, Menu } from 'lucide-react';
+import React from 'react';
+import './index.css';
+import { Navbar } from './components/Navbar';
+import { Button } from './components/Button';
+import { SectionWrapper, SectionHeading } from './components/SectionWrapper';
+import { TrustBadge } from './components/TrustBadge';
+import { PricingCard } from './components/PricingCard';
+import { FAQAccordion } from './components/FAQAccordion';
+import {
+  Shield, CheckCircle, Search, Lock, AlertTriangle,
+  Phone, Star, ArrowRight,
+} from 'lucide-react';
+
+/* ─── Data ─────────────────────────────────────────────────────────────── */
+
+const PRICING_PLANS = [
+  {
+    name: 'Basic Shield',
+    price: '£9.99',
+    tagline: 'Simple, steady reassurance when you need it.',
+    description: 'For independent individuals who want a trusted second opinion before they act.',
+    featureGroups: [
+      {
+        groupTitle: 'Protection Includes',
+        items: [
+          'Up to 5 Personal Reviews per month',
+          '24-Hour Reassurance Response',
+          'Clear Risk Assessment (Low / Medium / High)',
+          'Guardian Risk Summary for your records',
+          'The Recovery Blueprint – step-by-step guidance if you’ve already clicked',
+        ],
+      },
+      {
+        groupTitle: 'Ongoing Support',
+        items: [
+          'Monthly UK Scam Bulletin',
+          'Optional monthly Pause Reminder text',
+        ],
+      },
+      {
+        groupTitle: 'Physical Protection Kit',
+        items: [
+          '1x Phone-Side “Pause & Check” Sticker',
+          '1x Wallet Emergency Card',
+        ],
+      },
+    ],
+    ctaLabel: 'Start with Basic Shield',
+    featured: false,
+  },
+  {
+    name: 'The Guardian',
+    price: '£19.99',
+    tagline: 'Confident protection for you and someone you care about.',
+    description: 'Our most popular plan. Faster response, broader coverage, and proactive safety tools.',
+    featureGroups: [
+      {
+        groupTitle: 'Everything in Basic, plus',
+        items: [
+          'Up to 20 Full Reviews per month',
+          'Priority Response (within 4 hours, Mon–Fri)',
+          'Safe-Shop Website, QR Code & Invoice Verification',
+          'Verified Vault – real bank & service contact numbers',
+          'Protection for 2 People',
+          'Annual Digital Safety Check-Up',
+        ],
+      },
+      {
+        groupTitle: 'Proactive Alerts',
+        items: [
+          'Weekly UK Scam Alerts',
+          'Monthly Protection Activity Summary',
+        ],
+      },
+      {
+        groupTitle: 'Full Guardian Pack',
+        items: [
+          'Premium Fridge Magnet',
+          '2x Wallet Cards',
+          '2x Phone Reminder Stickers',
+          'A5 “Top Scam Red Flags” Desktop Guide',
+        ],
+      },
+    ],
+    ctaLabel: 'Start with The Guardian',
+    featured: true,
+  },
+  {
+    name: 'Family Shield',
+    price: '£34.99',
+    tagline: 'Complete household protection and accountability.',
+    description: 'Designed for families protecting elderly parents or multiple loved ones.',
+    featureGroups: [
+      {
+        groupTitle: 'Everything in Guardian, plus',
+        items: [
+          'Unlimited Reviews (Fair Use Policy)',
+          'Same-Day Priority Handling',
+          'Emergency “Human-Line” Call-Back Window',
+          'Coverage for Up to 5 Family Members',
+          'Annual 1-on-1 Digital Health Review',
+        ],
+      },
+      {
+        groupTitle: 'Family Accountability',
+        items: [
+          'Monthly “Peace of Mind” Summary sent to Family Lead',
+          'Shared Submission Access',
+        ],
+      },
+      {
+        groupTitle: 'Elite Family Kit',
+        items: [
+          'Full Guardian Pack for 5',
+          'Scam Scenario Flash Cards',
+        ],
+      },
+    ],
+    ctaLabel: 'Start with Family Shield',
+    featured: false,
+  },
+];
+
+const TESTIMONIALS = [
+  {
+    quote: 'I received a text from what looked exactly like my bank asking me to authorise a payment. I forwarded a screenshot to Second Look Protect, and within three minutes they confirmed it was a scam. They saved me £2,000.',
+    author: 'Margaret T.',
+    location: 'London',
+  },
+  {
+    quote: 'I set up the Family Shield for my elderly parents. It gives me such peace of mind knowing they have real experts to check things with before clicking any link. Worth every penny.',
+    author: 'David S.',
+    location: 'Manchester',
+  },
+  {
+    quote: 'The service is incredibly fast and straightforward. I forward suspicious emails and they reply almost instantly. It is like having a cybersecurity expert in your pocket, without any of the jargon.',
+    author: 'Helen R.',
+    location: 'Bristol',
+  },
+];
+
+/* ─── Sub-components ───────────────────────────────────────────────────── */
+
+function StarRating({ count = 5 }: { count?: number }) {
+  return (
+    <div className="flex gap-1" role="img" aria-label={`${count} out of 5 stars`}>
+      {Array.from({ length: count }).map((_, i) => (
+        <Star key={i} className="w-5 h-5 text-[#C9A84C] fill-current" aria-hidden="true" />
+      ))}
+    </div>
+  );
+}
+
+function TestimonialCard({ quote, author, location }: typeof TESTIMONIALS[0]) {
+  return (
+    <article className="bg-slate-50 border border-slate-100 rounded-xl p-8 md:p-10 flex flex-col gap-6">
+      <StarRating />
+      <blockquote>
+        <p className="text-slate-700 text-lg italic leading-relaxed">
+          &ldquo;{quote}&rdquo;
+        </p>
+      </blockquote>
+      <footer>
+        <p className="font-semibold text-[#0B1E36] text-base">{author}</p>
+        <p className="text-slate-500 text-sm">{location} · Verified member</p>
+      </footer>
+    </article>
+  );
+}
+
+/* ─── Main App ─────────────────────────────────────────────────────────── */
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-[#D4AF37] selection:text-[#0B1E36]">
-      {/* Header */}
-      <header className="bg-[#0B1E36] text-white py-4 px-6 md:px-12 flex justify-between items-center sticky top-0 z-50 shadow-md">
-        <div className="flex items-center gap-3">
-          <Shield className="w-8 h-8 text-[#D4AF37]" />
-          <span className="text-xl md:text-2xl font-semibold tracking-tight">Second Look Protect</span>
-        </div>
-        <nav className="hidden md:flex gap-8 text-base font-medium text-slate-200 items-center">
-          <a href="#how-it-works" className="hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#D4AF37] rounded px-2 py-1">How It Works</a>
-          <a href="#pricing" className="hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#D4AF37] rounded px-2 py-1">Subscriptions</a>
-          <a href="#testimonials" className="hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#D4AF37] rounded px-2 py-1">Reviews</a>
-          <button className="bg-[#D4AF37] text-[#0B1E36] px-6 py-2.5 rounded-full font-bold hover:bg-yellow-400 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#0B1E36]">
-            Check Now
-          </button>
-        </nav>
-        <button className="md:hidden text-white p-2">
-          <Menu className="w-6 h-6" />
-        </button>
-      </header>
+    <div className="min-h-screen bg-slate-50 selection:bg-[#C9A84C]/30 selection:text-[#0B1E36]">
+      <Navbar />
 
-      {/* Hero Section */}
-      <section className="relative bg-[#0B1E36] text-white overflow-hidden">
-        {/* Gorgeous Hero Image Background */}
-        <div className="absolute inset-0 z-0">
-          <picture>
-            <source media="(min-width: 768px)" srcSet="https://picsum.photos/seed/guardian/1920/1080?blur=1" />
-            <img 
-              src="https://picsum.photos/seed/guardian/800/1000?blur=1" 
-              alt="An older person looking at a tablet with a reassuring hand on their shoulder" 
-              className="w-full h-full object-cover opacity-40 mix-blend-overlay"
-              referrerPolicy="no-referrer"
-            />
-          </picture>
-          {/* Gradient overlay to ensure text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0B1E36] via-[#0B1E36]/90 to-transparent"></div>
-        </div>
-        
-        <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-32 lg:py-40 flex flex-col md:flex-row items-center gap-12">
-          <div className="md:w-2/3 space-y-8">
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full text-sm font-semibold text-[#D4AF37] border border-white/20 shadow-sm">
-              <Lock className="w-4 h-4" />
-              <span>Your Premium Digital Guardian</span>
-            </div>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight tracking-tight">
-              Before You Click.<br/>
-              <span className="text-slate-300">Before You Pay.</span><br/>
-              <span className="text-[#D4AF37]">Get a Second Look.</span>
-            </h1>
-            <p className="text-lg md:text-2xl text-slate-200 max-w-2xl leading-relaxed font-light">
-              Scams are getting smarter, but you don't have to face them alone. We provide immediate, expert verification of suspicious emails, texts, and websites so you can browse with complete peace of mind.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 pt-6">
-              <button className="bg-[#D4AF37] text-[#0B1E36] px-8 py-4 rounded-full font-bold text-lg hover:bg-yellow-400 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-[#D4AF37]/50">
-                <Search className="w-6 h-6" />
-                Check a Link Now
-              </button>
-              <button className="bg-white/10 backdrop-blur-sm text-white border border-white/30 px-8 py-4 rounded-full font-semibold text-lg hover:bg-white/20 transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-white/30">
-                <Phone className="w-5 h-5" />
-                Speak to an Expert
-              </button>
-            </div>
-            <div className="flex flex-wrap items-center gap-6 pt-8 text-sm md:text-base text-slate-300 font-medium">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-[#D4AF37]" />
-                <span>24/7 Support</span>
+      {/* ── Hero ─────────────────────────────────────────────────────── */}
+      <section
+        className="relative bg-[#112540] text-white overflow-hidden hero-bg"
+        aria-label="Hero section"
+      >
+        {/* Subtle radial glow behind content */}
+        <div
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 80% 60% at 30% 50%, rgba(201,168,76,0.06) 0%, transparent 70%)' }}
+          aria-hidden="true"
+        />
+        {/* Left-side gradient: ensures text always sits on dark ground */}
+        <div
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{ background: 'linear-gradient(to right, #112540 0%, #112540 45%, rgba(17,37,64,0.85) 60%, transparent 75%)' }}
+          aria-hidden="true"
+        />
+
+        {/* Two-column grid */}
+        <div className="relative z-10 max-w-6xl mx-auto px-6 md:px-10 pt-24 pb-20 md:pt-32 md:pb-24">
+          <div className="grid gap-12 md:gap-16">
+            {/* ── LEFT: Copy — constrained to left half ─────────────────── */}
+            <div className="max-w-[580px]">
+              {/* Micro label */}
+              <div className="animate-fade-in-up flex items-center gap-3 mb-8">
+                <div className="w-1 h-5 bg-[#C9A84C] rounded-full" aria-hidden="true" />
+                <span className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase">
+                  Independent · UK-Based · Expert Verification
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-[#D4AF37]" />
-                <span>UK Based Experts</span>
+
+              {/* Headline */}
+              <h1
+                className="animate-fade-in-up animate-delay-100 text-white mb-6 leading-tight"
+                style={{ fontFamily: "'Merriweather', serif" }}
+              >
+                Before you click.<br />
+                <span className="text-[#C9A84C]">Get a calm, expert second look.</span>
+              </h1>
+
+              {/* Supporting text */}
+              <p className="animate-fade-in-up animate-delay-200 text-slate-300 text-lg leading-relaxed mb-3 max-w-lg">
+                Send us suspicious texts, emails, links, WhatsApp messages, or screenshots — and we&rsquo;ll verify what&rsquo;s real, what&rsquo;s risky, and what to do next.
+              </p>
+              <p className="animate-fade-in-up animate-delay-200 text-[#C9A84C]/70 text-sm font-medium tracking-wide mb-8">
+                Independent. UK-based. Human-verified.
+              </p>
+
+              {/* Benefit chips */}
+              <div className="animate-fade-in-up animate-delay-300 flex flex-wrap gap-2 mb-10" role="list" aria-label="Key benefits">
+                {[
+                  '✔ Verify links before you open them',
+                  '✔ Spot scams that look real',
+                  '✔ Protect parents & family finances',
+                ].map((chip) => (
+                  <span
+                    key={chip}
+                    role="listitem"
+                    className="text-sm text-slate-200 bg-white/8 border border-white/12 rounded-full px-4 py-1.5 font-medium"
+                  >
+                    {chip}
+                  </span>
+                ))}
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-[#D4AF37]" />
-                <span>Fully Confidential</span>
+
+              {/* CTAs */}
+              <div className="animate-fade-in-up animate-delay-400 flex flex-col sm:flex-row gap-4 mb-4">
+                <div>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] border-0 font-semibold w-full sm:w-auto justify-center"
+                  >
+                    Get Protection
+                  </Button>
+                  <p className="text-slate-500 text-xs mt-2 text-center sm:text-left">Start in 60 seconds</p>
+                </div>
+                <Button variant="ghost" size="lg" className="w-full sm:w-auto justify-center">
+                  See How It Works
+                </Button>
               </div>
+
+              {/* Trust microcopy */}
+              <p className="animate-fade-in-up animate-delay-400 text-slate-500 text-sm mt-2 italic">
+                No judgement. No pressure. Just clarity.
+              </p>
             </div>
+
+
           </div>
         </div>
+
+        {/* Soft gradient edge */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-12 z-10 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.06))' }}
+          aria-hidden="true"
+        />
       </section>
 
-      {/* The Problem Section */}
-      <section className="py-20 md:py-28 bg-white">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="text-center max-w-3xl mx-auto mb-16 md:mb-24">
-            <h2 className="text-3xl md:text-5xl font-bold text-[#0B1E36] mb-6 tracking-tight">The internet shouldn't feel like a minefield.</h2>
-            <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
-              Every day, millions of convincing fake messages, websites, and calls target innocent people. They look like your bank, your delivery service, or even your family. One wrong click can cost you everything.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-slate-50 p-8 md:p-10 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mb-6">
-                <AlertTriangle className="w-7 h-7" />
-              </div>
-              <h3 className="text-2xl font-bold text-[#0B1E36] mb-4">Sophisticated Scams</h3>
-              <p className="text-slate-600 text-lg leading-relaxed">Modern scams are nearly indistinguishable from real communications. They use your name, real logos, and urgent language to force quick decisions.</p>
-            </div>
-            <div className="bg-slate-50 p-8 md:p-10 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-14 h-14 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-6">
-                <Lock className="w-7 h-7" />
-              </div>
-              <h3 className="text-2xl font-bold text-[#0B1E36] mb-4">Financial Devastation</h3>
-              <p className="text-slate-600 text-lg leading-relaxed">Once money is sent to a scammer, it is often impossible to recover. The financial and emotional toll can be life-altering.</p>
-            </div>
-            <div className="bg-[#0B1E36] p-8 md:p-10 rounded-3xl border border-[#0B1E36] shadow-lg text-white transform md:-translate-y-4">
-              <div className="w-14 h-14 bg-[#D4AF37]/20 text-[#D4AF37] rounded-2xl flex items-center justify-center mb-6">
-                <Shield className="w-7 h-7" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4">The Solution</h3>
-              <p className="text-slate-300 text-lg leading-relaxed">Pause. Don't click. Don't pay. Send it to us instead. Our experts will analyze the request and give you a definitive "Safe" or "Scam" verdict.</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ── The Problem ──────────────────────────────────────────────── */}
+      <SectionWrapper background="offwhite" topBorder={false} className="pt-16 md:pt-20">
+        <SectionHeading
+          title="The internet should not feel like a minefield."
+          subtitle="Every day, convincing fake messages, websites, and calls target innocent people. They look like your bank, your delivery service, or even your family. One wrong click can cost you everything."
+        />
 
-      {/* How It Works */}
-      <section id="how-it-works" className="py-20 md:py-28 bg-slate-100 border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="text-center mb-16 md:mb-24">
-            <h2 className="text-3xl md:text-5xl font-bold text-[#0B1E36] mb-6 tracking-tight">How Second Look Protect Works</h2>
-            <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto">Three simple steps to complete peace of mind.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-12 relative max-w-5xl mx-auto">
-            {/* Connecting line for desktop */}
-            <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-1 bg-slate-300 z-0 rounded-full"></div>
-            
-            <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="w-24 h-24 bg-white rounded-full border-4 border-slate-200 text-[#0B1E36] flex items-center justify-center text-3xl font-bold mb-8 shadow-sm">
-                1
-              </div>
-              <h3 className="text-2xl font-bold text-[#0B1E36] mb-4">Receive & Pause</h3>
-              <p className="text-slate-600 text-lg">You get a suspicious email, text, or payment request. Instead of acting on it, you pause.</p>
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Card 1 */}
+          <div className="bg-slate-50 border border-slate-100 rounded-xl p-8 hover:shadow-md transition-shadow duration-300">
+            <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+              <AlertTriangle className="w-6 h-6 text-slate-500" />
             </div>
-            
-            <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="w-24 h-24 bg-white rounded-full border-4 border-slate-200 text-[#0B1E36] flex items-center justify-center text-3xl font-bold mb-8 shadow-sm">
-                2
-              </div>
-              <h3 className="text-2xl font-bold text-[#0B1E36] mb-4">Send for a Second Look</h3>
-              <p className="text-slate-600 text-lg">Forward the message, screenshot, or link to our secure portal or dedicated WhatsApp number.</p>
-            </div>
-            
-            <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="w-24 h-24 bg-[#D4AF37] rounded-full border-4 border-[#D4AF37] text-[#0B1E36] flex items-center justify-center text-3xl font-bold mb-8 shadow-lg">
-                3
-              </div>
-              <h3 className="text-2xl font-bold text-[#0B1E36] mb-4">Get the Verdict</h3>
-              <p className="text-slate-600 text-lg">Within minutes, our experts analyze the threat and tell you exactly what to do next. Safe or Scam.</p>
-            </div>
-          </div>
-          
-          <div className="mt-20 text-center">
-            <button className="bg-[#0B1E36] text-white px-10 py-5 rounded-full font-bold text-xl hover:bg-slate-800 transition-colors shadow-xl hover:shadow-2xl inline-flex items-center gap-3 focus:outline-none focus:ring-4 focus:ring-[#0B1E36]/50">
-              Try It Now <ArrowRight className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Subscriptions */}
-      <section id="pricing" className="py-20 md:py-28 bg-[#0B1E36] text-white">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="text-center mb-16 md:mb-24">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight">Choose Your Level of Protection</h2>
-            <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto">Flexible plans designed to keep you and your loved ones safe.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Basic Plan */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 flex flex-col">
-              <h3 className="text-2xl font-bold mb-2">Essential</h3>
-              <p className="text-slate-400 mb-8 text-lg">Perfect for occasional checks.</p>
-              <div className="mb-10">
-                <span className="text-5xl font-bold">£9.99</span>
-                <span className="text-slate-400 text-lg">/month</span>
-              </div>
-              <ul className="space-y-5 mb-10 flex-1">
-                <li className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 text-[#D4AF37] shrink-0" />
-                  <span className="text-slate-200 text-lg">Up to 10 checks per month</span>
-                </li>
-                <li className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 text-[#D4AF37] shrink-0" />
-                  <span className="text-slate-200 text-lg">Email & SMS verification</span>
-                </li>
-                <li className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 text-[#D4AF37] shrink-0" />
-                  <span className="text-slate-200 text-lg">Response within 2 hours</span>
-                </li>
-              </ul>
-              <button className="w-full py-4 rounded-full border-2 border-white/20 font-bold text-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-4 focus:ring-white/20">
-                Select Essential
-              </button>
-            </div>
-
-            {/* Premium Plan */}
-            <div className="bg-white rounded-3xl p-8 md:p-10 flex flex-col transform md:-translate-y-6 shadow-2xl relative border-4 border-[#D4AF37]">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#D4AF37] text-[#0B1E36] px-6 py-2 rounded-full text-sm font-bold tracking-widest uppercase shadow-md">
-                Most Popular
-              </div>
-              <h3 className="text-2xl font-bold text-[#0B1E36] mb-2 mt-2">Guardian</h3>
-              <p className="text-slate-500 mb-8 text-lg">Comprehensive daily protection.</p>
-              <div className="mb-10 text-[#0B1E36]">
-                <span className="text-5xl font-bold">£19.99</span>
-                <span className="text-slate-500 text-lg">/month</span>
-              </div>
-              <ul className="space-y-5 mb-10 flex-1">
-                <li className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 text-[#D4AF37] shrink-0" />
-                  <span className="text-slate-700 font-medium text-lg">Unlimited checks</span>
-                </li>
-                <li className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 text-[#D4AF37] shrink-0" />
-                  <span className="text-slate-700 font-medium text-lg">Priority response (under 15 mins)</span>
-                </li>
-                <li className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 text-[#D4AF37] shrink-0" />
-                  <span className="text-slate-700 font-medium text-lg">Website & Payment verification</span>
-                </li>
-                <li className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 text-[#D4AF37] shrink-0" />
-                  <span className="text-slate-700 font-medium text-lg">Direct WhatsApp access</span>
-                </li>
-              </ul>
-              <button className="w-full py-4 rounded-full bg-[#0B1E36] text-white font-bold text-lg hover:bg-slate-800 transition-colors shadow-xl focus:outline-none focus:ring-4 focus:ring-[#0B1E36]/50">
-                Select Guardian
-              </button>
-            </div>
-
-            {/* Family Plan */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 flex flex-col">
-              <h3 className="text-2xl font-bold mb-2">Family Shield</h3>
-              <p className="text-slate-400 mb-8 text-lg">Protect up to 4 family members.</p>
-              <div className="mb-10">
-                <span className="text-5xl font-bold">£29.99</span>
-                <span className="text-slate-400 text-lg">/month</span>
-              </div>
-              <ul className="space-y-5 mb-10 flex-1">
-                <li className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 text-[#D4AF37] shrink-0" />
-                  <span className="text-slate-200 text-lg">Everything in Guardian</span>
-                </li>
-                <li className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 text-[#D4AF37] shrink-0" />
-                  <span className="text-slate-200 text-lg">4 independent accounts</span>
-                </li>
-                <li className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 text-[#D4AF37] shrink-0" />
-                  <span className="text-slate-200 text-lg">Family alert dashboard</span>
-                </li>
-              </ul>
-              <button className="w-full py-4 rounded-full border-2 border-white/20 font-bold text-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-4 focus:ring-white/20">
-                Select Family Shield
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section id="testimonials" className="py-20 md:py-28 bg-white">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="text-center mb-16 md:mb-24">
-            <h2 className="text-3xl md:text-5xl font-bold text-[#0B1E36] mb-6 tracking-tight">Trusted by Thousands</h2>
-            <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto">Real stories from people we've protected.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-slate-50 p-8 md:p-10 rounded-3xl border border-slate-100 shadow-sm">
-              <div className="flex gap-1 text-[#D4AF37] mb-6">
-                <Star className="w-6 h-6 fill-current" />
-                <Star className="w-6 h-6 fill-current" />
-                <Star className="w-6 h-6 fill-current" />
-                <Star className="w-6 h-6 fill-current" />
-                <Star className="w-6 h-6 fill-current" />
-              </div>
-              <p className="text-slate-700 mb-8 text-lg italic leading-relaxed">"I received a text from what looked exactly like my bank asking me to authorize a payment. I sent a screenshot to Second Look Protect, and within 3 minutes they confirmed it was a scam. They saved me £2,000."</p>
-              <div className="font-bold text-[#0B1E36] text-lg">- Margaret T., London</div>
-            </div>
-            <div className="bg-slate-50 p-8 md:p-10 rounded-3xl border border-slate-100 shadow-sm">
-              <div className="flex gap-1 text-[#D4AF37] mb-6">
-                <Star className="w-6 h-6 fill-current" />
-                <Star className="w-6 h-6 fill-current" />
-                <Star className="w-6 h-6 fill-current" />
-                <Star className="w-6 h-6 fill-current" />
-                <Star className="w-6 h-6 fill-current" />
-              </div>
-              <p className="text-slate-700 mb-8 text-lg italic leading-relaxed">"I bought the Family Shield for my elderly parents. It gives me such peace of mind knowing they have experts to check things with before they click any links in emails. It's worth every penny."</p>
-              <div className="font-bold text-[#0B1E36] text-lg">- David S., Manchester</div>
-            </div>
-            <div className="bg-slate-50 p-8 md:p-10 rounded-3xl border border-slate-100 shadow-sm">
-              <div className="flex gap-1 text-[#D4AF37] mb-6">
-                <Star className="w-6 h-6 fill-current" />
-                <Star className="w-6 h-6 fill-current" />
-                <Star className="w-6 h-6 fill-current" />
-                <Star className="w-6 h-6 fill-current" />
-                <Star className="w-6 h-6 fill-current" />
-              </div>
-              <p className="text-slate-700 mb-8 text-lg italic leading-relaxed">"The service is incredibly fast and easy to use. I just forward suspicious emails to them, and they reply almost instantly. It's like having a cybersecurity expert in your pocket."</p>
-              <div className="font-bold text-[#0B1E36] text-lg">- Helen R., Bristol</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 md:py-32 bg-[#D4AF37] text-[#0B1E36]">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl md:text-6xl font-bold mb-8 tracking-tight">Don't wait until it's too late.</h2>
-          <p className="text-xl md:text-2xl mb-12 font-medium opacity-90">Get your digital guardian today and browse with confidence.</p>
-          <button className="bg-[#0B1E36] text-white px-12 py-6 rounded-full font-bold text-xl md:text-2xl hover:bg-slate-800 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-[#0B1E36]/50">
-            Start Your Protection Now
-          </button>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-[#05101E] text-slate-400 py-16 border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 grid md:grid-cols-4 gap-12">
-          <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-3 mb-6">
-              <Shield className="w-8 h-8 text-[#D4AF37]" />
-              <span className="text-2xl font-bold text-white tracking-tight">Second Look Protect</span>
-            </div>
-            <p className="max-w-sm text-lg leading-relaxed">
-              Your premium digital guardian. We provide expert verification of suspicious communications to protect you from fraud.
+            <h3 className="mb-3">Increasingly Convincing Fraud</h3>
+            <p className="text-slate-600 text-base leading-relaxed">
+              Modern fraud is difficult to distinguish from genuine communications. Criminals replicate real logos, names, and language to prompt immediate action.
             </p>
           </div>
+
+          {/* Card 2 */}
+          <div className="bg-slate-50 border border-slate-100 rounded-xl p-8 hover:shadow-md transition-shadow duration-300">
+            <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+              <Lock className="w-6 h-6 text-slate-500" />
+            </div>
+            <h3 className="mb-3">Serious Financial Consequences</h3>
+            <p className="text-slate-600 text-base leading-relaxed">
+              Once funds are transferred, recovery is rarely possible. The financial and personal impact can be significant and long-lasting.
+            </p>
+          </div>
+
+          {/* Card 3 — highlighted solution */}
+          <div className="bg-[#112540] rounded-xl p-8 text-white border-l-4 border-[#C9A84C]">
+            <div className="w-12 h-12 bg-[#C9A84C]/15 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+              <Shield className="w-6 h-6 text-[#C9A84C]" />
+            </div>
+            <h3 className="text-white mb-3">The Solution</h3>
+            <p className="text-slate-300 text-base leading-relaxed">
+              Pause. Do not click. Do not pay. Send it to us instead. Our experts analyse the request and give you a clear verdict — Safe or Scam.
+            </p>
+          </div>
+        </div>
+      </SectionWrapper>
+
+      {/* ── How It Works ─────────────────────────────────────────────── */}
+      <SectionWrapper id="how-it-works" background="white" topBorder>
+        <SectionHeading
+          title="How It Works"
+          subtitle="A clear, three-step process. Simple to use, whatever your level of technical experience."
+        />
+
+        <div className="grid md:grid-cols-3 gap-12 max-w-4xl mx-auto relative">
+          {/* Connector line */}
+          <div
+            className="hidden md:block absolute top-11 left-[18%] right-[18%] h-px bg-slate-300"
+            aria-hidden="true"
+          />
+
+          {[
+            {
+              step: '1',
+              title: 'Receive & Pause',
+              body: 'You receive a suspicious email, text, or payment request. Instead of acting on it immediately, you pause.',
+              gold: false,
+            },
+            {
+              step: '2',
+              title: 'Send for a Second Look',
+              body: 'Forward the message, screenshot, or link to our secure portal or dedicated WhatsApp number.',
+              gold: false,
+            },
+            {
+              step: '3',
+              title: 'Get the Verdict',
+              body: 'Within minutes, our experts analyse the threat and tell you exactly what to do next.',
+              gold: true,
+            },
+          ].map(({ step, title, body, gold }) => (
+            <div key={step} className="relative flex flex-col items-center text-center">
+              <div
+                className={[
+                  'w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold mb-8 relative z-10',
+                  gold
+                    ? 'bg-[#C9A84C] text-[#0B1E36] shadow-lg'
+                    : 'bg-white text-[#0B1E36] border-2 border-slate-200 shadow-sm',
+                ].join(' ')}
+                aria-hidden="true"
+              >
+                {step}
+              </div>
+              <h3 className="mb-3">{title}</h3>
+              <p className="text-slate-600 text-base leading-relaxed">{body}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-16 text-center">
+          <Button variant="primary" size="lg" className="inline-flex" as="a" href="#pricing">
+            View Our Plans <ArrowRight className="w-5 h-5" aria-hidden="true" />
+          </Button>
+        </div>
+      </SectionWrapper>
+
+      {/* ── Founder's Note ─────────────────────────────────────────────── */}
+      <SectionWrapper background="slate" topBorder>
+        <div className="max-w-2xl mx-auto text-center">
+
+          {/* Eyebrow */}
+          <div className="flex items-center justify-center gap-3 mb-10">
+            <Shield className="w-5 h-5 text-[#A8853C]" aria-hidden="true" />
+            <span className="text-[#A8853C] text-sm font-medium tracking-widest uppercase">
+              Why I Started Second Look Protect
+            </span>
+          </div>
+
+          {/* Decorative open-quote */}
+          <div
+            className="text-[8rem] leading-none text-[#C9A84C]/20 font-serif select-none mb-2"
+            aria-hidden="true"
+            style={{ fontFamily: "'Merriweather', serif" }}
+          >
+            &ldquo;
+          </div>
+
+          {/* Quote */}
+          <blockquote>
+            <p
+              className="text-[#0B1E36] text-xl md:text-2xl leading-relaxed mb-10"
+              style={{ fontFamily: "'Merriweather', serif", fontWeight: 300 }}
+            >
+              I started Second Look Protect after seeing how convincing modern scams have become. Even careful, intelligent people are being caught off guard. This service exists to create a pause&nbsp;— a second look&nbsp;— before a decision is made.
+            </p>
+
+            {/* Divider */}
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="h-px w-16 bg-[#C9A84C]/40" aria-hidden="true" />
+              <Shield className="w-4 h-4 text-[#C9A84C]/60" aria-hidden="true" />
+              <div className="h-px w-16 bg-[#C9A84C]/40" aria-hidden="true" />
+            </div>
+
+            <footer>
+              <p className="font-semibold text-[#0B1E36] text-base tracking-wide">Kieran Rowan</p>
+              <p className="text-slate-500 text-sm mt-1">Founder, Second Look Protect</p>
+            </footer>
+          </blockquote>
+        </div>
+      </SectionWrapper>
+
+      {/* ── Pricing ──────────────────────────────────────────────────── */}
+      <SectionWrapper id="pricing" background="navy">
+        <SectionHeading
+          title="Protection Plans"
+          subtitle="Simple, transparent pricing. No long-term commitment required."
+          light
+        />
+
+        <div className="grid md:grid-cols-3 gap-6 items-start">
+          {PRICING_PLANS.map((plan) => (
+            <div key={plan.name}>
+              <PricingCard {...plan} />
+            </div>
+          ))}
+        </div>
+
+        <p className="text-center text-slate-400 text-sm mt-10">
+          All plans include a 14-day free trial. Cancel at any time from your account.
+          &nbsp;·&nbsp; Save 2 months when paying annually.
+        </p>
+
+        {/* Core System strip */}
+        <div className="mt-20 pt-16 border-t border-white/10 grid md:grid-cols-3 gap-10">
+
+          {/* Forward-to-Check */}
           <div>
-            <h4 className="text-white font-bold text-lg mb-6">Quick Links</h4>
-            <ul className="space-y-4">
-              <li><a href="#how-it-works" className="hover:text-white transition-colors text-lg">How It Works</a></li>
-              <li><a href="#pricing" className="hover:text-white transition-colors text-lg">Subscriptions</a></li>
-              <li><a href="#" className="hover:text-white transition-colors text-lg">About Us</a></li>
-              <li><a href="#" className="hover:text-white transition-colors text-lg">Contact</a></li>
+            <h4 className="text-white text-base font-semibold mb-4 flex items-center gap-2">
+              <span className="text-[#C9A84C] text-lg" aria-hidden="true">📨</span>
+              Forward-to-Check System
+            </h4>
+            <p className="text-slate-400 text-sm mb-4 leading-relaxed font-medium italic">
+              No portals. No logins. No confusion.
+            </p>
+            <ul className="space-y-2 text-sm text-slate-300">
+              {['Forward suspicious emails', 'Send WhatsApp screenshots', 'Submit website links'].map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <span className="text-[#C9A84C] mt-0.5" aria-hidden="true">→</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <p className="text-slate-500 text-xs mt-5 italic">
+              &ldquo;If you can forward a message, you can stay safe.&rdquo;
+            </p>
+          </div>
+
+          {/* Risk Assessment */}
+          <div>
+            <h4 className="text-white text-base font-semibold mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
+              Guardian Risk Assessment
+            </h4>
+            <p className="text-slate-400 text-sm mb-5 leading-relaxed">Every review includes a clear, structured verdict:</p>
+            <ul className="space-y-3 text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-green-400 text-base" aria-label="Green">&#x1F7E2;</span>
+                <span className="text-slate-200"><strong className="text-white">Low Risk</strong> – No immediate warning signs detected</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-yellow-400 text-base" aria-label="Amber">&#x1F7E1;</span>
+                <span className="text-slate-200"><strong className="text-white">Caution</strong> – Warning indicators present</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-red-400 text-base" aria-label="Red">&#x1F534;</span>
+                <span className="text-slate-200"><strong className="text-white">High Risk</strong> – Strong scam indicators detected</span>
+              </li>
+            </ul>
+            <p className="text-slate-500 text-xs mt-5">Clear. Calm. Structured.</p>
+          </div>
+
+          {/* Flexible Membership */}
+          <div>
+            <h4 className="text-white text-base font-semibold mb-4 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
+              Flexible Membership
+            </h4>
+            <ul className="space-y-3 text-sm text-slate-300">
+              {[
+                'Monthly rolling — no lock-in',
+                'Cancel any time from your account',
+                'Save 2 months on annual billing',
+                'Switch plan at any time',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-[#C9A84C] shrink-0 mt-0.5" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
             </ul>
           </div>
-          <div>
-            <h4 className="text-white font-bold text-lg mb-6">Legal</h4>
-            <ul className="space-y-4">
-              <li><a href="#" className="hover:text-white transition-colors text-lg">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-white transition-colors text-lg">Terms of Service</a></li>
-              <li><a href="#" className="hover:text-white transition-colors text-lg">Cookie Policy</a></li>
-            </ul>
-          </div>
+
         </div>
-        <div className="max-w-7xl mx-auto px-6 md:px-12 mt-16 pt-8 border-t border-white/10 text-base text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4">
-          <p>&copy; {new Date().getFullYear()} Second Look Protect Ltd. All rights reserved.</p>
-          <div className="flex gap-6">
-             <a href="#" className="hover:text-white transition-colors">Twitter</a>
-             <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
-             <a href="#" className="hover:text-white transition-colors">Facebook</a>
+      </SectionWrapper>
+
+      {/* ── Testimonials ─────────────────────────────────────────────── */}
+      <SectionWrapper id="testimonials" background="offwhite" topBorder>
+        <SectionHeading
+          title="What Our Members Say"
+          subtitle="Accounts from people who use Second Look Protect to stay safe online."
+        />
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {TESTIMONIALS.map((t) => (
+            <div key={t.author}>
+              <TestimonialCard {...t} />
+            </div>
+          ))}
+        </div>
+      </SectionWrapper>
+
+      {/* ── FAQ ──────────────────────────────────────────────────────── */}
+      <SectionWrapper id="faq" background="white" topBorder>
+        <div className="max-w-3xl mx-auto">
+          <SectionHeading
+            title="Frequently Asked Questions"
+            subtitle="Clear answers. No pressure. No jargon."
+          />
+          <FAQAccordion />
+        </div>
+      </SectionWrapper>
+
+      {/* ── Final CTA ────────────────────────────────────────────────── */}
+      <SectionWrapper background="navy">
+        <div className="max-w-xl mx-auto text-center">
+          <div className="flex justify-center mb-8" aria-hidden="true">
+            <div className="w-16 h-16 rounded-full bg-[#C9A84C]/15 flex items-center justify-center">
+              <Shield className="w-8 h-8 text-[#C9A84C]" />
+            </div>
+          </div>
+          <h2 className="text-white mb-5" style={{ fontFamily: "'Merriweather', serif" }}>
+            Scammers rely on pressure.<br />
+            <span className="text-[#C9A84C]">We give you pause.</span>
+          </h2>
+          <p className="text-slate-300 text-lg leading-relaxed mb-10">
+            Expert verification, available whenever you need it. Start with a free trial — no pressure, no commitment.
+          </p>
+          <Button
+            variant="primary"
+            size="lg"
+            className="bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] border-0 font-semibold w-full sm:w-auto justify-center"
+          >
+            🛡️ Protect Me Now
+          </Button>
+          <p className="text-slate-500 text-sm mt-4">14-day free trial · Cancel any time</p>
+        </div>
+      </SectionWrapper>
+
+      {/* ── Footer ───────────────────────────────────────────────────── */}
+      <footer
+        className="bg-[#0A1C32] text-slate-400 pt-16 pb-10 border-t border-white/8"
+        role="contentinfo"
+      >
+        <div className="max-w-6xl mx-auto px-6 md:px-10">
+
+          {/* Trust strip */}
+          <div className="mb-12 pb-12 border-b border-white/8">
+            <TrustBadge light />
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-12 mb-12">
+            {/* Brand */}
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-3 mb-5">
+                <Shield className="w-6 h-6 text-[#C9A84C]" aria-hidden="true" />
+                <span
+                  className="text-xl font-semibold text-white"
+                  style={{ fontFamily: "'Merriweather', serif" }}
+                >
+                  Second Look Protect
+                </span>
+              </div>
+
+              <p className="text-base leading-relaxed max-w-sm mb-5">
+                UK-based, independent verification service. Not affiliated with any bank, financial institution, or government body.
+              </p>
+
+              {/* Contact */}
+              <div className="space-y-2 mb-5 text-sm">
+                <p>
+                  <a href="tel:07907614821" className="hover:text-white transition-colors duration-200">
+                    📞 07907 614821 <span className="text-slate-600">(call-back service · Mon–Sat 8am–8pm)</span>
+                  </a>
+                </p>
+                <p>
+                  <a href="mailto:hello@secondlookprotect.co.uk" className="hover:text-white transition-colors duration-200">
+                    ✉ hello@secondlookprotect.co.uk
+                  </a>
+                </p>
+              </div>
+
+              {/* Legal authority */}
+              <div className="space-y-1 text-xs text-slate-600 border-t border-white/8 pt-4">
+                <p>Registered with the UK Information Commissioner's Office (ICO).</p>
+                <p>Second Look Protect Ltd · Company No. 15847293 (England &amp; Wales)</p>
+                <p>Registered Office: 71–75 Shelton Street, Covent Garden, London, WC2H 9JQ</p>
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <nav aria-label="Footer navigation">
+              <h4 className="text-white font-semibold text-base mb-5">Quick Links</h4>
+              <ul className="space-y-3 text-base">
+                {[
+                  { label: 'How It Works', href: '#how-it-works' },
+                  { label: 'Plans', href: '#pricing' },
+                  { label: 'Reviews', href: '#testimonials' },
+                  { label: 'About Us', href: '#' },
+                  { label: 'Contact', href: '#' },
+                ].map((l) => (
+                  <li key={l.label}>
+                    <a href={l.href} className="hover:text-white transition-colors duration-200">
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            {/* Legal */}
+            <nav aria-label="Legal links">
+              <h4 className="text-white font-semibold text-base mb-5">Legal</h4>
+              <ul className="space-y-3 text-base">
+                {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map((l) => (
+                  <li key={l}>
+                    <a href="#" className="hover:text-white transition-colors duration-200">{l}</a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="pt-8 border-t border-white/8 flex flex-col gap-3 text-xs text-slate-600">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+              <p className="text-slate-400 text-sm">© {new Date().getFullYear()} Second Look Protect Ltd. All rights reserved.</p>
+              <div className="flex gap-6">
+                {['Twitter', 'LinkedIn', 'Facebook'].map((s) => (
+                  <a key={s} href="#" className="hover:text-white transition-colors duration-200 text-sm"
+                    aria-label={`${s} — opens in new tab`}>
+                    {s}
+                  </a>
+                ))}
+              </div>
+            </div>
+            <p>
+              Second Look Protect Ltd is an independent verification service. We are not authorised or regulated by the Financial Conduct Authority (FCA).
+              We do not provide financial advice. UK-Based. Independent.
+            </p>
           </div>
         </div>
       </footer>
