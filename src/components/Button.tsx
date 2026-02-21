@@ -41,7 +41,8 @@ export function Button({
 }: ButtonBaseProps) {
     const classes = [
         'inline-flex items-center justify-center gap-2 font-medium rounded-lg',
-        'transition-colors duration-200 cursor-pointer',
+        'transition-all duration-200 cursor-pointer',
+        'active:scale-[0.98]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] focus-visible:ring-offset-2',
         variantClasses[variant],
         sizeClasses[size],

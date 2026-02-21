@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './index.css';
 import { Navbar } from './components/Navbar';
 import { Button } from './components/Button';
@@ -6,6 +6,7 @@ import { SectionWrapper, SectionHeading } from './components/SectionWrapper';
 import { TrustBadge } from './components/TrustBadge';
 import { PricingCard } from './components/PricingCard';
 import { FAQAccordion } from './components/FAQAccordion';
+import { GetProtectionPage } from './pages/GetProtectionPage';
 import {
   Shield, CheckCircle, Search, Lock, AlertTriangle,
   Phone, Star, ArrowRight,
@@ -168,9 +169,54 @@ function TestimonialCard({ quote, author, location }: typeof TESTIMONIALS[0]) {
   );
 }
 
+/* ─── Click tracking utility ────────────────────────────────────────────── */
+
+function trackEvent(event: string, data: Record<string, string>) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('slp_track', { detail: { event, ...data } }));
+    console.info('[SLP Track]', event, data);
+  }
+}
+
+/* ─── Smooth scroll with navbar offset ─────────────────────────────────── */
+
+function scrollToSection(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const navHeight = 72; // approximate navbar height
+  const top = el.getBoundingClientRect().top + window.scrollY - navHeight - 16;
+  window.scrollTo({ top, behavior: 'smooth' });
+}
+
 /* ─── Main App ─────────────────────────────────────────────────────────── */
 
 export default function App() {
+  const [page, setPage] = useState<'home' | 'get-protection'>('home');
+
+  function handleGetProtection() {
+    trackEvent('hero_cta_click', { button: 'get_protection' });
+    setPage('get-protection');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  function handleHowItWorks() {
+    trackEvent('hero_cta_click', { button: 'how_it_works' });
+    scrollToSection('how-it-works');
+  }
+
+  // ── Early return: GetProtection page ────────────────────────────────────
+  if (page === 'get-protection') {
+    return (
+      <GetProtectionPage
+        onBack={() => {
+          setPage('home');
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }}
+      />
+    );
+  }
+
+  // ── Home page ────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50 selection:bg-[#C9A84C]/30 selection:text-[#0B1E36]">
       <Navbar />
@@ -209,10 +255,10 @@ export default function App() {
               {/* Headline */}
               <h1
                 className="animate-fade-in-up animate-delay-100 text-white mb-6 leading-tight"
-                style={{ fontFamily: "'Merriweather', serif" }}
+                style={{ fontFamily: "'Merriweather', serif", textShadow: '0px 1px 6px rgba(0,0,0,0.15)' }}
               >
-                Before you click.<br />
-                <span className="text-[#C9A84C]">Get a calm, expert second look.</span>
+                <span className="block" style={{ color: '#A8C4DE' }}>Before you click.</span>
+                <span className="block text-[#C9A84C]" style={{ marginTop: '-4px' }}>Get a calm, expert second look.</span>
               </h1>
 
               {/* Supporting text */}
@@ -246,16 +292,29 @@ export default function App() {
                   <Button
                     variant="primary"
                     size="lg"
+                    onClick={handleGetProtection}
+                    aria-label="Get protection — start your fraud check in 60 seconds"
                     className="bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] border-0 font-semibold w-full sm:w-auto justify-center"
                   >
                     Get Protection
                   </Button>
                   <p className="text-slate-500 text-xs mt-2 text-center sm:text-left">Start in 60 seconds</p>
                 </div>
-                <Button variant="ghost" size="lg" className="w-full sm:w-auto justify-center">
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={handleHowItWorks}
+                  aria-label="See how Second Look Protect works — scroll to explanation"
+                  className="w-full sm:w-auto justify-center border-white/15 hover:border-white/25"
+                >
                   See How It Works
                 </Button>
               </div>
+
+              {/* Micro-trust line */}
+              <p className="text-slate-400/80 mt-2" style={{ fontSize: '13px', letterSpacing: '0.01em' }}>
+                ✓ UK-based specialists  ✓ Human-verified (not AI-only)  ✓ No judgement. No pressure.
+              </p>
 
               {/* Trust microcopy */}
               <p className="animate-fade-in-up animate-delay-400 text-slate-500 text-sm mt-2 italic">
