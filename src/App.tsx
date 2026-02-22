@@ -640,7 +640,7 @@ export default function App() {
           </div>
 
           {/* Quote */}
-          <blockquote>
+          <blockquote className="m-0">
             <p
               className="text-[#0B1E36] text-xl md:text-2xl leading-relaxed mb-10"
               style={{ fontFamily: "'Merriweather', serif", fontWeight: 300 }}
@@ -655,9 +655,11 @@ export default function App() {
               <div className="h-px w-16 bg-[#C9A84C]/40" aria-hidden="true" />
             </div>
 
-            <footer className="text-center">
-              <p className="font-semibold text-[#0B1E36] text-base tracking-wide">Kieran Rowan</p>
-              <p className="text-slate-500 text-sm mt-1">Founder, Second Look Protect</p>
+            <footer>
+              <div className="flex flex-col items-center justify-center w-full text-center">
+                <p className="font-semibold text-[#0B1E36] text-base tracking-wide">Kieran Rowan</p>
+                <p className="text-slate-500 text-sm mt-1">Founder, Second Look Protect</p>
+              </div>
             </footer>
           </blockquote>
         </div>
