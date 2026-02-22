@@ -433,15 +433,13 @@ export default function App() {
                     ✓ UK-based specialists &nbsp;·&nbsp; ✓ Human-reviewed (not AI-only) &nbsp;·&nbsp; ✓ Supporting safeguarding decisions
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="lg"
+                <button
                   onClick={handleHowItWorks}
                   aria-label="See how Second Look Protect works — scroll to explanation"
-                  className="w-full sm:w-auto justify-center border-white/15 hover:border-white/25"
+                  className="w-full sm:w-auto self-center text-slate-400 hover:text-slate-200 text-sm font-medium transition-colors duration-200 underline underline-offset-4 decoration-slate-600 hover:decoration-slate-400 px-2 py-2"
                 >
                   See How It Works
-                </Button>
+                </button>
               </div>
 
               {/* Emotional tagline */}
