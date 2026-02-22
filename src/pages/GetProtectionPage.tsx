@@ -160,26 +160,18 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
         try {
             const supabase = getSupabase(); // lazy — throws friendly error if env vars missing
 
+            // Generate UUID client-side so we never need to SELECT the row back
+            // (avoids needing a SELECT RLS policy — only INSERT is required)
+            const submissionId: string = crypto.randomUUID();
+
             const messageValue = selectedOption === 'link' ? linkValue
                 : selectedOption === 'contact' ? contactValue
                     : null;
 
-            // A) Create submission row to get id
-            const { data: row, error: insertError } = await supabase
-                .from('submissions')
-                .insert({ message: messageValue, status: 'new' })
-                .select('id')
-                .single();
-
-            if (insertError || !row) {
-                throw new Error(insertError?.message ?? 'Failed to create submission. Please try again.');
-            }
-
-            const submissionId: string = row.id;
             let imagePath: string | null = null;
             let imageUrl: string | null = null;
 
-            // B+C) Upload file if screenshot option
+            // B) Upload file first (if screenshot) so we have the URL ready for the insert
             if (selectedOption === 'screenshot' && file) {
                 const timestamp = Date.now();
                 const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -200,15 +192,19 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                 imageUrl = urlData.publicUrl;
             }
 
-            // D) Update row with image details
-            const { error: updateError } = await supabase
+            // A+D) Single INSERT with all fields — no read-back, no UPDATE needed
+            const { error: insertError } = await supabase
                 .from('submissions')
-                .update({ image_path: imagePath, image_url: imageUrl })
-                .eq('id', submissionId);
+                .insert({
+                    id: submissionId,
+                    message: messageValue,
+                    image_path: imagePath,
+                    image_url: imageUrl,
+                    status: 'new',
+                });
 
-            if (updateError) {
-                // Non-fatal — row was saved, just log
-                console.error('[SLP] Failed to update image_url on row:', updateError.message);
+            if (insertError) {
+                throw new Error(insertError.message ?? 'Failed to create submission. Please try again.');
             }
 
             trackEvent('get_protection_submit', { option: selectedOption ?? 'unknown', submission_id: submissionId });
