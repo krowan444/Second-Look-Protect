@@ -625,39 +625,37 @@ export default function App() {
 
       {/* ── Digital Safety Education ──────────────────────────────────── */}
       <SectionWrapper background="offwhite" topBorder>
-        <div className="max-w-3xl mx-auto">
-          <SectionHeading
-            title="The digital world is changing — and that's OK."
-          />
+        <SectionHeading
+          title="The digital world is changing — and that's OK."
+        />
 
-          <div className="max-w-[780px] mx-auto text-center">
-            <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-6">
-              A calm perspective on modern scams
-            </p>
+        <div className="max-w-[780px] mx-auto text-center mb-10">
+          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-6">
+            A calm perspective on modern scams
+          </p>
 
-            <p className="text-slate-600 text-base leading-relaxed mb-5">
-              Technology — including AI — is evolving rapidly. While this brings many benefits, it also means scam techniques are becoming more convincing and harder to recognise.
-            </p>
+          <p className="text-slate-600 text-base leading-relaxed mb-5">
+            Technology — including AI — is evolving rapidly. While this brings many benefits, it also means scam techniques are becoming more convincing and harder to recognise.
+          </p>
 
-            <p className="text-slate-600 text-base leading-relaxed mb-10">
-              You shouldn't need to be a technology expert to stay safe online. Second Look Protect provides a clear, calm second opinion whenever something feels uncertain.
-            </p>
-          </div>
+          <p className="text-slate-600 text-base leading-relaxed">
+            You shouldn't need to be a technology expert to stay safe online. Second Look Protect provides a clear, calm second opinion whenever something feels uncertain.
+          </p>
+        </div>
 
-          <div className="bg-white border border-slate-100 rounded-xl p-8 md:p-10 shadow-sm">
-            <h3 className="text-[#0B1E36] text-lg font-semibold mb-4">
-              Why is online safety becoming more challenging?
-            </h3>
-            <p className="text-slate-600 text-base leading-relaxed mb-4">
-              Technology and AI tools are evolving quickly. Unfortunately, this means scammers can create more convincing messages, emails, and fake content than ever before.
-            </p>
-            <p className="text-slate-600 text-base leading-relaxed mb-6">
-              Having a trusted second opinion helps you stay confident without needing to understand all the technical details.
-            </p>
-            <p className="text-slate-400 text-sm italic">
-              As scams evolve, so does your protection.
-            </p>
-          </div>
+        <div className="max-w-3xl mx-auto bg-white border border-slate-100 rounded-xl p-8 md:p-10 shadow-sm">
+          <h3 className="text-[#0B1E36] text-lg font-semibold mb-4">
+            Why is online safety becoming more challenging?
+          </h3>
+          <p className="text-slate-600 text-base leading-relaxed mb-4">
+            Technology and AI tools are evolving quickly. Unfortunately, this means scammers can create more convincing messages, emails, and fake content than ever before.
+          </p>
+          <p className="text-slate-600 text-base leading-relaxed mb-6">
+            Having a trusted second opinion helps you stay confident without needing to understand all the technical details.
+          </p>
+          <p className="text-slate-400 text-sm italic">
+            As scams evolve, so does your protection.
+          </p>
         </div>
       </SectionWrapper>
 
