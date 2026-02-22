@@ -134,6 +134,41 @@ const FAQ_GROUPS: FAQGroup[] = [
             },
         ],
     },
+    {
+        category: 'Support & Contact',
+        items: [
+            {
+                question: 'I need technical support — how do I get help?',
+                answer: (
+                    <>
+                        Email our support team at{' '}
+                        <a
+                            href="mailto:support@secondlookprotect.co.uk"
+                            className="text-[#A8853C] underline underline-offset-2 hover:text-[#C9A84C] transition-colors"
+                        >
+                            support@secondlookprotect.co.uk
+                        </a>{' '}
+                        and include your name, the email you signed up with, and a brief description of the issue. We&rsquo;ll get back to you as soon as possible.
+                    </>
+                ),
+            },
+            {
+                question: 'How do I contact you for general enquiries?',
+                answer: (
+                    <>
+                        For general questions, partnerships, or billing queries, email us at{' '}
+                        <a
+                            href="mailto:hello@secondlookprotect.co.uk"
+                            className="text-[#A8853C] underline underline-offset-2 hover:text-[#C9A84C] transition-colors"
+                        >
+                            hello@secondlookprotect.co.uk
+                        </a>
+                        . You can also call us directly — details are shown above.
+                    </>
+                ),
+            },
+        ],
+    },
 ];
 
 /* ─── Accordion item ──────────────────────────────────────────────────────── */

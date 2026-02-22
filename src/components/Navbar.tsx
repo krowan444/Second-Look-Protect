@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Menu, X, Phone, Smartphone } from 'lucide-react';
+import { Shield, Menu, X, Phone, Smartphone, Mail } from 'lucide-react';
 import { Button } from './Button';
 
 const OFFICE = '01604385888';
@@ -76,6 +76,17 @@ export function Navbar() {
                             <Smartphone className="w-3 h-3 text-[#C9A84C]" aria-hidden="true" />
                             <span className="text-slate-500">Mobile&nbsp;/&nbsp;WhatsApp:</span>
                             <span className="text-slate-300 font-medium">{MOBILE_DISPLAY}</span>
+                        </a>
+
+                        <span className="w-px h-3 bg-white/15" aria-hidden="true" />
+
+                        <a
+                            href="mailto:hello@secondlookprotect.co.uk"
+                            className="flex items-center gap-1.5 hover:text-[#C9A84C] transition-colors duration-200"
+                            aria-label="Email hello@secondlookprotect.co.uk"
+                        >
+                            <Mail className="w-3 h-3 text-[#C9A84C]" aria-hidden="true" />
+                            <span className="text-slate-300 font-medium">hello@secondlookprotect.co.uk</span>
                         </a>
 
                         <span className="ml-auto text-slate-600 italic text-[11px]">

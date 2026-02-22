@@ -403,17 +403,29 @@ export default function App() {
                 No judgement. No pressure. Just clarity.
               </p>
 
-              {/* Hero phone nudge */}
-              <p className="mt-5 text-slate-400 text-sm">
-                Prefer to talk?{' '}
-                <a
-                  href="tel:07907614821"
-                  className="text-[#C9A84C] hover:text-[#D9BC78] font-medium transition-colors duration-200"
-                  aria-label="Call us on 07907 614821"
-                >
-                  Call 07907 614821
-                </a>
-              </p>
+              {/* Hero phone + email nudge */}
+              <div className="mt-5 flex flex-col gap-1.5">
+                <p className="text-slate-400 text-sm">
+                  Prefer to talk?{' '}
+                  <a
+                    href="tel:07907614821"
+                    className="text-[#C9A84C] hover:text-[#D9BC78] font-medium transition-colors duration-200"
+                    aria-label="Call us on 07907 614821"
+                  >
+                    Call 07907 614821
+                  </a>
+                </p>
+                <p className="text-slate-400 text-sm">
+                  Prefer email?{' '}
+                  <a
+                    href="mailto:hello@secondlookprotect.co.uk"
+                    className="text-[#C9A84C] hover:text-[#D9BC78] font-medium transition-colors duration-200"
+                    aria-label="Email hello@secondlookprotect.co.uk"
+                  >
+                    hello@secondlookprotect.co.uk
+                  </a>
+                </p>
+              </div>
             </div>
 
 
@@ -527,6 +539,15 @@ export default function App() {
           <Button variant="primary" size="lg" className="inline-flex" as="a" href="#pricing">
             View Our Plans <ArrowRight className="w-5 h-5" aria-hidden="true" />
           </Button>
+          <p className="mt-5 text-slate-500 text-sm">
+            Questions?{' '}
+            <a
+              href="mailto:hello@secondlookprotect.co.uk"
+              className="text-[#A8853C] hover:text-[#C9A84C] transition-colors duration-200 font-medium"
+            >
+              Email hello@secondlookprotect.co.uk
+            </a>
+          </p>
         </div>
       </SectionWrapper>
 
@@ -739,13 +760,13 @@ export default function App() {
         <div className="max-w-2xl mx-auto text-center">
           <p className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase mb-3">Get in Touch</p>
           <h2 className="text-[#0B1E36] mb-3" style={{ fontFamily: "'Merriweather', serif" }}>
-            Prefer a quick chat?
+            We're here when you need us
           </h2>
           <p className="text-slate-600 text-lg mb-10">
-            Speak directly with a real person — no call centres, no automated menus.
+            Call, WhatsApp, or email — whichever works best for you.
           </p>
 
-          <div className="grid sm:grid-cols-3 gap-6 mb-10">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
             {/* Office */}
             <a
               href="tel:01604385888"
@@ -776,18 +797,35 @@ export default function App() {
               </div>
             </a>
 
-            {/* Email */}
+            {/* General Enquiries */}
             <a
-              href="mailto:hello@aimadesimple.co.uk"
+              href="mailto:hello@secondlookprotect.co.uk"
               className="group flex flex-col items-center gap-3 bg-white rounded-xl p-6 border border-slate-100 shadow-sm hover:shadow-md hover:border-[#C9A84C]/40 transition-all duration-200"
-              aria-label="Email hello@aimadesimple.co.uk"
+              aria-label="Email general enquiries"
             >
               <div className="w-12 h-12 rounded-full bg-[#C9A84C]/10 flex items-center justify-center group-hover:bg-[#C9A84C]/20 transition-colors">
                 <span className="text-xl" aria-hidden="true">✉</span>
               </div>
               <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-1">Email</p>
-                <p className="text-[#0B1E36] font-semibold text-sm break-all">hello@aimadesimple.co.uk</p>
+                <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-1">General Enquiries</p>
+                <p className="text-[#0B1E36] font-semibold text-xs break-all">hello@secondlookprotect.co.uk</p>
+                <p className="text-slate-400 text-xs mt-1">Questions, billing, partnerships</p>
+              </div>
+            </a>
+
+            {/* Technical Support */}
+            <a
+              href="mailto:support@secondlookprotect.co.uk"
+              className="group flex flex-col items-center gap-3 bg-white rounded-xl p-6 border border-slate-100 shadow-sm hover:shadow-md hover:border-[#C9A84C]/40 transition-all duration-200"
+              aria-label="Email technical support"
+            >
+              <div className="w-12 h-12 rounded-full bg-[#C9A84C]/10 flex items-center justify-center group-hover:bg-[#C9A84C]/20 transition-colors">
+                <span className="text-xl" aria-hidden="true">🛠</span>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-1">Technical Support</p>
+                <p className="text-[#0B1E36] font-semibold text-xs break-all">support@secondlookprotect.co.uk</p>
+                <p className="text-slate-400 text-xs mt-1">App/portal access, technical issues</p>
               </div>
             </a>
           </div>
@@ -866,12 +904,17 @@ export default function App() {
                   </a>
                 </p>
                 <p>
-                  <a href="mailto:hello@aimadesimple.co.uk" className="flex items-center gap-2 hover:text-white transition-colors duration-200">
+                  <a href="mailto:hello@secondlookprotect.co.uk" className="flex items-center gap-2 hover:text-white transition-colors duration-200">
                     <span aria-hidden="true">✉</span>
-                    hello@aimadesimple.co.uk
+                    <span><span className="text-slate-500">Enquiries:</span> hello@secondlookprotect.co.uk</span>
                   </a>
                 </p>
-                <p className="text-slate-600 text-xs italic pt-1">Prefer a quick chat? Call us directly.</p>
+                <p>
+                  <a href="mailto:support@secondlookprotect.co.uk" className="flex items-center gap-2 hover:text-white transition-colors duration-200">
+                    <span aria-hidden="true">🛠</span>
+                    <span><span className="text-slate-500">Support:</span> support@secondlookprotect.co.uk</span>
+                  </a>
+                </p>
               </div>
 
               {/* Legal authority */}
