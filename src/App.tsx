@@ -526,7 +526,7 @@ export default function App() {
             <div className="w-12 h-12 bg-[#C9A84C]/15 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
               <Shield className="w-6 h-6 text-[#C9A84C]" />
             </div>
-            <h3 className="text-white font-semibold mb-3" style={{ color: '#ffffff' }}>The Second Look Solution</h3>
+            <h3 className="text-white font-semibold mb-3" style={{ color: '#F3F6FA' }}>The Second Look Solution</h3>
             <p className="text-slate-200 text-base leading-relaxed">
               Pause. Before you click or pay — get a second look. Send it to us instead. Our experts analyse the request and give you a clear verdict — Safe or Scam.
             </p>
