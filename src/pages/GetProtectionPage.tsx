@@ -164,66 +164,66 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
         setIsSubmitting(true);
 
         try {
-            const supabase = getSupabase(); // lazy — throws friendly error if env vars missing
+            const supabase = getSupabase();
 
-            // Generate UUID client-side so we never need to SELECT the row back
-            // (avoids needing a SELECT RLS policy — only INSERT is required)
-            const submissionId: string = crypto.randomUUID();
+            // ── STEP 1: Upload image to SUBMISSIONS bucket (screenshot only) ──
+            let publicImageUrl: string | null = null;
 
-            // message column: use the type-specific input value as the core message
-            const messageForDB = selectedOption === 'link' ? linkValue.trim()
-                : selectedOption === 'contact' ? contactValue.trim()
-                    : noteValue.trim() || null;
-
-            let imagePath: string | null = null;
-            let imageUrl: string | null = null;
-
-            // B) Upload file first (if screenshot) so we have the URL ready for the insert
             if (selectedOption === 'screenshot' && file) {
-                const timestamp = Date.now();
-                const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-                const path = `submissions/${submissionId}/${timestamp}-${safeName}`;
+                const storageKey = `submissions/${crypto.randomUUID()}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
 
-                // Bucket name is case-sensitive: must be SUBMISSIONS (all caps)
+                console.log('[SLP] Step 1 — Uploading to SUBMISSIONS bucket:', storageKey);
+
                 const { error: uploadError } = await supabase.storage
                     .from('SUBMISSIONS')
-                    .upload(path, file, { cacheControl: '3600', upsert: false });
+                    .upload(storageKey, file, { cacheControl: '3600', upsert: false });
 
                 if (uploadError) {
                     throw new Error(`Image upload failed: ${uploadError.message}`);
                 }
 
-                imagePath = path;
+                // ── STEP 2: Get the public URL for that specific file ──────────
+                const { data: urlData } = supabase.storage
+                    .from('SUBMISSIONS')
+                    .getPublicUrl(storageKey);
 
-                // C) Get public URL
-                const { data: urlData } = supabase.storage.from('SUBMISSIONS').getPublicUrl(path);
-                imageUrl = urlData.publicUrl;
+                publicImageUrl = urlData.publicUrl;
+                console.log('[SLP] Step 2 — Public image URL captured:', publicImageUrl);
             }
 
-            // A+D) Single INSERT with all fields — no read-back, no UPDATE needed
+            // ── STEP 3: Build the message field ────────────────────────────────
+            const messageText = selectedOption === 'link' ? linkValue.trim()
+                : selectedOption === 'contact' ? contactValue.trim()
+                    : noteValue.trim() || null;
+
+            // ── STEP 4: Insert ONE row with name + email + phone + message + image_url ──
+            console.log('[SLP] Step 3 — Inserting submission row into Supabase...');
+
             const { error: insertError } = await supabase
                 .from('submissions')
                 .insert({
                     name: nameValue.trim(),
                     email: emailValue.trim(),
                     phone: phoneValue.trim() || null,
-                    message: messageForDB,
-                    image_url: imageUrl,
+                    message: messageText,
+                    image_url: publicImageUrl,
                     status: 'new',
                 });
 
             if (insertError) {
-                throw new Error(insertError.message ?? 'Failed to create submission. Please try again.');
+                // Surface the exact Supabase error so it's easy to diagnose
+                throw new Error(`Database error: ${insertError.message}`);
             }
 
-            trackEvent('get_protection_submit', { option: selectedOption ?? 'unknown', submission_id: submissionId });
+            console.log('[SLP] Step 4 — Submission saved to database ✓');
 
-            // E) Success
+            // ── STEP 5: Only show success after BOTH upload AND insert succeed ──
+            trackEvent('get_protection_submit', { option: selectedOption ?? 'unknown' });
             setSubmitted(true);
 
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
-            console.error('[SLP] Submission error:', err);
+            console.error('[SLP] Submission failed:', err);
             setSubmitError(msg);
         } finally {
             setIsSubmitting(false);
