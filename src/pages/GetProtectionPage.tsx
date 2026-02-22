@@ -238,7 +238,8 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
     const canSubmit = !isSubmitting
         && typeSpecificReady
         && nameValue.trim().length > 0
-        && emailValue.trim().length > 0;
+        && emailValue.trim().length > 0
+        && phoneValue.trim().length > 0;
 
     // Shared input style
     const inputCls = [
@@ -529,14 +530,15 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                         {/* Phone */}
                         <div>
                             <label htmlFor="phone-input" className="block text-slate-600 text-sm mb-1">
-                                Phone Number <span className="text-slate-400 text-xs">(optional)</span>
+                                Phone Number <span className="text-red-500" aria-label="required">*</span>
                             </label>
                             <input
                                 id="phone-input"
                                 type="tel"
                                 placeholder="+44 7700 000000"
                                 value={phoneValue}
-                                onChange={(e) => setPhoneValue(e.target.value)}
+                                onChange={(e) => { setPhoneValue(e.target.value); setSubmitError(null); }}
+                                required
                                 className={inputCls}
                             />
                         </div>
