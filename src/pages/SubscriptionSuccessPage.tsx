@@ -14,12 +14,12 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
         const sessionId = params.get('session_id');
         if (!sessionId) return;
 
-        fetch(`/api/get-session?session_id=${encodeURIComponent(sessionId)}`)
+        fetch(`/api/record-subscription?session_id=${encodeURIComponent(sessionId)}`)
             .then((r) => r.json())
             .then((data: { email?: string }) => {
                 if (data.email) setEmail(data.email);
             })
-            .catch(() => {/* email stays null — message still works without it */ });
+            .catch(() => {/* email stays null — page still works without it */ });
     }, []);
 
     return (
