@@ -30,11 +30,12 @@ const PLAN_PERKS: Record<string, { title: string; items: string[] }> = {
     'Family Shield': {
         title: '',   // header removed to match Guardian design
         items: [
-            'Protection for up to 5 family members — shared security for your whole household.',
-            '5× Physical Guardian Packs — stickers and magnets for every family member’s devices.',
-            'Family ‘Scam Scenario’ Flash Cards — interactive tools to train the whole family.',
-            'Priority 24-Hour Reassurance Response — our fastest support for family emergencies.',
-            'Shared Guardian Risk Summary — a comprehensive overview of your family’s safety.',
+            'Full Guardian Pack for 5 \u2014 physical magnets and stickers for the whole household.',
+            'Scam Scenario Flash Cards \u2014 interactive training tools for family safety.',
+            'Unlimited Personal Reviews \u2014 professional scam checks for every family member.',
+            "Emergency 'Human-Line' Call-Back \u2014 your direct priority line for urgent help.",
+            '1-on-1 Annual Digital Health Review \u2014 a personal security audit for the family lead.',
+            "Monthly 'Peace of Mind' Summary \u2014 a comprehensive safety report for all 5 members.",
         ],
     },
 };
