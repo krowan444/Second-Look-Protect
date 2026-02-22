@@ -194,10 +194,12 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                 console.log('[SLP] Step 2 — Public image URL:', publicImageUrl);
             }
 
-            // ── STEP 3: Build the message field ────────────────────────────────
-            const messageText = selectedOption === 'link' ? linkValue.trim()
-                : selectedOption === 'contact' ? contactValue.trim()
-                    : noteValue.trim() || null;
+            // Build message: combine type-specific input with user's written message
+            const parts: string[] = [];
+            if (selectedOption === 'link' && linkValue.trim()) parts.push(`URL: ${linkValue.trim()}`);
+            if (selectedOption === 'contact' && contactValue.trim()) parts.push(`Contact: ${contactValue.trim()}`);
+            if (noteValue.trim()) parts.push(noteValue.trim());
+            const messageText: string | null = parts.join('\n\n') || null;
 
             // ── STEP 4: Insert ONE row with name + email + phone + message + image_url ──
             console.log('[SLP] Step 3 — Inserting submission row into Supabase...');
@@ -242,7 +244,8 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
         && typeSpecificReady
         && nameValue.trim().length > 0
         && emailValue.trim().length > 0
-        && phoneValue.trim().length > 0;
+        && phoneValue.trim().length > 0
+        && noteValue.trim().length > 0;
 
     // Shared input style
     const inputCls = [
@@ -546,22 +549,21 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             />
                         </div>
 
-                        {/* Notes — shown for screenshot type (link/contact already have a message input) */}
-                        {selectedOption === 'screenshot' && (
-                            <div>
-                                <label htmlFor="note-input" className="block text-slate-600 text-sm mb-1">
-                                    Message <span className="text-slate-400 text-xs">(optional)</span>
-                                </label>
-                                <textarea
-                                    id="note-input"
-                                    placeholder="Any extra context that might help our specialists…"
-                                    value={noteValue}
-                                    onChange={(e) => setNoteValue(e.target.value)}
-                                    rows={3}
-                                    className={inputCls + ' resize-none'}
-                                />
-                            </div>
-                        )}
+                        {/* Message — required for all types */}
+                        <div>
+                            <label htmlFor="note-input" className="block text-slate-600 text-sm mb-1">
+                                Message <span className="text-red-500" aria-label="required">*</span>
+                            </label>
+                            <textarea
+                                id="note-input"
+                                placeholder="Please provide more info on the link or email you are reporting..."
+                                value={noteValue}
+                                onChange={(e) => { setNoteValue(e.target.value); setSubmitError(null); }}
+                                required
+                                rows={4}
+                                className={inputCls + ' resize-none'}
+                            />
+                        </div>
                     </div>
 
                     {/* ── Error message ── */}
