@@ -436,7 +436,24 @@ export default function App() {
                 <button
                   onClick={handleHowItWorks}
                   aria-label="See how Second Look Protect works — scroll to explanation"
-                  className="w-full sm:w-auto self-center text-slate-400 hover:text-slate-200 text-sm font-medium transition-colors duration-200 underline underline-offset-4 decoration-slate-600 hover:decoration-slate-400 px-2 py-2"
+                  className="hero-secondary-cta inline-flex items-center justify-center gap-2 font-medium text-white text-base transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                  style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.18)',
+                    borderRadius: '20px',
+                    padding: '15px 30px',
+                    minHeight: '56px',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.11)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.30)';
+                    (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.06)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)';
+                    (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+                  }}
                 >
                   See How It Works
                 </button>
