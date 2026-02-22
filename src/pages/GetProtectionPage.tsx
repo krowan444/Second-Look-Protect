@@ -102,11 +102,17 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [submitted, setSubmitted] = useState(false);
 
-    // Step 2 inputs
+    // Step 2 inputs — type-specific
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [linkValue, setLinkValue] = useState('');
     const [contactValue, setContactValue] = useState('');
+
+    // Step 2 inputs — contact details (all types)
+    const [nameValue, setNameValue] = useState('');
+    const [emailValue, setEmailValue] = useState('');
+    const [phoneValue, setPhoneValue] = useState('');
+    const [noteValue, setNoteValue] = useState('');
 
     // UI states
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -164,9 +170,10 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
             // (avoids needing a SELECT RLS policy — only INSERT is required)
             const submissionId: string = crypto.randomUUID();
 
-            const messageValue = selectedOption === 'link' ? linkValue
-                : selectedOption === 'contact' ? contactValue
-                    : null;
+            // message column: use the type-specific input value as the core message
+            const messageForDB = selectedOption === 'link' ? linkValue.trim()
+                : selectedOption === 'contact' ? contactValue.trim()
+                    : noteValue.trim() || null;
 
             let imagePath: string | null = null;
             let imageUrl: string | null = null;
@@ -197,7 +204,10 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
             const { error: insertError } = await supabase
                 .from('submissions')
                 .insert({
-                    message: messageValue,
+                    name: nameValue.trim(),
+                    email: emailValue.trim(),
+                    phone: phoneValue.trim() || null,
+                    message: messageForDB,
                     image_url: imageUrl,
                     status: 'new',
                 });
@@ -221,12 +231,20 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
     }
 
     // Is the submit button ready?
-    const canSubmit = !isSubmitting && (
-        selectedOption === 'screenshot' ? file !== null
-            : selectedOption === 'link' ? linkValue.trim().length > 0
-                : selectedOption === 'contact' ? contactValue.trim().length > 0
-                    : false
-    );
+    const typeSpecificReady = selectedOption === 'screenshot' ? file !== null
+        : selectedOption === 'link' ? linkValue.trim().length > 0
+            : selectedOption === 'contact' ? contactValue.trim().length > 0
+                : false;
+    const canSubmit = !isSubmitting
+        && typeSpecificReady
+        && nameValue.trim().length > 0
+        && emailValue.trim().length > 0;
+
+    // Shared input style
+    const inputCls = [
+        'w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 text-slate-700 text-base',
+        'focus:outline-none focus:border-[#C9A84C] transition-colors duration-200 placeholder:text-slate-400',
+    ].join(' ');
 
     /* ── Shared nav bar ───────────────────────────────────────────────────── */
     const Navbar = (
@@ -469,6 +487,77 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             />
                         </div>
                     )}
+
+                    {/* ── Contact details ── */}
+                    <div className="mb-8 space-y-4 border-t border-slate-200 pt-8">
+                        <p className="text-slate-700 font-semibold text-sm">Your contact details</p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Name */}
+                            <div>
+                                <label htmlFor="name-input" className="block text-slate-600 text-sm mb-1">
+                                    Name <span className="text-red-500" aria-label="required">*</span>
+                                </label>
+                                <input
+                                    id="name-input"
+                                    type="text"
+                                    placeholder="Your full name"
+                                    value={nameValue}
+                                    onChange={(e) => { setNameValue(e.target.value); setSubmitError(null); }}
+                                    required
+                                    className={inputCls}
+                                />
+                            </div>
+
+                            {/* Email */}
+                            <div>
+                                <label htmlFor="email-input" className="block text-slate-600 text-sm mb-1">
+                                    Email <span className="text-red-500" aria-label="required">*</span>
+                                </label>
+                                <input
+                                    id="email-input"
+                                    type="email"
+                                    placeholder="your@email.com"
+                                    value={emailValue}
+                                    onChange={(e) => { setEmailValue(e.target.value); setSubmitError(null); }}
+                                    required
+                                    className={inputCls}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Phone */}
+                        <div>
+                            <label htmlFor="phone-input" className="block text-slate-600 text-sm mb-1">
+                                Phone Number <span className="text-slate-400 text-xs">(optional)</span>
+                            </label>
+                            <input
+                                id="phone-input"
+                                type="tel"
+                                placeholder="+44 7700 000000"
+                                value={phoneValue}
+                                onChange={(e) => setPhoneValue(e.target.value)}
+                                className={inputCls}
+                            />
+                        </div>
+
+                        {/* Notes — shown for screenshot type (link/contact already have a message input) */}
+                        {selectedOption === 'screenshot' && (
+                            <div>
+                                <label htmlFor="note-input" className="block text-slate-600 text-sm mb-1">
+                                    Message <span className="text-slate-400 text-xs">(optional)</span>
+                                </label>
+                                <textarea
+                                    id="note-input"
+                                    placeholder="Any extra context that might help our specialists…"
+                                    value={noteValue}
+                                    onChange={(e) => setNoteValue(e.target.value)}
+                                    rows={3}
+                                    className={inputCls + ' resize-none'}
+                                />
+                            </div>
+                        )}
+                    </div>
 
                     {/* ── Error message ── */}
                     {submitError && (
