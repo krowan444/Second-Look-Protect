@@ -426,6 +426,9 @@ export default function App() {
                     Get Protection
                   </Button>
                   <p className="text-slate-500 text-xs mt-2 text-center sm:text-left">Start in 60 seconds</p>
+                  <p className="text-slate-400/70 text-xs mt-1.5 text-center sm:text-left" style={{ fontSize: '11px', letterSpacing: '0.01em' }}>
+                    ✓ UK-based specialists &nbsp;·&nbsp; ✓ Human-reviewed (not AI-only) &nbsp;·&nbsp; ✓ Supporting safeguarding decisions
+                  </p>
                 </div>
                 <Button
                   variant="ghost"
