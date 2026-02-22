@@ -197,7 +197,6 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
             const { error: insertError } = await supabase
                 .from('submissions')
                 .insert({
-                    id: submissionId,
                     message: messageValue,
                     image_url: imageUrl,
                     status: 'new',
