@@ -189,24 +189,30 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
                     )}
                 </div>
             )}
-            {/* Sticker claim form — Basic Shield only */}
-            {plan === 'Basic Shield' && email && (
+            {/* Shipping claim form — Basic Shield + The Guardian */}
+            {(plan === 'Basic Shield' || plan === 'The Guardian') && email && (
                 <div className="w-full max-w-md mb-8 bg-white/5 rounded-xl p-6 text-left ring-1 ring-white/10">
                     {stickerDone ? (
                         <div className="flex items-start gap-3 text-emerald-400">
                             <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
                             <p className="text-sm font-medium">
-                                Thank you! Your sticker will be sent to this address.
+                                {plan === 'The Guardian'
+                                    ? 'Success! Your Guardian Magnet and Stickers are being prepared for dispatch.'
+                                    : 'Thank you! Your sticker will be sent to this address.'}
                             </p>
                         </div>
                     ) : (
                         <form onSubmit={handleStickerSubmit} noValidate>
                             <p className="text-slate-200 font-semibold mb-4 flex items-center gap-2">
                                 <Package className="w-4 h-4 text-[#C9A84C]" aria-hidden="true" />
-                                Claim Your Shield Sticker
+                                {plan === 'The Guardian'
+                                    ? 'Where should we send your Guardian Magnet & Stickers?'
+                                    : 'Claim Your Shield Sticker'}
                             </p>
                             <p className="text-slate-400 text-xs mb-4">
-                                Enter your UK address and we'll post your free Shield Sticker within 3–5 working days.
+                                {plan === 'The Guardian'
+                                    ? "Enter your UK address and we'll post your Guardian Kit within 3–5 working days."
+                                    : "Enter your UK address and we'll post your free Shield Sticker within 3–5 working days."}
                             </p>
 
                             <div className="space-y-3">
