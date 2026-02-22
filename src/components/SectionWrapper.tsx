@@ -13,7 +13,7 @@ const bgClasses: Record<string, string> = {
     white: 'bg-white',
     offwhite: 'bg-[#F9F9F7]',
     slate: 'bg-slate-50',
-    navy: 'bg-[#112540] text-white',
+    navy: 'bg-[#1C3256] text-white',
     transparent: '',
 };
 
