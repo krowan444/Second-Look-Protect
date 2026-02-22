@@ -220,6 +220,7 @@ export default function App() {
           planName: PRICING_PLANS.find(
             (p) => p.monthlyPriceId === priceId || p.yearlyPriceId === priceId
           )?.name ?? '',
+          billingInterval: isYearly ? 'yearly' : 'monthly',
         }),
       });
       const data = await res.json() as { url?: string; error?: string };
