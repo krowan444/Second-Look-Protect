@@ -21,8 +21,8 @@ const PRICING_PLANS = [
     yearlyPrice: '£8.32',   // per month equivalent
     yearlyTotal: '£99.90', // billed annually (saves 2 months)
     // ── Replace these with your real Stripe Price IDs ──
-    monthlyPriceId: 'price_BASIC_MONTHLY_PLACEHOLDER',
-    yearlyPriceId: 'price_BASIC_YEARLY_PLACEHOLDER',
+    monthlyPriceId: 'price_1T3YRPFkPVozTYrkEP8FoPFe',
+    yearlyPriceId: 'price_1T3YMoFkPVozTYrkCaffgwMS',
     tagline: 'Simple, steady reassurance when you need it.',
     description: 'For independent individuals who want a trusted second opinion before they act.',
     featureGroups: [
@@ -59,8 +59,8 @@ const PRICING_PLANS = [
     monthlyPrice: '£19.99',
     yearlyPrice: '£16.65',
     yearlyTotal: '£199.90',
-    monthlyPriceId: 'price_GUARDIAN_MONTHLY_PLACEHOLDER',
-    yearlyPriceId: 'price_GUARDIAN_YEARLY_PLACEHOLDER',
+    monthlyPriceId: 'price_1T3YVRFkPVozTYrkzgwYcovr',
+    yearlyPriceId: 'price_1T3YVRFkPVozTYrkgOB6aCG1',
     tagline: 'Confident protection for you and someone you care about.',
     description: 'Our most popular plan. Faster response, broader coverage, and proactive safety tools.',
     featureGroups: [
@@ -100,8 +100,8 @@ const PRICING_PLANS = [
     monthlyPrice: '£34.99',
     yearlyPrice: '£29.15',
     yearlyTotal: '£349.90',
-    monthlyPriceId: 'price_FAMILY_MONTHLY_PLACEHOLDER',
-    yearlyPriceId: 'price_FAMILY_YEARLY_PLACEHOLDER',
+    monthlyPriceId: 'price_1T3YaaFkPVozTYrkhW62OFtl',
+    yearlyPriceId: 'price_1T3YbKFkPVozTYrktr9Anem8',
     tagline: 'Complete household protection and accountability.',
     description: 'Designed for families protecting elderly parents or multiple loved ones.',
     featureGroups: [
