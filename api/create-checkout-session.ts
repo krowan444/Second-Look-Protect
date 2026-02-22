@@ -77,7 +77,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // Collect full contact details — no website account required
             billing_address_collection: 'required',
             phone_number_collection: { enabled: true },
-            customer_creation: 'always',
+            // Note: customer_creation is NOT valid in subscription mode —
+            // Stripe creates the customer automatically.
 
             // Pass through to webhook via metadata
             metadata: {
