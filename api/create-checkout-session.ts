@@ -15,6 +15,14 @@ const PRICE_IDS: Record<string, string | undefined> = {
     FAMILY_YEARLY: process.env.NEXT_PUBLIC_PRICE_ID_FAMILY_YEARLY,
 };
 
+// planKey → Stripe Invoice Rendering Template ID
+const PLAN_INVOICE_TEMPLATES: Record<string, string> = {
+    BASIC: 'inrtem_1T3bdmFkPVozTYrkpKZ03xse',
+    GUARDIAN: 'inrtem_1T3bgdFkPVozTYrksEM4BUhR',
+    FAMILY: 'inrtem_1T3biBFkPVozTYrk90FOkEyi',
+};
+
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // CORS headers for local dev
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -84,6 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             metadata: {
                 planName: planName ?? '',
                 billingInterval: billingInterval ?? 'monthly',
+                invoiceTemplate: PLAN_INVOICE_TEMPLATES[planKey.toUpperCase()] ?? '',
             },
 
             success_url: `${origin}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
