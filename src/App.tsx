@@ -903,11 +903,13 @@ export default function App() {
             </a>
           </div>
 
-          <p className="text-slate-500 text-sm italic">Mon – Sat · 8am – 8pm · We aim to respond within 1 hour.</p>
-          <p className="text-slate-400 text-xs mt-3">
-            We will never ask for passwords, OTPs, full banking details, or ask you to move money. If unsure, contact us directly via our official website or{' '}
-            <a href="mailto:hello@secondlookprotect.co.uk" className="underline underline-offset-1 hover:text-slate-600 transition-colors">hello@secondlookprotect.co.uk</a>.
-          </p>
+          <div className="w-full mx-auto text-center">
+            <p className="text-slate-500 text-sm italic">Mon – Sat · 8am – 8pm · We aim to respond within 1 hour.</p>
+            <p className="text-slate-400 text-xs mt-3">
+              We will never ask for passwords, OTPs, full banking details, or ask you to move money. If unsure, contact us directly via our official website or{' '}
+              <a href="mailto:hello@secondlookprotect.co.uk" className="underline underline-offset-1 hover:text-slate-600 transition-colors">hello@secondlookprotect.co.uk</a>.
+            </p>
+          </div>
         </div>
       </SectionWrapper>
 
