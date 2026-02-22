@@ -186,7 +186,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                 const path = `submissions/${submissionId}/${timestamp}-${safeName}`;
 
                 const { error: uploadError } = await supabase.storage
-                    .from('uploads')
+                    .from('SUBMISSIONS')
                     .upload(path, file, { cacheControl: '3600', upsert: false });
 
                 if (uploadError) {
@@ -196,7 +196,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                 imagePath = path;
 
                 // C) Get public URL
-                const { data: urlData } = supabase.storage.from('uploads').getPublicUrl(path);
+                const { data: urlData } = supabase.storage.from('SUBMISSIONS').getPublicUrl(path);
                 imageUrl = urlData.publicUrl;
             }
 
