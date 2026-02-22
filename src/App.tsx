@@ -630,7 +630,7 @@ export default function App() {
             title="The digital world is changing — and that's OK."
           />
 
-          <div className="max-w-2xl mx-auto text-center">
+          <div className="max-w-[780px] mx-auto text-center">
             <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-6">
               A calm perspective on modern scams
             </p>
