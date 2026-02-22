@@ -153,6 +153,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
             }
 
+            // ── Retrieve + log the latest invoice ─────────────────────────
+            // Proves the invoice exists in Stripe. If it shows here, look for it in
+            // Stripe Dashboard → Billing → Invoices (filter by the ID below).
+            if (subscriptionId) {
+                try {
+                    const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+                        expand: ['latest_invoice'],
+                    });
+                    const inv = sub.latest_invoice as Stripe.Invoice | null;
+                    if (inv) {
+                        console.log(`[SLP Webhook] 📄 Latest invoice — id: ${inv.id} | status: ${inv.status} | amount: ${inv.amount_paid} | hosted_url: ${inv.hosted_invoice_url}`);
+                    } else {
+                        console.warn('[SLP Webhook] ⚠️ No latest_invoice found on subscription — this is unexpected for subscription mode');
+                    }
+                } catch (err) {
+                    console.error('[SLP Webhook] ⚠️ Could not retrieve subscription invoice:', err instanceof Error ? err.message : err);
+                }
+            }
+
             // Upsert customer to Supabase
             const details = session.customer_details;
             const { error } = await supabaseAdmin
