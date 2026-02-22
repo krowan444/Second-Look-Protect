@@ -86,7 +86,7 @@ const FAQ_GROUPS: FAQGroup[] = [
             },
             {
                 question: 'What if you get it wrong?',
-                answer: 'Scams evolve quickly, which is why we assess risk carefully and explain our reasoning clearly. When in doubt, we err on the side of caution. Our goal is to reduce risk and pressure &mdash; not rush decisions.',
+                answer: 'Scams evolve quickly, which is why we assess risk carefully and explain our reasoning clearly. When in doubt, we err on the side of caution. Our goal is to reduce risk and pressure — not rush decisions.',
             },
             {
                 question: 'Do you use artificial intelligence?',
