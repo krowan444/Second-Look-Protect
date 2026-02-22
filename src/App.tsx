@@ -17,12 +17,10 @@ import {
 const PRICING_PLANS = [
   {
     name: 'Basic Shield',
+    planKey: 'BASIC',           // maps to NEXT_PUBLIC_PRICE_ID_BASIC_MONTHLY / _YEARLY
     monthlyPrice: '£9.99',
     yearlyPrice: '£8.32',   // per month equivalent
     yearlyTotal: '£99.90', // billed annually (saves 2 months)
-    // ── Replace these with your real Stripe Price IDs ──
-    monthlyPriceId: 'price_1T3YRPFkPVozTYrkEP8FoPFe',
-    yearlyPriceId: 'price_1T3YMoFkPVozTYrkCaffgwMS',
     tagline: 'Simple, steady reassurance when you need it.',
     description: 'For independent individuals who want a trusted second opinion before they act.',
     featureGroups: [
@@ -56,11 +54,10 @@ const PRICING_PLANS = [
   },
   {
     name: 'The Guardian',
+    planKey: 'GUARDIAN',
     monthlyPrice: '£19.99',
     yearlyPrice: '£16.65',
     yearlyTotal: '£199.90',
-    monthlyPriceId: 'price_1T3YVRFkPVozTYrkzgwYcovr',
-    yearlyPriceId: 'price_1T3YVRFkPVozTYrkgOB6aCG1',
     tagline: 'Confident protection for you and someone you care about.',
     description: 'Our most popular plan. Faster response, broader coverage, and proactive safety tools.',
     featureGroups: [
@@ -97,11 +94,10 @@ const PRICING_PLANS = [
   },
   {
     name: 'Family Shield',
+    planKey: 'FAMILY',
     monthlyPrice: '£34.99',
     yearlyPrice: '£29.15',
     yearlyTotal: '£349.90',
-    monthlyPriceId: 'price_1T3YaaFkPVozTYrkhW62OFtl',
-    yearlyPriceId: 'price_1T3YbKFkPVozTYrktr9Anem8',
     tagline: 'Complete household protection and accountability.',
     description: 'Designed for families protecting elderly parents or multiple loved ones.',
     featureGroups: [
@@ -208,19 +204,19 @@ export default function App() {
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  async function handleSubscribe(priceId: string) {
+  async function handleSubscribe(planKey: string) {
+    const interval = isYearly ? 'yearly' : 'monthly';
+    const loadingKey = `${planKey}_${interval}`;
     if (loadingPlan) return; // prevent double-click
-    setLoadingPlan(priceId);
+    setLoadingPlan(loadingKey);
     try {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          priceId,
-          planName: PRICING_PLANS.find(
-            (p) => p.monthlyPriceId === priceId || p.yearlyPriceId === priceId
-          )?.name ?? '',
-          billingInterval: isYearly ? 'yearly' : 'monthly',
+          planKey,
+          billingInterval: interval,
+          planName: PRICING_PLANS.find((p) => p.planKey === planKey)?.name ?? '',
         }),
       });
       const data = await res.json() as { url?: string; error?: string };
@@ -568,7 +564,7 @@ export default function App() {
               <PricingCard
                 {...plan}
                 isYearly={isYearly}
-                isLoading={loadingPlan === (isYearly ? plan.yearlyPriceId : plan.monthlyPriceId)}
+                isLoading={loadingPlan === `${plan.planKey}_${isYearly ? 'yearly' : 'monthly'}`}
                 onSubscribe={handleSubscribe}
               />
             </div>

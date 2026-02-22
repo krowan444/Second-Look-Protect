@@ -3,6 +3,17 @@ import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
+// Price ID map — resolved from Vercel env vars at runtime (server-only, never exposed client-side)
+// Env var names follow the NEXT_PUBLIC_ convention set in Vercel dashboard.
+const PRICE_IDS: Record<string, string | undefined> = {
+    BASIC_MONTHLY: process.env.NEXT_PUBLIC_PRICE_ID_BASIC_MONTHLY,
+    BASIC_YEARLY: process.env.NEXT_PUBLIC_PRICE_ID_BASIC_YEARLY,
+    GUARDIAN_MONTHLY: process.env.NEXT_PUBLIC_PRICE_ID_GUARDIAN_MONTHLY,
+    GUARDIAN_YEARLY: process.env.NEXT_PUBLIC_PRICE_ID_GUARDIAN_YEARLY,
+    FAMILY_MONTHLY: process.env.NEXT_PUBLIC_PRICE_ID_FAMILY_MONTHLY,
+    FAMILY_YEARLY: process.env.NEXT_PUBLIC_PRICE_ID_FAMILY_YEARLY,
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // CORS headers for local dev
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,18 +23,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { priceId, planName, billingInterval } = req.body as {
-        priceId: string;
-        planName: string;
-        billingInterval: 'monthly' | 'yearly';
-    };
-
-    if (!priceId) {
-        return res.status(400).json({ error: 'priceId is required' });
+    if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(500).json({ error: 'STRIPE_SECRET_KEY is not configured on the server.' });
     }
 
-    if (!process.env.STRIPE_SECRET_KEY) {
-        return res.status(500).json({ error: 'Stripe is not configured on the server.' });
+    const { planKey, billingInterval, planName } = req.body as {
+        planKey: string;            // 'BASIC' | 'GUARDIAN' | 'FAMILY'
+        billingInterval: string;    // 'monthly' | 'yearly'
+        planName: string;
+    };
+
+    if (!planKey || !billingInterval) {
+        return res.status(400).json({ error: 'planKey and billingInterval are required' });
+    }
+
+    // Resolve the Price ID server-side from env vars
+    const envKey = `${planKey.toUpperCase()}_${billingInterval.toUpperCase()}`;
+    const priceId = PRICE_IDS[envKey];
+
+    if (!priceId) {
+        console.error(`[SLP Checkout] No price ID configured for key: ${envKey}`);
+        return res.status(400).json({
+            error: `No price configured for ${envKey}. Please set NEXT_PUBLIC_PRICE_ID_${envKey} in Vercel environment variables.`,
+        });
     }
 
     try {
@@ -46,12 +68,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             },
 
             // Redirect URLs
-            // success_url includes session_id so the success page can optionally confirm the session
             success_url: `${origin}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${origin}/#pricing`,
         });
 
-        console.log(`[SLP Checkout] Session created — plan: ${planName}, interval: ${billingInterval}, url: ${session.url}`);
+        console.log(`[SLP Checkout] ✅ Session created — plan: ${planName} (${billingInterval}), priceId: ${priceId}`);
         return res.json({ url: session.url });
 
     } catch (err: unknown) {

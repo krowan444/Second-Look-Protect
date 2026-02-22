@@ -9,15 +9,14 @@ interface FeatureGroup {
 
 export interface PricingCardProps {
     name: string;
+    planKey: string;            // 'BASIC' | 'GUARDIAN' | 'FAMILY' — sent to server
 
     // Monthly pricing
     monthlyPrice: string;       // e.g. "£9.99"
-    monthlyPriceId: string;     // Stripe Price ID for monthly
 
     // Yearly pricing (billed annually — saves 2 months)
     yearlyPrice: string;        // e.g. "£8.32"  (per-month equivalent)
     yearlyTotal: string;        // e.g. "£99.90"
-    yearlyPriceId: string;      // Stripe Price ID for yearly
 
     tagline: string;
     description: string;
@@ -28,7 +27,7 @@ export interface PricingCardProps {
     // Runtime props injected from parent
     isYearly: boolean;
     isLoading: boolean;
-    onSubscribe: (priceId: string) => void;
+    onSubscribe: (planKey: string) => void;
 }
 
 function GroupedFeatureList({ groups, light }: { groups: FeatureGroup[]; light: boolean }) {
@@ -59,11 +58,10 @@ function GroupedFeatureList({ groups, light }: { groups: FeatureGroup[]; light: 
 
 export function PricingCard({
     name,
+    planKey,
     monthlyPrice,
-    monthlyPriceId,
     yearlyPrice,
     yearlyTotal,
-    yearlyPriceId,
     tagline,
     description,
     featureGroups,
@@ -74,7 +72,6 @@ export function PricingCard({
     onSubscribe,
 }: PricingCardProps) {
     const displayPrice = isYearly ? yearlyPrice : monthlyPrice;
-    const priceId = isYearly ? yearlyPriceId : monthlyPriceId;
 
     const PriceBlock = ({ light }: { light: boolean }) => (
         <div className="mb-7">
@@ -97,7 +94,7 @@ export function PricingCard({
 
     const CtaButton = ({ variant }: { variant: 'primary' | 'secondary-light' | 'secondary-dark' }) => (
         <button
-            onClick={() => onSubscribe(priceId)}
+            onClick={() => onSubscribe(planKey)}
             disabled={isLoading}
             aria-label={`Subscribe to ${name} plan`}
             className={[
