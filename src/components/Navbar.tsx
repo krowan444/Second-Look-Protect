@@ -15,7 +15,11 @@ const NAV_LINKS = [
     { label: 'Contact', href: '#contact' },
 ];
 
-export function Navbar() {
+interface NavbarProps {
+    onGetProtection?: () => void;
+}
+
+export function Navbar({ onGetProtection }: NavbarProps) {
     const [isScrolled, setIsScrolled] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
 
@@ -129,7 +133,7 @@ export function Navbar() {
                         ))}
                         <Button variant="secondary" size="md"
                             className="border-white/30 text-white hover:bg-white hover:text-[#0B1E36]"
-                            as="a" href="#pricing"
+                            onClick={onGetProtection}
                         >
                             Get Protection
                         </Button>
@@ -188,7 +192,7 @@ export function Navbar() {
 
                     <div className="mt-10">
                         <Button variant="primary" size="lg" className="w-full justify-center bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] border-0"
-                            as="a" href="#pricing"
+                            onClick={onGetProtection}
                         >
                             Get Protection
                         </Button>

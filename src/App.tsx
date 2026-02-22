@@ -301,7 +301,7 @@ export default function App() {
   // ── Home page ────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50 selection:bg-[#C9A84C]/30 selection:text-[#0B1E36]">
-      <Navbar />
+      <Navbar onGetProtection={handleGetProtection} />
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <section
