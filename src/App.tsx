@@ -932,6 +932,8 @@ export default function App() {
           <Button
             variant="primary"
             size="lg"
+            onClick={handleGetProtection}
+            aria-label="Get protection — start your fraud check now"
             className="bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] border-0 font-semibold w-full sm:w-auto justify-center"
           >
             🛡️ Protect Me Now
