@@ -231,7 +231,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
     }
 
     // Is the submit button ready?
-    const typeSpecificReady = selectedOption === 'screenshot' ? file !== null
+    const typeSpecificReady = selectedOption === 'screenshot' ? true // image is optional
         : selectedOption === 'link' ? linkValue.trim().length > 0
             : selectedOption === 'contact' ? contactValue.trim().length > 0
                 : false;
@@ -385,7 +385,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                         </h1>
                         <p className="text-slate-500 text-base leading-relaxed max-w-prose">
                             {selectedOption === 'screenshot'
-                                ? 'Upload the screenshot you want verified. Accepted: JPG, PNG, WEBP, GIF.'
+                                ? 'Attach a screenshot if you have one — this is optional. Fill in your details below and we will still get back to you.'
                                 : selectedOption === 'link'
                                     ? 'Paste the full URL (starting with https://) that you would like us to check.'
                                     : 'Enter the phone number, email address, or contact name you want us to verify.'}
@@ -410,8 +410,8 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                                         <Image className="w-6 h-6 text-slate-400" />
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-slate-600 font-medium text-sm">Click to upload image</p>
-                                        <p className="text-slate-400 text-xs mt-1">JPG, PNG, WEBP, GIF · Max 10MB</p>
+                                        <p className="text-slate-600 font-medium text-sm">Click to upload a screenshot</p>
+                                        <p className="text-slate-400 text-xs mt-1">Optional · JPG, PNG, WEBP, GIF</p>
                                     </div>
                                 </button>
                             ) : (
