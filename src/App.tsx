@@ -451,7 +451,7 @@ export default function App() {
 
               {/* Trust microcopy */}
               <p className="animate-fade-in-up animate-delay-400 text-slate-500 text-sm mt-2 italic">
-                No judgement. No pressure. Just clarity.
+                Real people. Real guidance. When it matters most.
               </p>
 
               {/* Hero phone + email nudge */}
