@@ -388,6 +388,11 @@ export default function App() {
                 <span className="block text-[#C9A84C]" style={{ marginTop: '-4px' }}>Get a calm, expert second look.</span>
               </h1>
 
+              {/* AI context supporting line */}
+              <p className="animate-fade-in-up animate-delay-150 text-slate-300 text-sm leading-relaxed mb-4 max-w-lg">
+                As AI technology evolves rapidly, scams and online deception are becoming more sophisticated. Second Look Protect gives you a simple, calm way to double-check before you act.
+              </p>
+
               {/* Supporting text */}
               <p className="animate-fade-in-up animate-delay-200 text-slate-300 text-lg leading-relaxed mb-3 max-w-lg">
                 Send us suspicious texts, emails, links, WhatsApp messages, or screenshots — and we&rsquo;ll verify what&rsquo;s real, what&rsquo;s risky, and what to do next.
