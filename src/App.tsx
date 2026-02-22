@@ -623,6 +623,35 @@ export default function App() {
         </div>
       </SectionWrapper>
 
+      {/* ── Digital Safety Education ──────────────────────────────────── */}
+      <SectionWrapper background="offwhite" topBorder>
+        <div className="max-w-3xl mx-auto">
+          <SectionHeading
+            title="The digital world is changing — and that's OK."
+            subtitle="Technology — including AI — is advancing faster than ever. While this brings many benefits, it also means scam techniques are becoming more convincing and harder to recognise."
+          />
+
+          <p className="text-slate-600 text-base leading-relaxed mb-10 text-center">
+            You shouldn't need to be a technology expert to stay safe online. Second Look Protect provides a clear, calm second opinion whenever something feels uncertain.
+          </p>
+
+          <div className="bg-white border border-slate-100 rounded-xl p-8 md:p-10 shadow-sm">
+            <h3 className="text-[#0B1E36] text-lg font-semibold mb-4">
+              Why is online safety becoming more challenging?
+            </h3>
+            <p className="text-slate-600 text-base leading-relaxed mb-4">
+              Technology and AI tools are evolving quickly. Unfortunately, this means scammers can create more convincing messages, emails, and fake content than ever before.
+            </p>
+            <p className="text-slate-600 text-base leading-relaxed mb-6">
+              Having a trusted second opinion helps you stay confident without needing to understand all the technical details.
+            </p>
+            <p className="text-slate-400 text-sm italic">
+              As scams evolve, so does your protection.
+            </p>
+          </div>
+        </div>
+      </SectionWrapper>
+
       {/* ── Founder's Note ─────────────────────────────────────────────── */}
       <SectionWrapper background="slate" topBorder>
         <div className="max-w-2xl mx-auto text-center">
