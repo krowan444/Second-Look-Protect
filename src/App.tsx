@@ -492,7 +492,7 @@ export default function App() {
       </section>
 
       {/* ── The Problem ──────────────────────────────────────────────── */}
-      <SectionWrapper background="offwhite" topBorder={false} className="pt-16 md:pt-20">
+      <SectionWrapper background="offwhite" topBorder={false} className="pt-16 md:pt-20 pb-12 md:pb-16">
         <SectionHeading
           title="The internet should not feel like a minefield."
           subtitle="Every day, convincing fake messages, websites, and calls target innocent people. They look like your bank, your delivery service, or even your family. One wrong click can cost you everything."
@@ -535,7 +535,7 @@ export default function App() {
       </SectionWrapper>
 
       {/* ── How It Works ─────────────────────────────────────────────── */}
-      <SectionWrapper id="how-it-works" background="white" topBorder>
+      <SectionWrapper id="how-it-works" background="white" topBorder className="pt-14 md:pt-20">
         <SectionHeading
           title="How It Works"
           subtitle="A clear, three-step process. Simple to use, whatever your level of technical experience."
