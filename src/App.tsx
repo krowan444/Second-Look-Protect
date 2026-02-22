@@ -444,9 +444,9 @@ export default function App() {
                 </Button>
               </div>
 
-              {/* Micro-trust line */}
-              <p className="text-slate-400/80 mt-2" style={{ fontSize: '13px', letterSpacing: '0.01em' }}>
-                ✓ UK-based specialists  ✓ Human-verified (not AI-only)  ✓ No judgement. No pressure.
+              {/* Emotional tagline */}
+              <p className="text-slate-400/80 mt-2 italic" style={{ fontSize: '13px', letterSpacing: '0.01em' }}>
+                No judgement. No pressure. Just clarity.
               </p>
 
               {/* Trust microcopy */}
