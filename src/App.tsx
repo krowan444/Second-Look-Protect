@@ -902,14 +902,15 @@ export default function App() {
               </div>
             </a>
           </div>
+        </div>
 
-          <div className="w-full mx-auto text-center">
-            <p className="text-slate-500 text-sm italic">Mon – Sat · 8am – 8pm · We aim to respond within 1 hour.</p>
-            <p className="text-slate-400 text-xs mt-3">
-              We will never ask for passwords, OTPs, full banking details, or ask you to move money. If unsure, contact us directly via our official website or{' '}
-              <a href="mailto:hello@secondlookprotect.co.uk" className="underline underline-offset-1 hover:text-slate-600 transition-colors">hello@secondlookprotect.co.uk</a>.
-            </p>
-          </div>
+        {/* Contact footer note — full section width, true center */}
+        <div className="flex flex-col items-center justify-center w-full mt-8 text-center" style={{ maxWidth: '56rem', marginLeft: 'auto', marginRight: 'auto' }}>
+          <p className="text-slate-500 text-sm italic">Mon – Sat · 8am – 8pm · We aim to respond within 1 hour.</p>
+          <p className="text-slate-400 text-xs mt-3 max-w-2xl">
+            We will never ask for passwords, OTPs, full banking details, or ask you to move money. If unsure, contact us directly via our official website or{' '}
+            <a href="mailto:hello@secondlookprotect.co.uk" className="underline underline-offset-1 hover:text-slate-600 transition-colors">hello@secondlookprotect.co.uk</a>.
+          </p>
         </div>
       </SectionWrapper>
 
