@@ -174,8 +174,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             // Upsert customer (+ shipping address) to Supabase
             const details = session.customer_details;
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const shipping = (session as any).shipping_details as {
+            const sessionAny = session as any;
+
+            // DEBUG: log every top-level key on the session so we can see the exact field name
+            console.log('[SLP Webhook] 🔍 Session keys:', Object.keys(sessionAny).join(', '));
+
+            // Stripe uses shipping_details (new API) or shipping (old API) — support both
+            type ShippingRaw = {
                 name?: string;
                 address?: {
                     line1?: string; line2?: string | null;
@@ -183,6 +190,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     postal_code?: string; country?: string;
                 };
             } | null;
+
+            const shipping: ShippingRaw =
+                (sessionAny.shipping_details as ShippingRaw) ??
+                (sessionAny.shipping as ShippingRaw) ??
+                null;
+
+            console.log('[SLP Webhook] 🔍 shipping_details raw:', JSON.stringify(sessionAny.shipping_details));
+            console.log('[SLP Webhook] 🔍 shipping raw:', JSON.stringify(sessionAny.shipping));
 
             const shippingAddress = shipping?.address ? {
                 name: shipping.name ?? null,
@@ -195,7 +210,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             } : null;
 
             if (shippingAddress) {
-                console.log('[SLP Webhook] 📦 Shipping address:', JSON.stringify(shippingAddress));
+                console.log('[SLP Webhook] 📦 Shipping address resolved:', JSON.stringify(shippingAddress));
+            } else {
+                console.warn('[SLP Webhook] ⚠️ No shipping address on session — customer may not have filled it in, or field name has changed');
             }
 
             const { error } = await supabaseAdmin

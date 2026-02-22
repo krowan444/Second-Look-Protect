@@ -68,12 +68,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const stripeCustomerId = typeof session.customer === 'string' ? session.customer : null;
     const subscriptionId = typeof session.subscription === 'string' ? session.subscription : null;
 
-    // Shipping details — only present for physical plans (Guardian, Family)
+    // Shipping — Stripe uses shipping_details (new API) or shipping (old API)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const shippingRaw = (session as any).shipping_details as {
+    const sessionAny = session as any;
+    console.log('[SLP] 🔍 shipping_details raw:', JSON.stringify(sessionAny.shipping_details));
+    console.log('[SLP] 🔍 shipping raw:', JSON.stringify(sessionAny.shipping));
+
+    type ShippingRaw = {
         name?: string;
         address?: { line1?: string; line2?: string | null; city?: string; state?: string | null; postal_code?: string; country?: string; };
     } | null;
+
+    const shippingRaw: ShippingRaw =
+        (sessionAny.shipping_details as ShippingRaw) ??
+        (sessionAny.shipping as ShippingRaw) ??
+        null;
+
     const shippingAddress = shippingRaw?.address ? {
         name: shippingRaw.name ?? null,
         line1: shippingRaw.address.line1 ?? null,
