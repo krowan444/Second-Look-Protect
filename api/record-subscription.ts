@@ -68,7 +68,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const stripeCustomerId = typeof session.customer === 'string' ? session.customer : null;
     const subscriptionId = typeof session.subscription === 'string' ? session.subscription : null;
 
-    console.log('[SLP] Extracted — email:', email, '| plan:', plan, '| interval:', billingInterval);
+    // Shipping details — only present for physical plans (Guardian, Family)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const shippingRaw = (session as any).shipping_details as {
+        name?: string;
+        address?: { line1?: string; line2?: string | null; city?: string; state?: string | null; postal_code?: string; country?: string; };
+    } | null;
+    const shippingAddress = shippingRaw?.address ? {
+        name: shippingRaw.name ?? null,
+        line1: shippingRaw.address.line1 ?? null,
+        line2: shippingRaw.address.line2 ?? null,
+        city: shippingRaw.address.city ?? null,
+        postal_code: shippingRaw.address.postal_code ?? null,
+        country: shippingRaw.address.country ?? null,
+    } : null;
+
+    console.log('[SLP] Extracted — email:', email, '| plan:', plan, '| shipping:', shippingAddress ? 'yes' : 'none');
 
     // ── 4a. Phase 1: Full upsert (requires unique email constraint + extra columns) ──
     console.log('[SLP] Phase 1: attempting full upsert with all columns...');
@@ -84,13 +99,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 stripe_customer_id: stripeCustomerId,
                 subscription_id: subscriptionId,
                 subscription_status: 'active',
+                shipping_address: shippingAddress,
             },
             { onConflict: 'email' },
         );
 
     if (!upsertError) {
         console.log('[SLP] ✅ Phase 1 upsert succeeded for:', email);
-        return res.status(200).json({ email, plan, billingInterval });
+        return res.status(200).json({ email, plan, billingInterval, shippingAddress });
     }
 
     // ── 4b. Phase 2: Minimal insert fallback (works with bare-bones schema) ──
@@ -108,7 +124,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!insertError) {
         console.log('[SLP] ✅ Phase 2 minimal insert succeeded for:', email);
-        return res.status(200).json({ email, plan, billingInterval });
+        return res.status(200).json({ email, plan, billingInterval, shippingAddress });
     }
 
     // Both failed — log full error objects so we can see exactly what's wrong

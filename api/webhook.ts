@@ -172,8 +172,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
             }
 
-            // Upsert customer to Supabase
+            // Upsert customer (+ shipping address) to Supabase
             const details = session.customer_details;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const shipping = (session as any).shipping_details as {
+                name?: string;
+                address?: {
+                    line1?: string; line2?: string | null;
+                    city?: string; state?: string | null;
+                    postal_code?: string; country?: string;
+                };
+            } | null;
+
+            const shippingAddress = shipping?.address ? {
+                name: shipping.name ?? null,
+                line1: shipping.address.line1 ?? null,
+                line2: shipping.address.line2 ?? null,
+                city: shipping.address.city ?? null,
+                state: shipping.address.state ?? null,
+                postal_code: shipping.address.postal_code ?? null,
+                country: shipping.address.country ?? null,
+            } : null;
+
+            if (shippingAddress) {
+                console.log('[SLP Webhook] 📦 Shipping address:', JSON.stringify(shippingAddress));
+            }
+
             const { error } = await supabaseAdmin
                 .from('customers')
                 .upsert(
@@ -186,12 +210,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         stripe_customer_id: stripeCustomerId,
                         subscription_id: subscriptionId,
                         subscription_status: 'active',
+                        shipping_address: shippingAddress,  // JSONB column
                     },
                     { onConflict: 'email' },
                 );
 
             console.log('SUPABASE_UPDATE_STATUS', error ? JSON.stringify(error) : 'success');
             break;
+
         }
 
         default:

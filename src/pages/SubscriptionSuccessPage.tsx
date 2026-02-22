@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, Shield, Home, Package, Star } from 'lucide-react';
+import { CheckCircle, Shield, Home, Package, Star, MapPin } from 'lucide-react';
 
 interface Props {
     onGoHome: () => void;
@@ -45,6 +45,10 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
     const [email, setEmail] = useState<string | null>(null);
     const [plan, setPlan] = useState<string | null>(null);
     const [billingInterval, setBillingInterval] = useState<string | null>(null);
+    const [shippingAddress, setShippingAddress] = useState<{
+        name?: string | null; line1?: string | null; line2?: string | null;
+        city?: string | null; postal_code?: string | null; country?: string | null;
+    } | null>(null);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -53,12 +57,13 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
 
         fetch(`/api/record-subscription?session_id=${encodeURIComponent(sessionId)}`)
             .then((r) => r.json())
-            .then((data: { email?: string; plan?: string; billingInterval?: string }) => {
+            .then((data: { email?: string; plan?: string; billingInterval?: string; shippingAddress?: typeof shippingAddress }) => {
                 if (data.email) setEmail(data.email);
                 if (data.plan) setPlan(data.plan);
                 if (data.billingInterval) setBillingInterval(data.billingInterval);
+                if (data.shippingAddress) setShippingAddress(data.shippingAddress);
             })
-            .catch(() => { /* fails gracefully — page still renders */ });
+            .catch(() => { /* fails gracefully */ });
     }, []);
 
     const perks = plan ? PLAN_PERKS[plan] : null;
@@ -124,9 +129,27 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
                         ))}
                     </ul>
                     {hasPhysical && (
-                        <p className="mt-4 text-xs text-slate-400">
-                            📦 Physical items will be posted to you within 3–5 working days.
-                        </p>
+                        <>
+                            {shippingAddress ? (
+                                <div className="mt-4 flex items-start gap-2 text-sm text-slate-300 bg-white/5 rounded-lg p-3 ring-1 ring-white/10">
+                                    <MapPin className="w-4 h-4 text-[#C9A84C] mt-0.5 shrink-0" aria-hidden="true" />
+                                    <div>
+                                        <p className="font-semibold text-slate-200 mb-0.5">Shipping to:</p>
+                                        {shippingAddress.name && <p>{shippingAddress.name}</p>}
+                                        {shippingAddress.line1 && <p>{shippingAddress.line1}</p>}
+                                        {shippingAddress.line2 && <p>{shippingAddress.line2}</p>}
+                                        <p>
+                                            {[shippingAddress.city, shippingAddress.postal_code, shippingAddress.country]
+                                                .filter(Boolean).join(', ')}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="mt-4 text-xs text-slate-400">
+                                    📦 Physical items will be posted to you within 3–5 working days.
+                                </p>
+                            )}
+                        </>
                     )}
                 </div>
             )}

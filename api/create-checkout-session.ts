@@ -79,20 +79,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const invoiceTemplateId = PLAN_INVOICE_TEMPLATES[planKey.toUpperCase()] ?? '';
 
+        // Guardian and Family plans include physical items — collect a shipping address.
+        // Basic Shield is digital-only so we skip the extra step to reduce friction.
+        const PHYSICAL_PLANS = ['GUARDIAN', 'FAMILY'];
+        const needsShipping = PHYSICAL_PLANS.includes(planKey.toUpperCase());
+
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
             payment_method_types: ['card'],
             line_items: [{ price: priceId, quantity: 1 }],
 
-            // Collect full contact details — billing address needed for invoice delivery
+            // Billing address — required for invoice delivery
             billing_address_collection: 'required',
+            // Phone — always collected
             phone_number_collection: { enabled: true },
+            // Shipping — only for plans that post physical items
+            ...(needsShipping ? {
+                shipping_address_collection: {
+                    allowed_countries: ['GB', 'IE', 'US', 'CA', 'AU'],
+                },
+            } : {}),
 
             // Session-level metadata — available in checkout.session.completed
             metadata: {
                 planName: planName ?? '',
                 billingInterval: billingInterval ?? 'monthly',
                 invoiceTemplate: invoiceTemplateId,
+                needsShipping: needsShipping ? 'true' : 'false',
             },
 
             // Subscription-level metadata — persists on the subscription object
@@ -108,7 +121,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             cancel_url: `${origin}/#pricing`,
         });
 
-        console.log(`[SLP Checkout] ✅ Session created — plan: ${planName} (${billingInterval}), priceId: ${priceId}`);
+        console.log(`[SLP Checkout] ✅ Session created — plan: ${planName} (${billingInterval}), priceId: ${priceId}, needsShipping: ${needsShipping}`);
         return res.json({ url: session.url });
 
     } catch (err: unknown) {
