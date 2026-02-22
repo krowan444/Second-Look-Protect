@@ -77,22 +77,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         const origin = (req.headers.origin as string) || 'https://www.secondlookprotect.com';
 
+        const invoiceTemplateId = PLAN_INVOICE_TEMPLATES[planKey.toUpperCase()] ?? '';
+
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
             payment_method_types: ['card'],
             line_items: [{ price: priceId, quantity: 1 }],
 
-            // Collect full contact details — no website account required
+            // Collect full contact details — billing address needed for invoice delivery
             billing_address_collection: 'required',
             phone_number_collection: { enabled: true },
-            // Note: customer_creation is NOT valid in subscription mode —
-            // Stripe creates the customer automatically.
 
-            // Pass through to webhook via metadata
+            // Session-level metadata — available in checkout.session.completed
             metadata: {
                 planName: planName ?? '',
                 billingInterval: billingInterval ?? 'monthly',
-                invoiceTemplate: PLAN_INVOICE_TEMPLATES[planKey.toUpperCase()] ?? '',
+                invoiceTemplate: invoiceTemplateId,
+            },
+
+            // Subscription-level metadata — persists on the subscription object
+            // so the invoice.created webhook can read it for every future invoice
+            subscription_data: {
+                metadata: {
+                    planName: planName ?? '',
+                    invoiceTemplate: invoiceTemplateId,
+                },
             },
 
             success_url: `${origin}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,

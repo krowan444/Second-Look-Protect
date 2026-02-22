@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-// ── Env var check at cold-start — visible in Vercel Function Logs ──────────
+// ── Env var check at cold-start ────────────────────────────────────────────
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL as string;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY as string;
@@ -18,23 +18,17 @@ console.log('[SLP Webhook] Cold-start env check:',
 const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 const stripe = new Stripe(STRIPE_SECRET);
 
-// ── Price ID → Plan + Invoice Template mapping ────────────────────────────
-// Each price_id maps to the plan name shown in Supabase and the template to apply.
+// ── Price ID → Plan mapping ────────────────────────────────────────────────
 const PRICE_PLAN_MAP: Record<string, { planName: string; invoiceTemplate: string }> = {
-    // Basic Shield — monthly & yearly
     'price_1T3ZJNFkPVozTYrkrp9k0hHw': { planName: 'Basic Shield', invoiceTemplate: 'BASIC_SHIELD_TEMPLATE' },
     'price_1T3ZJNFkPVozTYrkkl2f8f3S': { planName: 'Basic Shield', invoiceTemplate: 'BASIC_SHIELD_TEMPLATE' },
-    // The Guardian — monthly & yearly
     'price_1T3ZKgFkPVozTYrkBwyLcgI4': { planName: 'The Guardian', invoiceTemplate: 'GUARDIAN_TEMPLATE' },
     'price_1T3ZKgFkPVozTYrkAK8GaG9P': { planName: 'The Guardian', invoiceTemplate: 'GUARDIAN_TEMPLATE' },
-    // Family Fortress — monthly & yearly
     'price_1T3ZLcFkPVozTYrkO7bi1GWS': { planName: 'Family Fortress', invoiceTemplate: 'FAMILY_SHIELD_TEMPLATE' },
     'price_1T3ZLcFkPVozTYrktYp5NSYT': { planName: 'Family Fortress', invoiceTemplate: 'FAMILY_SHIELD_TEMPLATE' },
 };
 
-// ── Invoice Template IDs ──────────────────────────────────────────────────
-// Replace placeholder values with real Stripe Invoice Template IDs:
-// Stripe Dashboard → Billing → Invoice Templates → copy the ID (format: tmpl_xxx)
+// ── Invoice Template IDs (Stripe Rendering Templates) ─────────────────────
 const TEMPLATE_IDS: Record<string, string> = {
     BASIC_SHIELD_TEMPLATE: 'inrtem_1T3bdmFkPVozTYrkpKZ03xse',
     GUARDIAN_TEMPLATE: 'inrtem_1T3bgdFkPVozTYrksEM4BUhR',
@@ -45,111 +39,147 @@ const TEMPLATE_IDS: Record<string, string> = {
 export const config = { api: { bodyParser: false } };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    // ── 1: Method guard ────────────────────────────────────────────────────
     console.log('WEBHOOK_RECEIVED', req.method);
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    // ── 2: Signature verification ──────────────────────────────────────────
+    // ── Signature verification ─────────────────────────────────────────────
     const sig = req.headers['stripe-signature'] as string;
-    if (!sig) {
-        console.error('[SLP Webhook] ❌ Missing Stripe-Signature header');
-        return res.status(400).json({ error: 'Missing Stripe-Signature header' });
-    }
+    if (!sig) return res.status(400).json({ error: 'Missing Stripe-Signature header' });
 
     let event: Stripe.Event;
     try {
         const rawBody = await readRawBody(req);
         event = stripe.webhooks.constructEvent(rawBody, sig, WEBHOOK_SECRET);
-        console.log('[SLP Webhook] ✅ Signature verified — event:', event.type);
+        console.log('[SLP Webhook] ✅ Event verified:', event.type);
     } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Signature verification failed';
         console.error('[SLP Webhook] ❌ Signature error:', msg);
         return res.status(400).json({ error: msg });
     }
 
-    // ── 3: Handle checkout.session.completed ──────────────────────────────
-    if (event.type === 'checkout.session.completed') {
-        const session = event.data.object as Stripe.Checkout.Session;
-        console.log('[SLP Webhook] Processing session:', session.id);
+    // ── Event routing ──────────────────────────────────────────────────────
+    switch (event.type) {
 
-        // ── 3a: Resolve plan via price_id from line items ─────────────────
-        // This is the authoritative source — price ID can't be spoofed
-        let priceId: string | null = null;
-        try {
-            const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
-            priceId = lineItems.data[0]?.price?.id ?? null;
-            console.log('[SLP Webhook] price_id from line_items:', priceId);
-        } catch (err) {
-            console.error('[SLP Webhook] ⚠️ Could not fetch line items:', err instanceof Error ? err.message : err);
-        }
+        // ── invoice.created ──────────────────────────────────────────────────
+        // Fires when Stripe creates any invoice for a subscription — including
+        // the VERY FIRST one, while it is still in 'draft' state. This is the
+        // earliest point we can apply a custom rendering template.
+        case 'invoice.created': {
+            const invoice = event.data.object as Stripe.Invoice;
+            console.log('[SLP Webhook] invoice.created — status:', invoice.status, '| id:', invoice.id);
 
-        const planInfo = priceId ? PRICE_PLAN_MAP[priceId] : null;
-        const invoiceTemplate = planInfo?.invoiceTemplate ?? null;
-
-        // Fall back to metadata if price ID wasn't in our map
-        const plan = planInfo?.planName ?? session.metadata?.planName ?? null;
-        const billingInterval = session.metadata?.billingInterval ?? null;
-
-        console.log(`[SLP Webhook] Plan resolved: "${plan}" | template: "${invoiceTemplate}" | interval: "${billingInterval}"`);
-
-        // ── 3b: Apply Stripe Invoice Template to the subscription ─────────
-        const subscriptionId = typeof session.subscription === 'string' ? session.subscription : null;
-        const stripeCustomerId = typeof session.customer === 'string' ? session.customer : null;
-        const templateId = invoiceTemplate ? TEMPLATE_IDS[invoiceTemplate] : null;
-
-        if (templateId && subscriptionId) {
-            try {
-                await stripe.subscriptions.update(subscriptionId, {
-                    // invoice_settings.rendering.template is a newer Stripe field not yet
-                    // fully typed — cast required to bypass TS definition gap.
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    invoice_settings: { rendering: { template: templateId } } as any,
-                });
-                console.log(`[SLP Webhook] ✅ Invoice template applied: ${invoiceTemplate} → ${templateId}`);
-            } catch (err) {
-                console.error('[SLP Webhook] ⚠️ Invoice template apply failed:', err instanceof Error ? err.message : err);
+            if (invoice.status !== 'draft') {
+                console.log('[SLP Webhook] Invoice already past draft — skipping template apply');
+                break;
             }
-        } else if (invoiceTemplate) {
-            // Template name identified but no Stripe ID yet — log for reference
-            console.log(`[SLP Webhook] ℹ️ Template identified: "${invoiceTemplate}" — add its Stripe ID to TEMPLATE_IDS in webhook.ts to activate`);
+
+            // The template ID is stored in subscription metadata (set at checkout creation)
+            let templateId: string | null = null;
+
+            // `.subscription` exists at runtime but isn't typed in all SDK versions
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const invoiceSub = (invoice as any).subscription as string | Stripe.Subscription | null | undefined;
+
+            if (invoiceSub) {
+                try {
+                    const sub = await stripe.subscriptions.retrieve(
+                        typeof invoiceSub === 'string'
+                            ? invoiceSub
+                            : (invoiceSub as Stripe.Subscription).id
+                    );
+                    const templateFromMeta = sub.metadata?.invoiceTemplate ?? null;
+                    templateId = templateFromMeta
+                        ? (TEMPLATE_IDS[templateFromMeta] ?? null)
+                        : null;
+                    console.log('[SLP Webhook] Subscription metadata invoiceTemplate:', templateFromMeta, '→ ID:', templateId);
+                } catch (err) {
+                    console.error('[SLP Webhook] ⚠️ Could not retrieve subscription:', err instanceof Error ? err.message : err);
+                }
+            }
+
+            if (templateId) {
+                try {
+                    await stripe.invoices.update(invoice.id, {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        rendering: { template: templateId } as any,
+                    });
+                    console.log('[SLP Webhook] ✅ Invoice template applied to draft invoice:', invoice.id, '→', templateId);
+                } catch (err) {
+                    console.error('[SLP Webhook] ⚠️ Invoice template update failed:', err instanceof Error ? err.message : err);
+                }
+            } else {
+                console.log('[SLP Webhook] ℹ️ No template ID resolved for invoice:', invoice.id);
+            }
+            break;
         }
 
-        // ── 3c: Customer contact details ──────────────────────────────────
-        const details = session.customer_details;
-        const name = details?.name ?? null;
-        const email = details?.email ?? null;
-        const phone = details?.phone ?? null;
+        // ── checkout.session.completed ───────────────────────────────────────
+        // Primary handler: saves customer to Supabase and applies template to
+        // the subscription (covers all future renewal invoices).
+        case 'checkout.session.completed': {
+            const session = event.data.object as Stripe.Checkout.Session;
+            console.log('[SLP Webhook] Processing session:', session.id);
 
-        // ── 3d: Upsert to Supabase (service role bypasses RLS) ────────────
-        const { error } = await supabaseAdmin
-            .from('customers')
-            .upsert(
-                {
-                    name,
-                    email,
-                    phone,
-                    plan,
-                    billing_interval: billingInterval,
-                    stripe_customer_id: stripeCustomerId,
-                    subscription_id: subscriptionId,
-                    subscription_status: 'active',
-                },
-                { onConflict: 'email' },
-            );
+            // Resolve plan via price_id (authoritative — can't be spoofed)
+            let priceId: string | null = null;
+            try {
+                const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+                priceId = lineItems.data[0]?.price?.id ?? null;
+                console.log('[SLP Webhook] price_id:', priceId);
+            } catch (err) {
+                console.error('[SLP Webhook] ⚠️ Could not fetch line items:', err instanceof Error ? err.message : err);
+            }
 
-        console.log('SUPABASE_UPDATE_STATUS', error ? error : 'success');
+            const planInfo = priceId ? PRICE_PLAN_MAP[priceId] : null;
+            const involveTemplate = planInfo?.invoiceTemplate ?? null;
+            const plan = planInfo?.planName ?? session.metadata?.planName ?? null;
+            const billingInterval = session.metadata?.billingInterval ?? null;
+            const subscriptionId = typeof session.subscription === 'string' ? session.subscription : null;
+            const stripeCustomerId = typeof session.customer === 'string' ? session.customer : null;
 
-        if (error) {
-            console.error('[SLP Webhook] ❌ Supabase upsert error:', JSON.stringify(error));
-        } else {
-            console.log('[SLP Webhook] ✅ Customer saved to Supabase:', email, '| plan:', plan);
+            console.log(`[SLP Webhook] Plan: "${plan}" | template: "${involveTemplate}" | interval: "${billingInterval}"`);
+
+            // Apply template to the subscription for all future renewal invoices
+            const templateId = involveTemplate ? TEMPLATE_IDS[involveTemplate] : null;
+            if (templateId && subscriptionId) {
+                try {
+                    await stripe.subscriptions.update(subscriptionId, {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        invoice_settings: { rendering: { template: templateId } } as any,
+                    });
+                    console.log('[SLP Webhook] ✅ Template applied to subscription:', involveTemplate, '→', templateId);
+                } catch (err) {
+                    console.error('[SLP Webhook] ⚠️ Subscription template update failed:', err instanceof Error ? err.message : err);
+                }
+            }
+
+            // Upsert customer to Supabase
+            const details = session.customer_details;
+            const { error } = await supabaseAdmin
+                .from('customers')
+                .upsert(
+                    {
+                        name: details?.name ?? null,
+                        email: details?.email ?? null,
+                        phone: details?.phone ?? null,
+                        plan,
+                        billing_interval: billingInterval,
+                        stripe_customer_id: stripeCustomerId,
+                        subscription_id: subscriptionId,
+                        subscription_status: 'active',
+                    },
+                    { onConflict: 'email' },
+                );
+
+            console.log('SUPABASE_UPDATE_STATUS', error ? JSON.stringify(error) : 'success');
+            break;
         }
-    } else {
-        console.log('[SLP Webhook] ℹ️ Unhandled event type:', event.type);
+
+        default:
+            console.log('[SLP Webhook] ℹ️ Unhandled event type:', event.type);
     }
 
-    // ── 4: Always respond 200 to prevent Stripe retries ──────────────────
-    console.log('[SLP Webhook] Responding 200 OK');
+    // Always 200 — prevents Stripe retries on our processing errors
     return res.status(200).json({ received: true });
 }
 
