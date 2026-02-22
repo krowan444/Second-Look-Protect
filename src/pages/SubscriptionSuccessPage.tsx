@@ -28,13 +28,13 @@ const PLAN_PERKS: Record<string, { title: string; items: string[] }> = {
         ],
     },
     'Family Shield': {
-        title: 'Your Family Shield Pack is on its way:',
+        title: '',   // header removed to match Guardian design
         items: [
-            'Protection for up to 5 family members',
-            '5× Physical Guardian Kits — Fridge Magnets, Wallet Cards & Stickers for every member',
-            'Exclusive Scam Scenario Flash Cards for the whole family',
-            'Shared Guardian Risk Summary dashboard',
-            'Priority 24-Hour Reassurance Response',
+            'Protection for up to 5 family members — shared security for your whole household.',
+            '5× Physical Guardian Packs — stickers and magnets for every family member’s devices.',
+            'Family ‘Scam Scenario’ Flash Cards — interactive tools to train the whole family.',
+            'Priority 24-Hour Reassurance Response — our fastest support for family emergencies.',
+            'Shared Guardian Risk Summary — a comprehensive overview of your family’s safety.',
         ],
     },
 };
@@ -191,8 +191,8 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
                     )}
                 </div>
             )}
-            {/* Shipping claim form — Basic Shield + The Guardian */}
-            {(plan === 'Basic Shield' || plan === 'The Guardian') && email && (
+            {/* Shipping claim form — all three tiers */}
+            {(plan === 'Basic Shield' || plan === 'The Guardian' || plan === 'Family Shield') && email && (
                 <div className="w-full max-w-md mb-8 bg-white/5 rounded-xl p-6 text-left ring-1 ring-white/10">
                     {stickerDone ? (
                         <div className="flex items-start gap-3 text-emerald-400">
@@ -200,7 +200,9 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
                             <p className="text-sm font-medium">
                                 {plan === 'The Guardian'
                                     ? 'Success! Your Guardian Magnet and Stickers are being prepared for dispatch.'
-                                    : 'Thank you! Your sticker will be sent to this address.'}
+                                    : plan === 'Family Shield'
+                                        ? 'Success! Your 5× Family Guardian Packs and Flash Cards are being prepared for dispatch.'
+                                        : 'Thank you! Your sticker will be sent to this address.'}
                             </p>
                         </div>
                     ) : (
@@ -209,12 +211,16 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
                                 <Package className="w-4 h-4 text-[#C9A84C]" aria-hidden="true" />
                                 {plan === 'The Guardian'
                                     ? 'Where should we send your Guardian Magnet & Stickers?'
-                                    : 'Claim Your Shield Sticker'}
+                                    : plan === 'Family Shield'
+                                        ? 'Where should we send your Family Guardian Packs?'
+                                        : 'Claim Your Shield Sticker'}
                             </p>
                             <p className="text-slate-400 text-xs mb-4">
                                 {plan === 'The Guardian'
                                     ? "Enter your UK address and we'll post your Guardian Kit within 3–5 working days."
-                                    : "Enter your UK address and we'll post your free Shield Sticker within 3–5 working days."}
+                                    : plan === 'Family Shield'
+                                        ? "Enter your UK address and we'll post your 5 Family Guardian Packs within 3–5 working days."
+                                        : "Enter your UK address and we'll post your free Shield Sticker within 3–5 working days."}
                             </p>
 
                             <div className="space-y-3">
