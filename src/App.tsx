@@ -207,8 +207,11 @@ export default function App() {
   async function handleSubscribe(planKey: string) {
     const interval = isYearly ? 'yearly' : 'monthly';
     const loadingKey = `${planKey}_${interval}`;
-    if (loadingPlan) return; // prevent double-click
+    if (loadingPlan) return;
     setLoadingPlan(loadingKey);
+
+    console.log(`[SLP] 🛒 Starting checkout: planKey=${planKey}, interval=${interval}`);
+
     try {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
@@ -219,15 +222,32 @@ export default function App() {
           planName: PRICING_PLANS.find((p) => p.planKey === planKey)?.name ?? '',
         }),
       });
-      const data = await res.json() as { url?: string; error?: string };
+
+      console.log(`[SLP] Checkout API → HTTP ${res.status}`);
+
+      // Safely parse JSON; if the API returned HTML/text, capture it for debugging
+      let data: { url?: string; error?: string };
+      const contentType = res.headers.get('content-type') ?? '';
+      if (contentType.includes('application/json')) {
+        data = await res.json() as { url?: string; error?: string };
+      } else {
+        const rawText = await res.text();
+        console.error('[SLP] ❌ Checkout API returned non-JSON:', rawText);
+        alert(`Checkout error (HTTP ${res.status}): The server returned an unexpected response. Check browser console.`);
+        return;
+      }
+
+      console.log('[SLP] Checkout API response:', data);
+
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(`Subscription error: ${data.error ?? 'Unknown error'}`);
+        console.error('[SLP] ❌ No checkout URL returned. Error:', data.error);
+        alert(`Subscription error: ${data.error ?? 'No checkout URL returned — check browser console'}`);
       }
     } catch (err) {
-      console.error('[SLP] Subscribe error:', err);
-      alert('Could not start checkout. Please try again.');
+      console.error('[SLP] ❌ Fetch failed (network error or JSON parse):', err);
+      alert(`Could not start checkout: ${err instanceof Error ? err.message : 'Network error — check browser console'}`);
     } finally {
       setLoadingPlan(null);
     }
