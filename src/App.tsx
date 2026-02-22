@@ -10,6 +10,7 @@ import { GetProtectionPage } from './pages/GetProtectionPage';
 import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { SupportPage } from './pages/SupportPage';
+import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import {
   Shield, CheckCircle, Search, Lock, AlertTriangle,
   Phone, Star, ArrowRight,
@@ -204,16 +205,17 @@ function scrollToSection(id: string) {
 
 export default function App() {
   // Initialise page from URL so /subscription-success works on direct load / Stripe redirect
-  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' {
+  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' {
     const path = window.location.pathname;
     if (path.startsWith('/subscription-success')) return 'subscription-success';
     if (path.startsWith('/get-protection')) return 'get-protection';
     if (path.startsWith('/privacy-policy')) return 'privacy-policy';
     if (path.startsWith('/support')) return 'support';
+    if (path.startsWith('/terms-of-service')) return 'terms-of-service';
     return 'home';
   }
 
-  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support'>(getInitialPage);
+  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service'>(getInitialPage);
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
@@ -319,6 +321,19 @@ export default function App() {
   if (page === 'support') {
     return (
       <SupportPage
+        onBack={() => {
+          window.history.replaceState(null, '', '/');
+          setPage('home');
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }}
+      />
+    );
+  }
+
+  // ── Early return: Terms of Service page ────────────────────────────────
+  if (page === 'terms-of-service') {
+    return (
+      <TermsOfServicePage
         onBack={() => {
           window.history.replaceState(null, '', '/');
           setPage('home');
@@ -999,7 +1014,13 @@ export default function App() {
                 </li>
                 {['Terms of Service', 'Cookie Policy'].map((l) => (
                   <li key={l}>
-                    <a href="#" className="hover:text-white transition-colors duration-200">{l}</a>
+                    <a
+                      href={l === 'Terms of Service' ? '/terms-of-service' : '#'}
+                      onClick={l === 'Terms of Service' ? (e) => { e.preventDefault(); window.history.pushState(null, '', '/terms-of-service'); setPage('terms-of-service'); window.scrollTo({ top: 0, behavior: 'instant' }); } : undefined}
+                      className="hover:text-white transition-colors duration-200"
+                    >
+                      {l}
+                    </a>
                   </li>
                 ))}
               </ul>
