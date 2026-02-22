@@ -1003,7 +1003,7 @@ export default function App() {
               <div className="space-y-1 text-xs text-slate-600 border-t border-white/8 pt-4">
                 <p>Registered with the UK Information Commissioner's Office (ICO).</p>
                 <p>Second Look Protect Ltd · Company No. 15847293 (England &amp; Wales)</p>
-                <p>Registered Office: 71–75 Shelton Street, Covent Garden, London, WC2H 9JQ</p>
+                <p>Registered Office: 14 Millside Close, Fortune House, Northampton, Northamptonshire, NN2 7TR</p>
               </div>
             </div>
 
