@@ -7,6 +7,7 @@ import { TrustBadge } from './components/TrustBadge';
 import { PricingCard } from './components/PricingCard';
 import { FAQAccordion } from './components/FAQAccordion';
 import { GetProtectionPage } from './pages/GetProtectionPage';
+import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
 import {
   Shield, CheckCircle, Search, Lock, AlertTriangle,
   Phone, Star, ArrowRight,
@@ -200,7 +201,15 @@ function scrollToSection(id: string) {
 /* ─── Main App ─────────────────────────────────────────────────────────── */
 
 export default function App() {
-  const [page, setPage] = useState<'home' | 'get-protection'>('home');
+  // Initialise page from URL so /subscription-success works on direct load / Stripe redirect
+  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' {
+    const path = window.location.pathname;
+    if (path.startsWith('/subscription-success')) return 'subscription-success';
+    if (path.startsWith('/get-protection')) return 'get-protection';
+    return 'home';
+  }
+
+  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success'>(getInitialPage);
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
@@ -262,6 +271,19 @@ export default function App() {
   function handleHowItWorks() {
     trackEvent('hero_cta_click', { button: 'how_it_works' });
     scrollToSection('how-it-works');
+  }
+
+  // ── Early return: Subscription Success page ─────────────────────────────
+  if (page === 'subscription-success') {
+    return (
+      <SubscriptionSuccessPage
+        onGoHome={() => {
+          window.history.replaceState(null, '', '/');
+          setPage('home');
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }}
+      />
+    );
   }
 
   // ── Early return: GetProtection page ────────────────────────────────────
