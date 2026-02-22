@@ -177,6 +177,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                 const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
                 const path = `submissions/${submissionId}/${timestamp}-${safeName}`;
 
+                // Bucket name is case-sensitive: must be SUBMISSIONS (all caps)
                 const { error: uploadError } = await supabase.storage
                     .from('SUBMISSIONS')
                     .upload(path, file, { cacheControl: '3600', upsert: false });
