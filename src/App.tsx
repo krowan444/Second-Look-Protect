@@ -770,7 +770,6 @@ export default function App() {
                 <span className="text-slate-200"><strong className="text-white">High Risk</strong> – Strong scam indicators detected</span>
               </li>
             </ul>
-            <p className="text-slate-500 text-xs mt-5">Clear. Calm. Structured.</p>
           </div>
 
           {/* Flexible Membership */}
@@ -794,6 +793,11 @@ export default function App() {
             </ul>
           </div>
 
+        </div>
+
+        {/* Section-wide centered tagline */}
+        <div className="w-full flex justify-center mt-8">
+          <p className="text-slate-500 text-xs text-center">Clear. Calm. Structured.</p>
         </div>
       </SectionWrapper>
 
