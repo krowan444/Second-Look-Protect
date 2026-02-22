@@ -90,7 +90,7 @@ const FAQ_GROUPS: FAQGroup[] = [
             },
             {
                 question: 'Do you use artificial intelligence?',
-                answer: 'We use modern tools behind the scenes to help identify warning signs efficiently. Every assessment is reviewed carefully before guidance is given. Our focus is clear, human guidance &mdash; not automation.',
+                answer: 'We use modern tools behind the scenes to help identify warning signs efficiently. Every assessment is reviewed carefully before guidance is given. Our focus is clear, human guidance — not automation.',
             },
         ],
     },
@@ -103,7 +103,7 @@ const FAQ_GROUPS: FAQGroup[] = [
             },
             {
                 question: 'What if I don\'t use it this month?',
-                answer: 'That\'s good news &mdash; it means you stayed safe. Even when you don\'t submit a check, we monitor UK scam trends and provide proactive awareness. Like a smoke alarm, it may stay quiet &mdash; but it\'s there when you need it.',
+                answer: 'That\'s good news — it means you stayed safe. Even when you don\'t submit a check, we monitor UK scam trends and provide proactive awareness. Like a smoke alarm, it may stay quiet — but it\'s there when you need it.',
             },
             {
                 question: 'Can I cancel at any time?',
