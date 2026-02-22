@@ -133,6 +133,16 @@ const FAQ_GROUPS: FAQGroup[] = [
                 answer: 'Banks often step in after money has moved. We help before you act — reviewing suspicious messages, links, and invoices in advance so you can avoid the problem entirely.',
             },
             {
+                question: "Can't I just ask a family member or friend?",
+                answer: (
+                    <>
+                        <p className="mb-3">Of course — and many people do.</p>
+                        <p className="mb-3">But we also understand that not everyone feels comfortable asking family or friends about suspicious messages or online concerns. It can sometimes feel embarrassing, or you may worry about bothering someone or being judged.</p>
+                        <p>Second Look Protect provides a calm, impartial second opinion from trained professionals who deal with these situations every day. We're here to reduce pressure, not add to it.</p>
+                    </>
+                ),
+            },
+            {
                 question: 'Why are scams harder to spot now?',
                 answer: (
                     <>
