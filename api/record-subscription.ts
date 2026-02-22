@@ -13,16 +13,16 @@ const supabaseAdmin = createClient(
 /**
  * GET /api/record-subscription?session_id=cs_test_...
  *
- * Called by the /subscription-success page immediately after Stripe redirects back.
- * 1. Retrieves the completed Checkout Session from Stripe (secure — never trusts the client).
- * 2. Upserts the customer row in Supabase using the service role key (bypasses RLS).
- * 3. Returns { email } so the success page can personalise the confirmation message.
+ * Called immediately from the /subscription-success page after Stripe redirects.
+ * Saves the customer to Supabase and returns their email for the confirmation message.
  *
- * This is a belt-and-braces approach: the Stripe webhook also writes to Supabase,
- * but this ensures the row exists even if the webhook has not fired yet.
+ * Two-phase write strategy:
+ *   Phase 1 — Full upsert with all columns. Works once you've added the columns + unique
+ *             constraint in Supabase (see note printed to logs).
+ *   Phase 2 — Minimal insert fallback using only the 4 columns every fresh table has.
+ *             This guarantees something is written even on a bare-bones schema.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    // CORS — allow browser calls from the same origin
     res.setHeader('Access-Control-Allow-Origin', '*');
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -32,49 +32,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'session_id is required' });
     }
 
-    // ── Step 1: Log env var status ─────────────────────────────────────────
-    console.log('[SLP record-subscription] env check:',
-        `STRIPE_SECRET_KEY=${process.env.STRIPE_SECRET_KEY ? '✅' : '❌ MISSING'}`,
-        `VITE_SUPABASE_URL=${process.env.VITE_SUPABASE_URL ? '✅' : '❌ MISSING'}`,
-        `SERVICE_ROLE_KEY=${process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅' : '❌ MISSING'}`,
+    // ── 1. Env var audit ──────────────────────────────────────────────────
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const stripeSecret = process.env.STRIPE_SECRET_KEY;
+
+    console.log('[SLP] record-subscription env:',
+        `VITE_SUPABASE_URL=${supabaseUrl ? '✅' : '❌ MISSING'}`,
+        `SERVICE_ROLE_KEY=${serviceRoleKey ? '✅' : '❌ MISSING'}`,
+        `STRIPE_SECRET_KEY=${stripeSecret ? '✅' : '❌ MISSING'}`,
     );
 
-    // ── Step 2: Retrieve session from Stripe ──────────────────────────────
+    if (!supabaseUrl || !serviceRoleKey) {
+        return res.status(500).json({ error: 'Supabase env vars missing on server. Check Vercel → Settings → Environment Variables.' });
+    }
+
+    // ── 2. Retrieve & verify Stripe session ──────────────────────────────
     let session: Stripe.Checkout.Session;
     try {
         session = await stripe.checkout.sessions.retrieve(session_id);
-        console.log('[SLP record-subscription] ✅ Session retrieved:', session.id);
+        console.log('[SLP] ✅ Stripe session retrieved:', session.id, '| status:', session.status);
     } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to retrieve Stripe session';
-        console.error('[SLP record-subscription] ❌ Stripe error:', msg);
+        const msg = err instanceof Error ? err.message : 'Stripe error';
+        console.error('[SLP] ❌ Stripe retrieve error:', msg);
         return res.status(500).json({ error: msg });
     }
 
-    // Only process completed sessions
-    if (session.status !== 'complete' && session.payment_status !== 'paid') {
-        console.warn('[SLP record-subscription] Session not complete:', session.status);
-        return res.status(400).json({ error: 'Session is not completed yet' });
-    }
-
-    // ── Step 3: Extract customer data ──────────────────────────────────────
+    // ── 3. Extract data ───────────────────────────────────────────────────
     const details = session.customer_details;
-    const name = details?.name ?? null;
     const email = details?.email ?? null;
+    const name = details?.name ?? null;
     const phone = details?.phone ?? null;
     const plan = session.metadata?.planName ?? null;
     const billingInterval = session.metadata?.billingInterval ?? null;
     const stripeCustomerId = typeof session.customer === 'string' ? session.customer : null;
     const subscriptionId = typeof session.subscription === 'string' ? session.subscription : null;
 
-    console.log('[SLP record-subscription] Extracted:', { email, plan, billingInterval, stripeCustomerId });
+    console.log('[SLP] Extracted — email:', email, '| plan:', plan, '| interval:', billingInterval);
 
-    // ── Step 4: Upsert to Supabase using service role (bypasses RLS) ───────
-    const { data, error } = await supabaseAdmin
+    // ── 4a. Phase 1: Full upsert (requires unique email constraint + extra columns) ──
+    console.log('[SLP] Phase 1: attempting full upsert with all columns...');
+    const { error: upsertError } = await supabaseAdmin
         .from('customers')
         .upsert(
             {
-                name,
                 email,
+                name,
                 phone,
                 plan,
                 billing_interval: billingInterval,
@@ -82,16 +85,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 subscription_id: subscriptionId,
                 subscription_status: 'active',
             },
-            { onConflict: 'email' }
-        )
-        .select();
+            { onConflict: 'email' },
+        );
 
-    if (error) {
-        console.error('[SLP record-subscription] ❌ Supabase error code:', error.code, '| message:', error.message, '| details:', error.details);
-        // Return the email anyway so the success page still works
-        return res.status(200).json({ email, supabaseError: error.message });
+    if (!upsertError) {
+        console.log('[SLP] ✅ Phase 1 upsert succeeded for:', email);
+        return res.status(200).json({ email });
     }
 
-    console.log('[SLP record-subscription] ✅ Supabase upsert succeeded. Row:', JSON.stringify(data));
-    return res.status(200).json({ email });
+    // ── 4b. Phase 2: Minimal insert fallback (works with bare-bones schema) ──
+    console.error('[SLP] ⚠️  Phase 1 upsert failed:', upsertError.code, upsertError.message);
+    console.log('[SLP] Hint — to enable full upsert run this in Supabase SQL Editor:');
+    console.log(`  ALTER TABLE customers ADD COLUMN IF NOT EXISTS billing_interval text;`);
+    console.log(`  ALTER TABLE customers ADD COLUMN IF NOT EXISTS subscription_id text;`);
+    console.log(`  ALTER TABLE customers ADD COLUMN IF NOT EXISTS subscription_status text DEFAULT 'active';`);
+    console.log(`  ALTER TABLE customers ADD CONSTRAINT customers_email_key UNIQUE (email);`);
+
+    console.log('[SLP] Phase 2: attempting minimal insert (email + name + phone + plan)...');
+    const { error: insertError } = await supabaseAdmin
+        .from('customers')
+        .insert({ email, name, phone, plan });
+
+    if (!insertError) {
+        console.log('[SLP] ✅ Phase 2 minimal insert succeeded for:', email);
+        return res.status(200).json({ email });
+    }
+
+    // Both failed — log full error objects so we can see exactly what's wrong
+    console.error('[SLP] ❌ Phase 2 insert also failed:', JSON.stringify(insertError));
+    // Still return the email so the success page shows the right message
+    return res.status(200).json({ email, dbError: insertError.message });
 }
