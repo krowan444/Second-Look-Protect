@@ -630,17 +630,19 @@ export default function App() {
             title="The digital world is changing — and that's OK."
           />
 
-          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase text-center mb-6">
-            A calm perspective on modern scams
-          </p>
+          <div className="max-w-2xl mx-auto text-center">
+            <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-6">
+              A calm perspective on modern scams
+            </p>
 
-          <p className="text-slate-600 text-base leading-relaxed mb-5 text-center">
-            Technology — including AI — is evolving rapidly. While this brings many benefits, it also means scam techniques are becoming more convincing and harder to recognise.
-          </p>
+            <p className="text-slate-600 text-base leading-relaxed mb-5">
+              Technology — including AI — is evolving rapidly. While this brings many benefits, it also means scam techniques are becoming more convincing and harder to recognise.
+            </p>
 
-          <p className="text-slate-600 text-base leading-relaxed mb-10 text-center">
-            You shouldn't need to be a technology expert to stay safe online. Second Look Protect provides a clear, calm second opinion whenever something feels uncertain.
-          </p>
+            <p className="text-slate-600 text-base leading-relaxed mb-10">
+              You shouldn't need to be a technology expert to stay safe online. Second Look Protect provides a clear, calm second opinion whenever something feels uncertain.
+            </p>
+          </div>
 
           <div className="bg-white border border-slate-100 rounded-xl p-8 md:p-10 shadow-sm">
             <h3 className="text-[#0B1E36] text-lg font-semibold mb-4">
