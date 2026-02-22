@@ -629,8 +629,9 @@ export default function App() {
           title="The digital world is changing — and that's OK."
         />
 
-        <div className="max-w-[780px] mx-auto text-center mb-10">
-          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-6">
+        {/* Sub-label + paragraphs — constrained to ~65 char line length */}
+        <div className="max-w-[640px] mx-auto text-center mt-10 mb-14">
+          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-5">
             A calm perspective on modern scams
           </p>
 
@@ -643,14 +644,15 @@ export default function App() {
           </p>
         </div>
 
-        <div className="max-w-3xl mx-auto bg-white border border-slate-100 rounded-xl p-8 md:p-10 shadow-sm">
-          <h3 className="text-[#0B1E36] text-lg font-semibold mb-4">
+        {/* Card — centered, left-aligned text inside for readability */}
+        <div className="max-w-3xl mx-auto bg-white border border-slate-100 rounded-xl p-8 md:p-12 shadow-sm">
+          <h3 className="text-[#0B1E36] text-lg font-semibold mb-5">
             Why is online safety becoming more challenging?
           </h3>
           <p className="text-slate-600 text-base leading-relaxed mb-4">
             Technology and AI tools are evolving quickly. Unfortunately, this means scammers can create more convincing messages, emails, and fake content than ever before.
           </p>
-          <p className="text-slate-600 text-base leading-relaxed mb-6">
+          <p className="text-slate-600 text-base leading-relaxed mb-8">
             Having a trusted second opinion helps you stay confident without needing to understand all the technical details.
           </p>
           <p className="text-slate-400 text-sm italic">
