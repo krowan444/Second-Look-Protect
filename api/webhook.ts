@@ -24,8 +24,8 @@ const PRICE_PLAN_MAP: Record<string, { planName: string; invoiceTemplate: string
     'price_1T3ZJNFkPVozTYrkkl2f8f3S': { planName: 'Basic Shield', invoiceTemplate: 'BASIC_SHIELD_TEMPLATE' },
     'price_1T3ZKgFkPVozTYrkBwyLcgI4': { planName: 'The Guardian', invoiceTemplate: 'GUARDIAN_TEMPLATE' },
     'price_1T3ZKgFkPVozTYrkAK8GaG9P': { planName: 'The Guardian', invoiceTemplate: 'GUARDIAN_TEMPLATE' },
-    'price_1T3ZLcFkPVozTYrkO7bi1GWS': { planName: 'Family Fortress', invoiceTemplate: 'FAMILY_SHIELD_TEMPLATE' },
-    'price_1T3ZLcFkPVozTYrktYp5NSYT': { planName: 'Family Fortress', invoiceTemplate: 'FAMILY_SHIELD_TEMPLATE' },
+    'price_1T3ZLcFkPVozTYrkO7bi1GWS': { planName: 'Family Shield', invoiceTemplate: 'FAMILY_SHIELD_TEMPLATE' },
+    'price_1T3ZLcFkPVozTYrktYp5NSYT': { planName: 'Family Shield', invoiceTemplate: 'FAMILY_SHIELD_TEMPLATE' },
 };
 
 // ── Invoice Template IDs (Stripe Rendering Templates) ─────────────────────

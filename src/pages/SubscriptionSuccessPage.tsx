@@ -27,19 +27,19 @@ const PLAN_PERKS: Record<string, { title: string; items: string[] }> = {
             'Priority 12-Hour Response',
         ],
     },
-    'Family Fortress': {
-        title: 'Your Family Fortress Pack is on its way:',
+    'Family Shield': {
+        title: 'Your Family Shield Pack is on its way:',
         items: [
-            'Full Guardian Pack for up to 5 family members',
-            'Scam Scenario Flash Cards — practice spotting threats together',
-            'Unlimited Personal Reviews per month',
-            'Priority 6-Hour Response',
-            'Dedicated Family Risk Dashboard summary',
+            'Protection for up to 5 family members',
+            '5× Physical Guardian Kits — Fridge Magnets, Wallet Cards & Stickers for every member',
+            'Exclusive Scam Scenario Flash Cards for the whole family',
+            'Shared Guardian Risk Summary dashboard',
+            'Priority 24-Hour Reassurance Response',
         ],
     },
 };
 
-const PHYSICAL_PLANS = ['The Guardian', 'Family Fortress'];
+const PHYSICAL_PLANS = ['The Guardian', 'Family Shield'];
 
 export default function SubscriptionSuccessPage({ onGoHome }: Props) {
     const [email, setEmail] = useState<string | null>(null);
