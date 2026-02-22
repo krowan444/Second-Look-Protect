@@ -222,8 +222,6 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                     message: messageText,
                     image_url: publicImageUrl,
                     status: 'new',
-                    consent_confirmed: true,
-                    consent_confirmed_at: new Date().toISOString(),
                 });
 
             if (insertError) {
@@ -609,7 +607,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                         </label>
                         {consentError && (
                             <p id="consent-error" role="alert" className="mt-2 ml-7 text-red-600 text-xs">
-                                Please confirm before submitting.
+                                Please confirm you understand how your information will be used.
                             </p>
                         )}
                     </div>
