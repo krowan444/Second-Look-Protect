@@ -130,7 +130,7 @@ const FAQ_GROUPS: FAQGroup[] = [
             },
             {
                 question: 'How is this different from my bank\'s fraud team?',
-                answer: 'Banks often step in after money has moved. We help before you act &mdash; reviewing suspicious messages, links, and invoices in advance so you can avoid the problem entirely.',
+                answer: 'Banks often step in after money has moved. We help before you act — reviewing suspicious messages, links, and invoices in advance so you can avoid the problem entirely.',
             },
             {
                 question: 'Why are scams harder to spot now?',
@@ -144,7 +144,7 @@ const FAQ_GROUPS: FAQGroup[] = [
                             <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">→</span>Copy trusted brand websites</li>
                             <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">→</span>Create urgency to pressure quick decisions</li>
                         </ul>
-                        <p>They are designed to catch people in the moment &mdash; not because they lack intelligence, but because they are busy or under pressure.</p>
+                        <p>They are designed to catch people in the moment — not because they lack intelligence, but because they are busy or under pressure.</p>
                     </>
                 ),
             },
