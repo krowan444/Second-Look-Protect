@@ -139,17 +139,17 @@ const TESTIMONIALS = [
   {
     quote: 'I received a text from what looked exactly like my bank asking me to authorise a payment. I forwarded a screenshot to Second Look Protect, and within three minutes they confirmed it was a scam. They saved me £2,000.',
     author: 'Margaret T.',
-    location: 'London',
+    location: 'Kingsthorpe',
   },
   {
     quote: 'I set up the Family Shield for my elderly parents. It gives me such peace of mind knowing they have real experts to check things with before clicking any link. Worth every penny.',
     author: 'David S.',
-    location: 'Manchester',
+    location: 'Duston',
   },
   {
     quote: 'The service is incredibly fast and straightforward. I forward suspicious emails and they reply almost instantly. It is like having a cybersecurity expert in your pocket, without any of the jargon.',
     author: 'Helen R.',
-    location: 'Bristol',
+    location: 'Abington',
   },
 ];
 
