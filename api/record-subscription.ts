@@ -90,7 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!upsertError) {
         console.log('[SLP] ✅ Phase 1 upsert succeeded for:', email);
-        return res.status(200).json({ email });
+        return res.status(200).json({ email, plan, billingInterval });
     }
 
     // ── 4b. Phase 2: Minimal insert fallback (works with bare-bones schema) ──
@@ -108,11 +108,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!insertError) {
         console.log('[SLP] ✅ Phase 2 minimal insert succeeded for:', email);
-        return res.status(200).json({ email });
+        return res.status(200).json({ email, plan, billingInterval });
     }
 
     // Both failed — log full error objects so we can see exactly what's wrong
     console.error('[SLP] ❌ Phase 2 insert also failed:', JSON.stringify(insertError));
-    // Still return the email so the success page shows the right message
-    return res.status(200).json({ email, dbError: insertError.message });
+    return res.status(200).json({ email, plan, billingInterval, dbError: insertError.message });
 }
