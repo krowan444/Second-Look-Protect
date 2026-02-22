@@ -715,12 +715,12 @@ export default function App() {
           ))}
         </div>
 
-        <div className="mt-10 text-center space-y-2">
-          <p className="text-slate-400 text-sm">
+        <div className="mt-10 mx-auto max-w-lg text-center space-y-2">
+          <p className="text-slate-400 text-sm text-center">
             Simple cancellations: Just email us to stop your subscription at any time.
           </p>
-          <p className="text-slate-500 text-xs">
-            All plans include a 14-day free trial. · Prices shown in GBP.
+          <p className="text-slate-500 text-xs text-center">
+            All plans include a 14-day free trial. · Prices shown in GBP.
           </p>
         </div>
 
