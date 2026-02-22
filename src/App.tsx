@@ -13,7 +13,7 @@ import { SupportPage } from './pages/SupportPage';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import {
   Shield, CheckCircle, Search, Lock, AlertTriangle,
-  Phone, Star, ArrowRight,
+  Phone, Star, ArrowRight, Users,
 } from 'lucide-react';
 
 /* ─── Data ─────────────────────────────────────────────────────────────── */
@@ -725,7 +725,7 @@ export default function App() {
         </div>
 
         {/* Core System strip */}
-        <div className="mt-20 pt-16 border-t border-white/10 grid md:grid-cols-3 gap-10">
+        <div className="mt-20 pt-16 border-t border-white/10 grid md:grid-cols-2 lg:grid-cols-4 gap-10">
 
           {/* Forward-to-Check */}
           <div>
@@ -791,6 +791,17 @@ export default function App() {
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* Peace of Mind */}
+          <div>
+            <h4 className="text-white text-base font-semibold mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
+              Peace of mind for you — and the people who care about you
+            </h4>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Families and loved ones know there's always a calm, trusted second opinion available when something doesn't feel right. Support without judgement — for you and the people who care about you.
+            </p>
           </div>
 
         </div>
