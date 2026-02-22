@@ -50,6 +50,14 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
         city?: string | null; postal_code?: string | null; country?: string | null;
     } | null>(null);
 
+    // Sticker claim form state (Basic Shield only)
+    const [stickerLine1, setStickerLine1] = useState('');
+    const [stickerCity, setStickerCity] = useState('');
+    const [stickerPostcode, setStickerPostcode] = useState('');
+    const [stickerSaving, setStickerSaving] = useState(false);
+    const [stickerDone, setStickerDone] = useState(false);
+    const [stickerError, setStickerError] = useState<string | null>(null);
+
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const sessionId = params.get('session_id');
@@ -69,6 +77,34 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
     const perks = plan ? PLAN_PERKS[plan] : null;
     const hasPhysical = plan ? PHYSICAL_PLANS.includes(plan) : false;
     const intervalLabel = billingInterval === 'yearly' ? 'annual' : 'monthly';
+
+    const handleStickerSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!email) return;
+        setStickerSaving(true);
+        setStickerError(null);
+        try {
+            const res = await fetch('/api/update-shipping', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    line1: stickerLine1.trim(),
+                    city: stickerCity.trim(),
+                    postalCode: stickerPostcode.trim(),
+                }),
+            });
+            if (!res.ok) {
+                const d = await res.json();
+                throw new Error(d.error ?? 'Save failed');
+            }
+            setStickerDone(true);
+        } catch (err) {
+            setStickerError(err instanceof Error ? err.message : 'Something went wrong');
+        } finally {
+            setStickerSaving(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#0B1E36] flex flex-col items-center justify-center px-4 py-16 text-center">
@@ -153,6 +189,80 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
                     )}
                 </div>
             )}
+            {/* Sticker claim form — Basic Shield only */}
+            {plan === 'Basic Shield' && email && (
+                <div className="w-full max-w-md mb-8 bg-white/5 rounded-xl p-6 text-left ring-1 ring-white/10">
+                    {stickerDone ? (
+                        <div className="flex items-start gap-3 text-emerald-400">
+                            <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
+                            <p className="text-sm font-medium">
+                                Thank you! Your sticker will be sent to this address.
+                            </p>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleStickerSubmit} noValidate>
+                            <p className="text-slate-200 font-semibold mb-4 flex items-center gap-2">
+                                <Package className="w-4 h-4 text-[#C9A84C]" aria-hidden="true" />
+                                Claim Your Shield Sticker
+                            </p>
+                            <p className="text-slate-400 text-xs mb-4">
+                                Enter your UK address and we'll post your free Shield Sticker within 3–5 working days.
+                            </p>
+
+                            <div className="space-y-3">
+                                <div>
+                                    <label htmlFor="sticker-line1" className="block text-xs text-slate-400 mb-1">Address Line 1</label>
+                                    <input
+                                        id="sticker-line1"
+                                        type="text"
+                                        required
+                                        value={stickerLine1}
+                                        onChange={(e) => setStickerLine1(e.target.value)}
+                                        placeholder="12 High Street"
+                                        className="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/60"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="sticker-city" className="block text-xs text-slate-400 mb-1">Town / City</label>
+                                    <input
+                                        id="sticker-city"
+                                        type="text"
+                                        required
+                                        value={stickerCity}
+                                        onChange={(e) => setStickerCity(e.target.value)}
+                                        placeholder="London"
+                                        className="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/60"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="sticker-postcode" className="block text-xs text-slate-400 mb-1">Postcode</label>
+                                    <input
+                                        id="sticker-postcode"
+                                        type="text"
+                                        required
+                                        value={stickerPostcode}
+                                        onChange={(e) => setStickerPostcode(e.target.value)}
+                                        placeholder="SW1A 1AA"
+                                        className="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/60"
+                                    />
+                                </div>
+                            </div>
+
+                            {stickerError && (
+                                <p className="mt-3 text-xs text-red-400">{stickerError}</p>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={stickerSaving || !stickerLine1 || !stickerCity || !stickerPostcode}
+                                className="mt-4 w-full py-2.5 rounded-lg bg-[#C9A84C] text-[#0B1E36] font-semibold text-sm hover:bg-[#D9BC78] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {stickerSaving ? 'Saving…' : 'Confirm Delivery'}
+                            </button>
+                        </form>
+                    )}
+                </div>
+            )}
 
             <p className="text-slate-400 text-sm max-w-sm mb-6 leading-relaxed">
                 If you spot anything suspicious, forward it to our team straight away —
@@ -178,6 +288,6 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
                 <Home className="w-4 h-4" aria-hidden="true" />
                 Return to Home
             </button>
-        </div>
+        </div >
     );
 }
