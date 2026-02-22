@@ -8,6 +8,8 @@ import { PricingCard } from './components/PricingCard';
 import { FAQAccordion } from './components/FAQAccordion';
 import { GetProtectionPage } from './pages/GetProtectionPage';
 import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
+import { SupportPage } from './pages/SupportPage';
 import {
   Shield, CheckCircle, Search, Lock, AlertTriangle,
   Phone, Star, ArrowRight,
@@ -202,14 +204,16 @@ function scrollToSection(id: string) {
 
 export default function App() {
   // Initialise page from URL so /subscription-success works on direct load / Stripe redirect
-  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' {
+  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' {
     const path = window.location.pathname;
     if (path.startsWith('/subscription-success')) return 'subscription-success';
     if (path.startsWith('/get-protection')) return 'get-protection';
+    if (path.startsWith('/privacy-policy')) return 'privacy-policy';
+    if (path.startsWith('/support')) return 'support';
     return 'home';
   }
 
-  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success'>(getInitialPage);
+  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support'>(getInitialPage);
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
@@ -291,6 +295,32 @@ export default function App() {
     return (
       <GetProtectionPage
         onBack={() => {
+          setPage('home');
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }}
+      />
+    );
+  }
+
+  // ── Early return: Privacy Policy page ───────────────────────────────────
+  if (page === 'privacy-policy') {
+    return (
+      <PrivacyPolicyPage
+        onBack={() => {
+          window.history.replaceState(null, '', '/');
+          setPage('home');
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }}
+      />
+    );
+  }
+
+  // ── Early return: Support page ──────────────────────────────────────────
+  if (page === 'support') {
+    return (
+      <SupportPage
+        onBack={() => {
+          window.history.replaceState(null, '', '/');
           setPage('home');
           window.scrollTo({ top: 0, behavior: 'instant' });
         }}
@@ -942,6 +972,15 @@ export default function App() {
                     </a>
                   </li>
                 ))}
+                <li>
+                  <a
+                    href="/support"
+                    onClick={(e) => { e.preventDefault(); window.history.pushState(null, '', '/support'); setPage('support'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                    className="hover:text-white transition-colors duration-200"
+                  >
+                    Support
+                  </a>
+                </li>
               </ul>
             </nav>
 
@@ -949,7 +988,16 @@ export default function App() {
             <nav aria-label="Legal links">
               <h4 className="text-white font-semibold text-base mb-5">Legal</h4>
               <ul className="space-y-3 text-base">
-                {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map((l) => (
+                <li>
+                  <a
+                    href="/privacy-policy"
+                    onClick={(e) => { e.preventDefault(); window.history.pushState(null, '', '/privacy-policy'); setPage('privacy-policy'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                    className="hover:text-white transition-colors duration-200"
+                  >
+                    Privacy Policy
+                  </a>
+                </li>
+                {['Terms of Service', 'Cookie Policy'].map((l) => (
                   <li key={l}>
                     <a href="#" className="hover:text-white transition-colors duration-200">{l}</a>
                   </li>
