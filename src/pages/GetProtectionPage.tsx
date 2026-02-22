@@ -199,7 +199,6 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                 .insert({
                     id: submissionId,
                     message: messageValue,
-                    image_path: imagePath,
                     image_url: imageUrl,
                     status: 'new',
                 });
