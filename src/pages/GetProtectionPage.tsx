@@ -118,6 +118,10 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
+    // Consent checkbox
+    const [consentChecked, setConsentChecked] = useState(false);
+    const [consentError, setConsentError] = useState(false);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Click tracking
@@ -160,6 +164,11 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
     /* ── Supabase submit handler ─────────────────────────────────────────── */
 
     async function handleSubmit() {
+        if (!consentChecked) {
+            setConsentError(true);
+            return;
+        }
+        setConsentError(false);
         setSubmitError(null);
         setIsSubmitting(true);
 
@@ -213,6 +222,8 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                     message: messageText,
                     image_url: publicImageUrl,
                     status: 'new',
+                    consent_confirmed: true,
+                    consent_confirmed_at: new Date().toISOString(),
                 });
 
             if (insertError) {
@@ -241,6 +252,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
             : selectedOption === 'contact' ? contactValue.trim().length > 0
                 : false;
     const canSubmit = !isSubmitting
+        && consentChecked
         && typeSpecificReady
         && nameValue.trim().length > 0
         && emailValue.trim().length > 0
@@ -568,6 +580,38 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                                 className={inputCls + ' resize-none'}
                             />
                         </div>
+                    </div>
+
+                    {/* ── Privacy consent checkbox ── */}
+                    <div className="mb-4">
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                                id="consent-checkbox"
+                                type="checkbox"
+                                checked={consentChecked}
+                                onChange={(e) => { setConsentChecked(e.target.checked); if (e.target.checked) setConsentError(false); }}
+                                className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-slate-300 accent-[#C9A84C] cursor-pointer"
+                                aria-required="true"
+                                aria-describedby={consentError ? 'consent-error' : undefined}
+                            />
+                            <span className="text-slate-600 text-sm leading-relaxed">
+                                I understand my information will be used to review my enquiry in line with the{' '}
+                                <a
+                                    href="/privacy-policy"
+                                    className="text-[#A8853C] underline underline-offset-2 hover:text-[#C9A84C] transition-colors"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    Privacy Policy
+                                </a>
+                                .
+                            </span>
+                        </label>
+                        {consentError && (
+                            <p id="consent-error" role="alert" className="mt-2 ml-7 text-red-600 text-xs">
+                                Please confirm before submitting.
+                            </p>
+                        )}
                     </div>
 
                     {/* ── Error message ── */}
