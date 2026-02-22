@@ -18,13 +18,13 @@ const PLAN_PERKS: Record<string, { title: string; items: string[] }> = {
         ],
     },
     'The Guardian': {
-        title: 'Your Guardian Pack is on its way:',
+        title: '',   // header removed per design update
         items: [
-            'Premium Fridge Magnet — quick-access scam warning guide',
-            '2× Wallet Cards — carry your protection everywhere',
-            'Phone Stickers — instant reminder on your device',
-            'Up to 15 Personal Reviews per month',
-            'Priority 12-Hour Response',
+            'Up to 15 Personal Reviews per month — professional scam checks whenever you need them.',
+            'Priority 12-Hour Reassurance Response — fast-track support for your peace of mind.',
+            'Premium Fridge Magnet — a quick-access physical guide to scam warning signs.',
+            '2× Wallet Cards & Phone Stickers — keep your protection visible on every device.',
+            'Guardian Risk Summary — a detailed monthly breakdown for your records.',
         ],
     },
     'Family Shield': {
@@ -149,13 +149,15 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
             {/* Plan-specific perks */}
             {perks && (
                 <div className="w-full max-w-md mb-8 bg-white/5 rounded-xl p-6 text-left ring-1 ring-white/10">
-                    <p className="text-slate-200 font-semibold mb-4 flex items-center gap-2">
-                        {hasPhysical
-                            ? <Package className="w-4 h-4 text-[#C9A84C]" aria-hidden="true" />
-                            : <Star className="w-4 h-4 text-[#C9A84C]" aria-hidden="true" />
-                        }
-                        {perks.title}
-                    </p>
+                    {perks.title && (
+                        <p className="text-slate-200 font-semibold mb-4 flex items-center gap-2">
+                            {hasPhysical
+                                ? <Package className="w-4 h-4 text-[#C9A84C]" aria-hidden="true" />
+                                : <Star className="w-4 h-4 text-[#C9A84C]" aria-hidden="true" />
+                            }
+                            {perks.title}
+                        </p>
+                    )}
                     <ul className="space-y-2">
                         {perks.items.map((item) => (
                             <li key={item} className="flex items-start gap-2 text-slate-300 text-sm">
