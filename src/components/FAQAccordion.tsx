@@ -143,6 +143,15 @@ const FAQ_GROUPS: FAQGroup[] = [
                 ),
             },
             {
+                question: 'Is this helpful for family members or carers too?',
+                answer: (
+                    <>
+                        <p className="mb-3">Yes. Many families and carers use Second Look Protect to feel reassured that their loved one has a safe, independent place to check messages, emails, or online situations.</p>
+                        <p>It helps reduce worry while supporting confidence, independence, and peace of mind for everyone involved.</p>
+                    </>
+                ),
+            },
+            {
                 question: 'Why are scams harder to spot now?',
                 answer: (
                     <>
