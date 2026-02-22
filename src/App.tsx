@@ -17,7 +17,12 @@ import {
 const PRICING_PLANS = [
   {
     name: 'Basic Shield',
-    price: '£9.99',
+    monthlyPrice: '£9.99',
+    yearlyPrice: '£8.32',   // per month equivalent
+    yearlyTotal: '£99.90', // billed annually (saves 2 months)
+    // ── Replace these with your real Stripe Price IDs ──
+    monthlyPriceId: 'price_BASIC_MONTHLY_PLACEHOLDER',
+    yearlyPriceId: 'price_BASIC_YEARLY_PLACEHOLDER',
     tagline: 'Simple, steady reassurance when you need it.',
     description: 'For independent individuals who want a trusted second opinion before they act.',
     featureGroups: [
@@ -28,7 +33,7 @@ const PRICING_PLANS = [
           '24-Hour Reassurance Response',
           'Clear Risk Assessment (Low / Medium / High)',
           'Guardian Risk Summary for your records',
-          'The Recovery Blueprint – step-by-step guidance if you’ve already clicked',
+          'The Recovery Blueprint – step-by-step guidance if you\'ve already clicked',
         ],
       },
       {
@@ -41,7 +46,7 @@ const PRICING_PLANS = [
       {
         groupTitle: 'Physical Protection Kit',
         items: [
-          '1x Phone-Side “Pause & Check” Sticker',
+          '1x Phone-Side "Pause & Check" Sticker',
           '1x Wallet Emergency Card',
         ],
       },
@@ -51,7 +56,11 @@ const PRICING_PLANS = [
   },
   {
     name: 'The Guardian',
-    price: '£19.99',
+    monthlyPrice: '£19.99',
+    yearlyPrice: '£16.65',
+    yearlyTotal: '£199.90',
+    monthlyPriceId: 'price_GUARDIAN_MONTHLY_PLACEHOLDER',
+    yearlyPriceId: 'price_GUARDIAN_YEARLY_PLACEHOLDER',
     tagline: 'Confident protection for you and someone you care about.',
     description: 'Our most popular plan. Faster response, broader coverage, and proactive safety tools.',
     featureGroups: [
@@ -79,7 +88,7 @@ const PRICING_PLANS = [
           'Premium Fridge Magnet',
           '2x Wallet Cards',
           '2x Phone Reminder Stickers',
-          'A5 “Top Scam Red Flags” Desktop Guide',
+          'A5 "Top Scam Red Flags" Desktop Guide',
         ],
       },
     ],
@@ -88,7 +97,11 @@ const PRICING_PLANS = [
   },
   {
     name: 'Family Shield',
-    price: '£34.99',
+    monthlyPrice: '£34.99',
+    yearlyPrice: '£29.15',
+    yearlyTotal: '£349.90',
+    monthlyPriceId: 'price_FAMILY_MONTHLY_PLACEHOLDER',
+    yearlyPriceId: 'price_FAMILY_YEARLY_PLACEHOLDER',
     tagline: 'Complete household protection and accountability.',
     description: 'Designed for families protecting elderly parents or multiple loved ones.',
     featureGroups: [
@@ -97,7 +110,7 @@ const PRICING_PLANS = [
         items: [
           'Unlimited Reviews (Fair Use Policy)',
           'Same-Day Priority Handling',
-          'Emergency “Human-Line” Call-Back Window',
+          'Emergency "Human-Line" Call-Back Window',
           'Coverage for Up to 5 Family Members',
           'Annual 1-on-1 Digital Health Review',
         ],
@@ -105,7 +118,7 @@ const PRICING_PLANS = [
       {
         groupTitle: 'Family Accountability',
         items: [
-          'Monthly “Peace of Mind” Summary sent to Family Lead',
+          'Monthly "Peace of Mind" Summary sent to Family Lead',
           'Shared Submission Access',
         ],
       },
@@ -192,6 +205,36 @@ function scrollToSection(id: string) {
 
 export default function App() {
   const [page, setPage] = useState<'home' | 'get-protection'>('home');
+  const [isYearly, setIsYearly] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  async function handleSubscribe(priceId: string) {
+    if (loadingPlan) return; // prevent double-click
+    setLoadingPlan(priceId);
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId,
+          planName: PRICING_PLANS.find(
+            (p) => p.monthlyPriceId === priceId || p.yearlyPriceId === priceId
+          )?.name ?? '',
+        }),
+      });
+      const data = await res.json() as { url?: string; error?: string };
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(`Subscription error: ${data.error ?? 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('[SLP] Subscribe error:', err);
+      alert('Could not start checkout. Please try again.');
+    } finally {
+      setLoadingPlan(null);
+    }
+  }
 
   function handleGetProtection() {
     trackEvent('hero_cta_click', { button: 'get_protection' });
@@ -489,18 +532,56 @@ export default function App() {
           light
         />
 
+        {/* Monthly / Yearly toggle */}
+        <div className="flex items-center justify-center gap-4 mb-10" role="group" aria-label="Billing period">
+          <span className={`text-sm font-medium transition-colors ${!isYearly ? 'text-white' : 'text-slate-400'}`}>
+            Monthly
+          </span>
+          <button
+            onClick={() => setIsYearly((v) => !v)}
+            aria-pressed={isYearly}
+            aria-label={isYearly ? 'Switch to monthly billing' : 'Switch to yearly billing'}
+            className={[
+              'relative w-14 h-7 rounded-full transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C]',
+              isYearly ? 'bg-[#C9A84C]' : 'bg-white/20',
+            ].join(' ')}
+          >
+            <span
+              className={[
+                'absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-300',
+                isYearly ? 'translate-x-7' : 'translate-x-0',
+              ].join(' ')}
+            />
+          </button>
+          <span className={`text-sm font-medium transition-colors ${isYearly ? 'text-white' : 'text-slate-400'}`}>
+            Yearly
+            <span className="ml-1.5 text-xs font-semibold text-[#C9A84C] bg-[#C9A84C]/15 px-2 py-0.5 rounded-md">
+              Save 2 months
+            </span>
+          </span>
+        </div>
+
         <div className="grid md:grid-cols-3 gap-6 items-start">
           {PRICING_PLANS.map((plan) => (
             <div key={plan.name}>
-              <PricingCard {...plan} />
+              <PricingCard
+                {...plan}
+                isYearly={isYearly}
+                isLoading={loadingPlan === (isYearly ? plan.yearlyPriceId : plan.monthlyPriceId)}
+                onSubscribe={handleSubscribe}
+              />
             </div>
           ))}
         </div>
 
-        <p className="text-center text-slate-400 text-sm mt-10">
-          All plans include a 14-day free trial. Cancel at any time from your account.
-          &nbsp;·&nbsp; Save 2 months when paying annually.
-        </p>
+        <div className="mt-10 text-center space-y-2">
+          <p className="text-slate-400 text-sm">
+            Simple cancellations: Just email us to stop your subscription at any time.
+          </p>
+          <p className="text-slate-500 text-xs">
+            All plans include a 14-day free trial. · Prices shown in GBP.
+          </p>
+        </div>
 
         {/* Core System strip */}
         <div className="mt-20 pt-16 border-t border-white/10 grid md:grid-cols-3 gap-10">
