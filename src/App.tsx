@@ -655,7 +655,7 @@ export default function App() {
               <div className="h-px w-16 bg-[#C9A84C]/40" aria-hidden="true" />
             </div>
 
-            <footer>
+            <footer className="text-center">
               <p className="font-semibold text-[#0B1E36] text-base tracking-wide">Kieran Rowan</p>
               <p className="text-slate-500 text-sm mt-1">Founder, Second Look Protect</p>
             </footer>
