@@ -526,9 +526,9 @@ export default function App() {
             <div className="w-12 h-12 bg-[#C9A84C]/15 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
               <Shield className="w-6 h-6 text-[#C9A84C]" />
             </div>
-            <h3 className="text-white mb-3">The Solution</h3>
-            <p className="text-slate-300 text-base leading-relaxed">
-              Pause. Do not click. Do not pay. Send it to us instead. Our experts analyse the request and give you a clear verdict — Safe or Scam.
+            <h3 className="text-white mb-3">The Second Look Solution</h3>
+            <p className="text-slate-200 text-base leading-relaxed">
+              Pause. Before you click or pay — get a second look. Send it to us instead. Our experts analyse the request and give you a clear verdict — Safe or Scam.
             </p>
           </div>
         </div>
