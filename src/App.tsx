@@ -628,8 +628,15 @@ export default function App() {
         <div className="max-w-3xl mx-auto">
           <SectionHeading
             title="The digital world is changing — and that's OK."
-            subtitle="Technology — including AI — is advancing faster than ever. While this brings many benefits, it also means scam techniques are becoming more convincing and harder to recognise."
           />
+
+          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase text-center mb-6">
+            A calm perspective on modern scams
+          </p>
+
+          <p className="text-slate-600 text-base leading-relaxed mb-5 text-center">
+            Technology — including AI — is evolving rapidly. While this brings many benefits, it also means scam techniques are becoming more convincing and harder to recognise.
+          </p>
 
           <p className="text-slate-600 text-base leading-relaxed mb-10 text-center">
             You shouldn't need to be a technology expert to stay safe online. Second Look Protect provides a clear, calm second opinion whenever something feels uncertain.
