@@ -183,12 +183,15 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                 }
 
                 // ── STEP 2: Get the public URL for that specific file ──────────
+                // getPublicUrl returns a direct HTTPS link ending in the original
+                // filename (e.g. …/submissions/uuid/1234567890-photo.jpg).
+                // It is always a plain text string — no signing, no expiry.
                 const { data: urlData } = supabase.storage
                     .from('SUBMISSIONS')
                     .getPublicUrl(storageKey);
 
-                publicImageUrl = urlData.publicUrl;
-                console.log('[SLP] Step 2 — Public image URL captured:', publicImageUrl);
+                publicImageUrl = String(urlData.publicUrl).trim(); // explicit text string
+                console.log('[SLP] Step 2 — Public image URL:', publicImageUrl);
             }
 
             // ── STEP 3: Build the message field ────────────────────────────────
