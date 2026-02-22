@@ -57,6 +57,26 @@ const FAQ_GROUPS: FAQGroup[] = [
         category: 'Trust & Safety',
         items: [
             {
+                question: 'Will Second Look Protect ever ask for my passwords or bank details?',
+                answer: (
+                    <>
+                        <p className="mb-3">
+                            <strong>Important:</strong> Second Look Protect will never ask for your passwords, one-time passcodes (OTPs), full banking details, or ask you to move money. We will never pressure you to act urgently.
+                        </p>
+                        <p>
+                            If someone claims to be us and asks for sensitive information, stop immediately and contact us directly via our official website or email at{' '}
+                            <a
+                                href="mailto:hello@secondlookprotect.co.uk"
+                                className="text-[#A8853C] underline underline-offset-2 hover:text-[#C9A84C] transition-colors"
+                            >
+                                hello@secondlookprotect.co.uk
+                            </a>
+                            .
+                        </p>
+                    </>
+                ),
+            },
+            {
                 question: 'Is my information kept private?',
                 answer: 'Yes. Anything you send for review is treated confidentially and used solely for assessment purposes. We never sell or share your information.',
             },

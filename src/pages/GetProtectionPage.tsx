@@ -360,6 +360,10 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                                 Continue <ChevronRight className="w-5 h-5" />
                             </Button>
                             <p className="text-center text-slate-400 text-xs">Your submission is treated with full confidentiality.</p>
+                            <p className="text-center text-slate-400 text-xs leading-relaxed">
+                                We will never ask for passwords, OTPs, full banking details, or ask you to move money. If unsure, contact us directly via our official website or{' '}
+                                <a href="mailto:hello@secondlookprotect.co.uk" className="underline underline-offset-1 hover:text-slate-600 transition-colors">hello@secondlookprotect.co.uk</a>.
+                            </p>
                         </div>
                         <div className="mt-10 pt-8 border-t border-slate-200 flex flex-wrap justify-center gap-6 text-slate-400 text-xs">
                             <span>✓ ICO Registered</span>
@@ -594,6 +598,10 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             {isSubmitting ? 'Submitting…' : 'Submit for Review'}
                         </Button>
                         <p className="text-center text-slate-400 text-xs">Your submission is treated with full confidentiality.</p>
+                        <p className="text-center text-slate-400 text-xs leading-relaxed">
+                            We will never ask for passwords, OTPs, full banking details, or ask you to move money. If unsure, contact us directly via our official website or{' '}
+                            <a href="mailto:hello@secondlookprotect.co.uk" className="underline underline-offset-1 hover:text-slate-600 transition-colors">hello@secondlookprotect.co.uk</a>.
+                        </p>
                     </div>
 
                     <div className="mt-10 pt-8 border-t border-slate-200 flex flex-wrap justify-center gap-6 text-slate-400 text-xs">
