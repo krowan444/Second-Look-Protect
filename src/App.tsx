@@ -605,15 +605,16 @@ export default function App() {
           <Button variant="primary" size="lg" className="inline-flex" as="a" href="#pricing">
             View Our Plans <ArrowRight className="w-5 h-5" aria-hidden="true" />
           </Button>
-          <p className="mt-5 text-slate-500 text-sm">
-            Questions?{' '}
+          <div className="mt-4 flex flex-col items-center gap-0.5">
+            <p className="text-slate-400 text-xs tracking-wide">Questions? Speak directly with us:</p>
             <a
               href="mailto:hello@secondlookprotect.co.uk"
-              className="text-[#A8853C] hover:text-[#C9A84C] transition-colors duration-200 font-medium"
+              className="text-[#A8853C] hover:text-[#C9A84C] transition-colors duration-200 font-medium text-sm"
+              aria-label="Email hello@secondlookprotect.co.uk"
             >
-              Email hello@secondlookprotect.co.uk
+              hello@secondlookprotect.co.uk
             </a>
-          </p>
+          </div>
         </div>
       </SectionWrapper>
 
