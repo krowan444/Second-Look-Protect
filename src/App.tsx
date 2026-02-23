@@ -475,8 +475,8 @@ export default function App() {
               </p>
 
               {/* Care environment trust badge */}
-              <div className="mt-4 flex justify-center">
-                <span className="inline-flex items-center gap-2 bg-[#C9A84C]/10 border border-[#C9A84C]/25 text-[#0B1E36] text-xs font-medium px-4 py-1.5 rounded-full">
+              <div className="mt-4">
+                <span className="inline-flex items-center gap-2 bg-[#C9A84C]/15 border border-[#C9A84C]/50 text-slate-200 text-xs font-medium px-4 py-1.5 rounded-full shadow-sm">
                   <Shield className="w-3.5 h-3.5 text-[#C9A84C] shrink-0" aria-hidden="true" />
                   Suitable for care environments &amp; safeguarding teams.
                 </span>
