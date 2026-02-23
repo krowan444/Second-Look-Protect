@@ -433,8 +433,8 @@ export default function App() {
                   >
                     Get Protection
                   </Button>
-                  <p className="text-slate-500 text-xs mt-2 text-center sm:text-left">Start in 60 seconds</p>
-                  <p className="text-slate-400/70 text-xs mt-1.5 text-center sm:text-left" style={{ fontSize: '11px', letterSpacing: '0.01em' }}>
+                  <p className="text-slate-200 text-sm font-medium mt-2 text-center sm:text-left">Start in 60 seconds</p>
+                  <p className="text-slate-300/80 text-xs mt-2 text-center sm:text-left leading-relaxed" style={{ fontSize: '12px', letterSpacing: '0.01em' }}>
                     ✓ UK-based specialists &nbsp;·&nbsp; ✓ Human-reviewed (not AI-only) &nbsp;·&nbsp; ✓ Supporting safeguarding decisions
                   </p>
                 </div>
@@ -464,18 +464,13 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Emotional tagline */}
-              <p className="text-slate-400/80 mt-2 italic" style={{ fontSize: '13px', letterSpacing: '0.01em' }}>
-                No judgement. No pressure. Just clarity.
-              </p>
-
-              {/* Trust microcopy */}
-              <p className="animate-fade-in-up animate-delay-400 text-slate-500 text-sm mt-2 italic">
-                Real people. Real guidance. When it matters most.
+              {/* Reassurance line */}
+              <p className="text-slate-300/90 mt-3 italic" style={{ fontSize: '13px', letterSpacing: '0.01em' }}>
+                No judgement. No pressure. Just clarity when something doesn&rsquo;t feel right.
               </p>
 
               {/* Care environment trust badge */}
-              <div className="mt-4">
+              <div className="mt-6">
                 <span className="inline-flex items-center gap-2 bg-[#C9A84C]/15 border border-[#C9A84C]/50 text-slate-200 text-xs font-medium px-4 py-1.5 rounded-full shadow-sm">
                   <Shield className="w-3.5 h-3.5 text-[#C9A84C] shrink-0" aria-hidden="true" />
                   Suitable for care environments &amp; safeguarding teams.
