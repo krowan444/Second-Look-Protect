@@ -616,16 +616,16 @@ export default function App() {
             Designed for real people who want extra reassurance online.
           </h2>
 
-          <ul className="space-y-5 text-left max-w-md mx-auto" role="list">
+          <ul className="space-y-5 max-w-md mx-auto" role="list">
             {[
               'Independent individuals wanting a trusted second opinion',
               'Concerned family members supporting loved ones',
               'Care home residents or retirement community members',
               'Older adults who want reassurance without technical complexity',
             ].map((item) => (
-              <li key={item} className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-[#C9A84C] shrink-0 mt-0.5" aria-hidden="true" />
-                <span className="text-slate-600 text-base leading-relaxed">{item}</span>
+              <li key={item} className="flex items-center justify-center gap-3">
+                <CheckCircle className="w-5 h-5 text-[#C9A84C] shrink-0" aria-hidden="true" />
+                <span className="text-slate-700 text-base leading-relaxed">{item}</span>
               </li>
             ))}
           </ul>
