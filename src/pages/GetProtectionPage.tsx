@@ -630,7 +630,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             className={[
                                 'w-full justify-center font-semibold transition-all duration-200 border-0',
                                 canSubmit
-                                    ? 'bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] active:scale-[0.98]'
+                                    ? 'bg-[#0B1E36] text-white hover:bg-[#1C3256] active:scale-[0.98] transition-colors duration-200'
                                     : 'bg-slate-200 text-slate-400 cursor-not-allowed',
                             ].join(' ')}
                             aria-label="Submit your check for review"
