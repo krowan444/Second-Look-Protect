@@ -207,11 +207,10 @@ export function Navbar({ onGetProtection }: NavbarProps) {
                     onClick={onGetProtection}
                     aria-label="Get Protection"
                     className="flex items-center gap-2 px-4 py-3 rounded-full
-                               bg-[#0B1E36] text-white font-semibold text-sm shadow-xl
-                               border border-[#C9A84C]/40
-                               active:scale-95 transition-all duration-200"
+                               bg-[#C9A84C] text-[#0B1E36] font-semibold text-sm shadow-xl
+                               hover:bg-[#D9BC78] active:scale-95 transition-all duration-200"
                 >
-                    <Shield className="w-4 h-4 text-[#C9A84C]" aria-hidden="true" />
+                    <Shield className="w-4 h-4 text-[#0B1E36]" aria-hidden="true" />
                     Get Protection
                 </button>
 
