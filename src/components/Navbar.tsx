@@ -131,8 +131,13 @@ export function Navbar({ onGetProtection }: NavbarProps) {
                                 {link.label}
                             </a>
                         ))}
-                        <Button variant="secondary" size="md"
-                            className="border-white/30 text-white hover:bg-white hover:text-[#0B1E36]"
+                        <Button
+                            variant="secondary"
+                            size="md"
+                            className="bg-[#C9A84C] text-white border-[#C9A84C]
+                                       hover:bg-[#0B1E36] hover:border-[#0B1E36] hover:text-white
+                                       hover:-translate-y-0.5 hover:shadow-md
+                                       transition-all duration-250 ease-out"
                             onClick={onGetProtection}
                         >
                             Get Protection
