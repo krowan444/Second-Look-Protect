@@ -1001,7 +1001,7 @@ export default function App() {
 
       {/* ── Contact ──────────────────────────────────────────────────── */}
       <SectionWrapper id="contact" background="offwhite" topBorder>
-        <div className="max-w-2xl mx-auto text-center">
+        <div className="max-w-2xl mx-auto flex flex-col items-center text-center">
           <p className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase mb-3">Get in Touch</p>
           <h2 className="text-[#0B1E36] mb-3" style={{ fontFamily: "'Merriweather', serif" }}>
             We're here when you need us
