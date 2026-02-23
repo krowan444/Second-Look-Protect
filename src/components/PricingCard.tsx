@@ -74,19 +74,23 @@ export function PricingCard({
     const displayPrice = isYearly ? yearlyPrice : monthlyPrice;
 
     const PriceBlock = ({ light }: { light: boolean }) => (
-        <div className="mb-7">
+        <div className="mb-4">
             <div className="flex items-baseline gap-1">
                 <span
-                    className={`text-4xl font-bold ${light ? 'text-white' : 'text-[#112540]'}`}
+                    className={`text-4xl font-extrabold ${light ? 'text-white' : 'text-[#112540]'}`}
                     style={{ fontFamily: "'Merriweather', serif" }}
                 >
                     {displayPrice}
                 </span>
                 <span className={`text-sm ml-1 ${light ? 'text-slate-400' : 'text-slate-500'}`}>/mo</span>
             </div>
-            {isYearly && (
+            {isYearly ? (
                 <p className={`text-xs mt-1 ${light ? 'text-slate-400' : 'text-slate-500'}`}>
                     Billed {yearlyTotal}/yr · <span className="text-[#C9A84C] font-medium">Save 2 months</span>
+                </p>
+            ) : (
+                <p className={`text-xs mt-1 ${light ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Simple monthly protection. Cancel anytime.
                 </p>
             )}
         </div>
@@ -119,6 +123,7 @@ export function PricingCard({
                 className="relative bg-white rounded-xl p-8 flex flex-col shadow-2xl ring-2 ring-[#C9A84C] md:-mt-4 md:-mb-4"
                 aria-label={`${name} plan — recommended`}
             >
+                {/* Plan name + badge */}
                 <div className="flex items-start justify-between gap-3 mb-1">
                     <h3 className="text-[#112540]">{name}</h3>
                     <span className="shrink-0 text-xs font-semibold tracking-widest uppercase text-[#A8853C] bg-[#C9A84C]/10 px-3 py-1 rounded-md">
@@ -126,10 +131,15 @@ export function PricingCard({
                     </span>
                 </div>
 
-                <p className="text-sm font-medium text-[#A8853C] italic mb-2">{tagline}</p>
+                {/* Tagline */}
+                <p className="text-sm font-medium text-[#A8853C] italic mb-3">{tagline}</p>
+
+                {/* Price — decision anchor */}
+                <PriceBlock light={false} />
+
+                {/* Description */}
                 <p className="text-slate-500 mb-6 text-sm leading-relaxed">{description}</p>
 
-                <PriceBlock light={false} />
                 <GroupedFeatureList groups={featureGroups} light={false} />
                 <CtaButton variant="primary" />
             </article>
@@ -141,11 +151,18 @@ export function PricingCard({
             className="bg-white/5 border border-white/10 rounded-xl p-8 flex flex-col"
             aria-label={`${name} plan`}
         >
+            {/* Plan name */}
             <h3 className="text-white mb-1">{name}</h3>
-            <p className="text-sm font-medium text-[#C9A84C]/80 italic mb-2">{tagline}</p>
+
+            {/* Tagline */}
+            <p className="text-sm font-medium text-[#C9A84C]/80 italic mb-3">{tagline}</p>
+
+            {/* Price — decision anchor */}
+            <PriceBlock light={true} />
+
+            {/* Description */}
             <p className="text-slate-400 mb-6 text-sm leading-relaxed">{description}</p>
 
-            <PriceBlock light={true} />
             <GroupedFeatureList groups={featureGroups} light={true} />
             <CtaButton variant="secondary-light" />
         </article>
