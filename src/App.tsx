@@ -219,7 +219,7 @@ export default function App() {
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const howItWorksRef = React.useRef<HTMLDivElement>(null);
-  const [howItWorksInView, setHowItWorksInView] = React.useState(false);
+  const [howItWorksInView, setHowItWorksInView] = React.useState(true);
   React.useEffect(() => {
     const el = howItWorksRef.current;
     if (!el) return;
