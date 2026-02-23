@@ -529,139 +529,8 @@ export default function App() {
         />
       </section>
 
-      {/* ── Simple 4-Step Explainer ───────────────────────────────────── */}
-      <SectionWrapper background="offwhite" topBorder={false}>
-        <div className="max-w-2xl mx-auto text-center mb-12">
-          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-4">
-            How it works
-          </p>
-          <h2 className="text-[#0B1E36]">
-            Simple. Calm. Clear.
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Step 1 */}
-          <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-[#C9A84C]/12 flex items-center justify-center mb-5" aria-hidden="true">
-              <Mail className="w-5 h-5 text-[#C9A84C]" />
-            </div>
-            <p className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase mb-2">Step 1</p>
-            <h4 className="text-[#0B1E36] font-semibold mb-2">You receive something</h4>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              A message, email, link, call, or invoice that feels uncertain.
-            </p>
-          </div>
-
-          {/* Step 2 */}
-          <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-[#C9A84C]/12 flex items-center justify-center mb-5" aria-hidden="true">
-              <ArrowRight className="w-5 h-5 text-[#C9A84C]" />
-            </div>
-            <p className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase mb-2">Step 2</p>
-            <h4 className="text-[#0B1E36] font-semibold mb-2">You send it to us</h4>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              Forward it through our app, portal, or WhatsApp.
-            </p>
-          </div>
-
-          {/* Step 3 */}
-          <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-[#C9A84C]/12 flex items-center justify-center mb-5" aria-hidden="true">
-              <Shield className="w-5 h-5 text-[#C9A84C]" />
-            </div>
-            <p className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase mb-2">Step 3</p>
-            <h4 className="text-[#0B1E36] font-semibold mb-2">We review it carefully</h4>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              Our UK-based experts check for warning signs and hidden risks.
-            </p>
-          </div>
-
-          {/* Step 4 */}
-          <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-[#C9A84C]/12 flex items-center justify-center mb-5" aria-hidden="true">
-              <CheckCircle className="w-5 h-5 text-[#C9A84C]" />
-            </div>
-            <p className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase mb-2">Step 4</p>
-            <h4 className="text-[#0B1E36] font-semibold mb-2">You get a clear answer</h4>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              Simple guidance on whether it's safe — and what to do next.
-            </p>
-          </div>
-        </div>
-      </SectionWrapper>
-
-      {/* ── Who This Is For ──────────────────────────────────────────────── */}
-      <SectionWrapper background="white" topBorder>
-        <div className="max-w-2xl mx-auto text-center">
-          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-4">
-            Who this is for
-          </p>
-          <h2 className="text-[#0B1E36] mb-10">
-            Designed for real people who want extra reassurance online.
-          </h2>
-
-          <ul className="space-y-5 text-left max-w-md mx-auto" role="list">
-            {[
-              'Independent individuals wanting a trusted second opinion',
-              'Concerned family members supporting loved ones',
-              'Care home residents or retirement community members',
-              'Older adults who want reassurance without technical complexity',
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-[#C9A84C] shrink-0 mt-0.5" aria-hidden="true" />
-                <span className="text-slate-600 text-base leading-relaxed">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </SectionWrapper>
-
-      {/* ── The Problem ──────────────────────────────────────────────── */}
-      <SectionWrapper background="offwhite" topBorder={false} className="pt-16 md:pt-20 pb-12 md:pb-16">
-        <SectionHeading
-          title="The internet should not feel like a minefield."
-          subtitle="Every day, convincing fake messages, websites, and calls target innocent people. They look like your bank, your delivery service, or even your family. One wrong click can cost you everything."
-        />
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Card 1 */}
-          <div className="bg-slate-50 border border-slate-100 rounded-xl p-8 hover:shadow-md transition-shadow duration-300">
-            <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
-              <AlertTriangle className="w-6 h-6 text-slate-500" />
-            </div>
-            <h3 className="mb-3">Increasingly Convincing Fraud</h3>
-            <p className="text-slate-600 text-base leading-relaxed">
-              Modern fraud is difficult to distinguish from genuine communications. Criminals replicate real logos, names, and language to prompt immediate action.
-            </p>
-          </div>
-
-          {/* Card 2 */}
-          <div className="bg-slate-50 border border-slate-100 rounded-xl p-8 hover:shadow-md transition-shadow duration-300">
-            <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
-              <Lock className="w-6 h-6 text-slate-500" />
-            </div>
-            <h3 className="mb-3">Serious Financial Consequences</h3>
-            <p className="text-slate-600 text-base leading-relaxed">
-              Once funds are transferred, recovery is rarely possible. The financial and personal impact can be significant and long-lasting.
-            </p>
-          </div>
-
-          {/* Card 3 — highlighted solution */}
-          <div className="bg-[#112540] rounded-xl p-8 text-white border-l-4 border-[#C9A84C]">
-            <div className="w-12 h-12 bg-[#C9A84C]/15 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
-              <Shield className="w-6 h-6 text-[#C9A84C]" />
-            </div>
-            <h3 className="text-white font-semibold mb-3" style={{ color: '#F3F6FA' }}>The Second Look Solution</h3>
-            <p className="text-slate-200 text-base leading-relaxed">
-              Pause. Before you click or pay — get a second look. Send it to us instead. Our experts analyse the request and give you a clear verdict — Safe or Scam.
-            </p>
-          </div>
-        </div>
-      </SectionWrapper>
-
       {/* ── How It Works ─────────────────────────────────────────────── */}
-      <SectionWrapper id="how-it-works" background="offwhite" topBorder className="pt-14 md:pt-20">
+      <SectionWrapper id="how-it-works" background="offwhite" topBorder={false} className="pt-14 md:pt-20">
         <SectionHeading
           title="How It Works"
           subtitle="A clear, three-step process. Simple to use, whatever your level of technical experience."
@@ -751,6 +620,77 @@ export default function App() {
           </div>
         </div>
       </SectionWrapper>
+
+      {/* ── Who This Is For ──────────────────────────────────────────────── */}
+      <SectionWrapper background="white" topBorder>
+        <div className="max-w-2xl mx-auto text-center">
+          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-4">
+            Who this is for
+          </p>
+          <h2 className="text-[#0B1E36] mb-10">
+            Designed for real people who want extra reassurance online.
+          </h2>
+
+          <ul className="space-y-5 text-left max-w-md mx-auto" role="list">
+            {[
+              'Independent individuals wanting a trusted second opinion',
+              'Concerned family members supporting loved ones',
+              'Care home residents or retirement community members',
+              'Older adults who want reassurance without technical complexity',
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-[#C9A84C] shrink-0 mt-0.5" aria-hidden="true" />
+                <span className="text-slate-600 text-base leading-relaxed">{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </SectionWrapper>
+
+      {/* ── The Problem ──────────────────────────────────────────────── */}
+      <SectionWrapper background="offwhite" topBorder={false} className="pt-16 md:pt-20 pb-12 md:pb-16">
+        <SectionHeading
+          title="The internet should not feel like a minefield."
+          subtitle="Every day, convincing fake messages, websites, and calls target innocent people. They look like your bank, your delivery service, or even your family. One wrong click can cost you everything."
+        />
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Card 1 */}
+          <div className="bg-slate-50 border border-slate-100 rounded-xl p-8 hover:shadow-md transition-shadow duration-300">
+            <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+              <AlertTriangle className="w-6 h-6 text-slate-500" />
+            </div>
+            <h3 className="mb-3">Increasingly Convincing Fraud</h3>
+            <p className="text-slate-600 text-base leading-relaxed">
+              Modern fraud is difficult to distinguish from genuine communications. Criminals replicate real logos, names, and language to prompt immediate action.
+            </p>
+          </div>
+
+          {/* Card 2 */}
+          <div className="bg-slate-50 border border-slate-100 rounded-xl p-8 hover:shadow-md transition-shadow duration-300">
+            <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+              <Lock className="w-6 h-6 text-slate-500" />
+            </div>
+            <h3 className="mb-3">Serious Financial Consequences</h3>
+            <p className="text-slate-600 text-base leading-relaxed">
+              Once funds are transferred, recovery is rarely possible. The financial and personal impact can be significant and long-lasting.
+            </p>
+          </div>
+
+          {/* Card 3 — highlighted solution */}
+          <div className="bg-[#112540] rounded-xl p-8 text-white border-l-4 border-[#C9A84C]">
+            <div className="w-12 h-12 bg-[#C9A84C]/15 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+              <Shield className="w-6 h-6 text-[#C9A84C]" />
+            </div>
+            <h3 className="text-white font-semibold mb-3" style={{ color: '#F3F6FA' }}>The Second Look Solution</h3>
+            <p className="text-slate-200 text-base leading-relaxed">
+              Pause. Before you click or pay — get a second look. Send it to us instead. Our experts analyse the request and give you a clear verdict — Safe or Scam.
+            </p>
+          </div>
+        </div>
+      </SectionWrapper>
+
+
 
       {/* ── Digital Safety Education ──────────────────────────────────── */}
       <SectionWrapper background="offwhite" topBorder>
