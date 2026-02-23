@@ -610,7 +610,7 @@ export default function App() {
       <SectionWrapper background="white" topBorder className="pt-12 md:pt-14">
         {/* Header — centred */}
         <div className="max-w-xl mx-auto text-center mb-10">
-          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-6">
+          <p className="text-[#A8853C] text-lg font-semibold tracking-widest uppercase mb-6">
             Who this is for
           </p>
           <h2 className="text-[#0B1E36]">
