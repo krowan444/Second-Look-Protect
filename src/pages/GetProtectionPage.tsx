@@ -363,12 +363,32 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                                 onClick={handleContinue}
                                 disabled={!selectedOption}
                                 size="lg"
-                                className={[
-                                    'w-full justify-center font-semibold transition-all duration-200 border-0',
-                                    selectedOption
-                                        ? 'bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] active:scale-[0.98]'
-                                        : 'bg-slate-200 text-slate-400 cursor-not-allowed',
-                                ].join(' ')}
+                                className="w-full justify-center font-semibold border-0 transition-all duration-[250ms]"
+                                style={selectedOption ? {
+                                    background: 'linear-gradient(135deg, #B8962E 0%, #C6A544 50%, #9F7E1F 100%)',
+                                    color: '#FFFFFF',
+                                    boxShadow: '0 6px 18px rgba(184,150,46,0.35)',
+                                    cursor: 'pointer',
+                                } : {
+                                    background: '#E7E3DA',
+                                    color: '#A8A39A',
+                                    boxShadow: 'none',
+                                    cursor: 'not-allowed',
+                                }}
+                                onMouseEnter={e => {
+                                    if (!selectedOption) return;
+                                    const el = e.currentTarget as HTMLElement;
+                                    el.style.background = 'linear-gradient(135deg, #C6A544 0%, #D4B85E 50%, #B8962E 100%)';
+                                    el.style.transform = 'translateY(-2px)';
+                                    el.style.boxShadow = '0 10px 24px rgba(184,150,46,0.4)';
+                                }}
+                                onMouseLeave={e => {
+                                    if (!selectedOption) return;
+                                    const el = e.currentTarget as HTMLElement;
+                                    el.style.background = 'linear-gradient(135deg, #B8962E 0%, #C6A544 50%, #9F7E1F 100%)';
+                                    el.style.transform = 'translateY(0)';
+                                    el.style.boxShadow = '0 6px 18px rgba(184,150,46,0.35)';
+                                }}
                                 aria-label="Continue to step 2"
                             >
                                 Continue <ChevronRight className="w-5 h-5" />
