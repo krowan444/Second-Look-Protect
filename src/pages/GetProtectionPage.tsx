@@ -340,9 +340,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             <p className="text-slate-500 text-base leading-relaxed max-w-prose mb-3">
                                 If something doesn't feel right, simply upload it below — we'll review it and send you a clear, easy-to-understand risk report explaining what's safe, what's risky, and what to do next.
                             </p>
-                            <p className="text-slate-400 text-sm mb-5">
-                                No registration required. UK-based. Human-verified.
-                            </p>
+
                             <p className="text-slate-500 text-sm leading-relaxed mb-6">
                                 You can upload a screenshot, paste a link, or copy the message — whichever is easiest for you.
                             </p>
