@@ -206,3 +206,22 @@ p {
     /* No filter, no blur */
     filter: none;
 }
+
+/* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */
+@media (max-width: 767px) {
+    @keyframes fabPulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.03);
+        }
+    }
+
+    .fab-pulse {
+        animation: fabPulse 3.5s ease-in-out infinite;
+    }
+}
