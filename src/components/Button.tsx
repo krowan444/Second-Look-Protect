@@ -11,9 +11,12 @@ interface ButtonBaseProps {
     as?: 'button' | 'a';
     href?: string;
     onClick?: React.MouseEventHandler;
+    onMouseEnter?: React.MouseEventHandler;
+    onMouseLeave?: React.MouseEventHandler;
     type?: 'button' | 'submit' | 'reset';
     disabled?: boolean;
     'aria-label'?: string;
+    style?: React.CSSProperties;
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
@@ -35,9 +38,12 @@ export function Button({
     as: Tag = 'button',
     href,
     onClick,
+    onMouseEnter,
+    onMouseLeave,
     type = 'button',
     disabled,
     'aria-label': ariaLabel,
+    style,
 }: ButtonBaseProps) {
     const classes = [
         'inline-flex items-center justify-center gap-2 font-medium rounded-lg',
@@ -62,8 +68,11 @@ export function Button({
             type={type}
             className={classes}
             onClick={onClick}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
             disabled={disabled}
             aria-label={ariaLabel}
+            style={style}
         >
             {children}
         </button>
