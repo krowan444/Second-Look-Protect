@@ -422,22 +422,16 @@ export default function App() {
               </div>
 
               {/* CTAs */}
-              <div className="animate-fade-in-up animate-delay-400 flex flex-col sm:flex-row gap-4 mb-4">
-                <div>
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={handleGetProtection}
-                    aria-label="Get protection — start your fraud check in 60 seconds"
-                    className="bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] border-0 font-semibold w-full sm:w-auto justify-center"
-                  >
-                    Get Protection
-                  </Button>
-                  <p className="text-slate-200 text-sm font-medium mt-2 text-center sm:text-left">Start in 60 seconds</p>
-                  <p className="text-slate-300/80 text-xs mt-2 text-center sm:text-left leading-relaxed" style={{ fontSize: '12px', letterSpacing: '0.01em' }}>
-                    ✓ UK-based specialists &nbsp;·&nbsp; ✓ Human-reviewed (not AI-only) &nbsp;·&nbsp; ✓ Supporting safeguarding decisions
-                  </p>
-                </div>
+              <div className="animate-fade-in-up animate-delay-400 flex flex-col sm:flex-row gap-4 mb-5">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handleGetProtection}
+                  aria-label="Get protection — start your fraud check in 60 seconds"
+                  className="bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] border-0 font-semibold w-full sm:w-auto justify-center"
+                >
+                  Get Protection
+                </Button>
                 <button
                   onClick={handleHowItWorks}
                   aria-label="See how Second Look Protect works — scroll to explanation"
@@ -464,8 +458,17 @@ export default function App() {
                 </button>
               </div>
 
+              {/* Sub-CTA stack — full-width, left-aligned below both buttons */}
+              <p className="text-slate-200 text-sm font-medium mb-3">Start in 60 seconds</p>
+
+              <div className="flex flex-col gap-1.5 mb-5">
+                <p className="text-slate-300/85 text-sm">✓ UK-based specialists</p>
+                <p className="text-slate-300/85 text-sm">✓ Human-reviewed (not AI-only)</p>
+                <p className="text-slate-300/85 text-sm">✓ Supporting safeguarding decisions</p>
+              </div>
+
               {/* Reassurance line */}
-              <p className="text-slate-300/90 mt-3 italic" style={{ fontSize: '13px', letterSpacing: '0.01em' }}>
+              <p className="text-slate-300/80 italic" style={{ fontSize: '13px', letterSpacing: '0.01em' }}>
                 No judgement. No pressure. Just clarity when something doesn&rsquo;t feel right.
               </p>
 
