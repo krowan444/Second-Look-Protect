@@ -201,7 +201,7 @@ p {
     background-image: image-set(url('/hero-bg.png') 1x,
             url('/hero-bg@2x.png') 2x);
     background-size: cover;
-    background-position: 75% center;
+    background-position: 83% center;
     background-repeat: no-repeat;
     /* No filter, no blur */
     filter: none;
