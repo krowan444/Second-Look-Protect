@@ -608,7 +608,7 @@ export default function App() {
 
       {/* ── Who This Is For ──────────────────────────────────────────────── */}
       <SectionWrapper background="white" topBorder>
-        <div className="max-w-2xl mx-auto text-center">
+        <div className="max-w-xl mx-auto text-center">
           <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-6">
             Who this is for
           </p>
