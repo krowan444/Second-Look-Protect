@@ -245,3 +245,91 @@ p {
     transform: scale(0.98);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
+
+/* ─── Upload page — Continue button premium states ───────────────────────── */
+.slp-continue-btn {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.25s ease;
+}
+
+/* Disabled / inactive state */
+.slp-continue-btn:disabled {
+    background: #E7E3DA !important;
+    color: #A8A39A !important;
+    border: 1px solid rgba(20, 33, 61, 0.08) !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+}
+
+/* Active / enabled state */
+.slp-continue-btn:not(:disabled) {
+    background: linear-gradient(135deg, #B8962E 0%, #C6A544 45%, #9F7E1F 100%);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 10px 22px rgba(184, 150, 46, 0.28);
+    cursor: pointer;
+}
+
+/* Hover — active only */
+.slp-continue-btn:not(:disabled):hover {
+    background: linear-gradient(135deg, #C6A544 0%, #D4B85E 50%, #B8962E 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px rgba(184, 150, 46, 0.35);
+}
+
+/* Pressed — active only */
+.slp-continue-btn:not(:disabled):active {
+    transform: translateY(0);
+    box-shadow: 0 8px 16px rgba(184, 150, 46, 0.28);
+    filter: brightness(0.98);
+}
+
+/* Sheen sweep — active only */
+.slp-continue-btn:not(:disabled)::after {
+    content: "";
+    position: absolute;
+    top: -60%;
+    left: -120%;
+    width: 60%;
+    height: 220%;
+    background: linear-gradient(115deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.16) 45%,
+            rgba(255, 255, 255, 0.32) 50%,
+            rgba(255, 255, 255, 0.16) 55%,
+            rgba(255, 255, 255, 0) 100%);
+    transform: rotate(12deg);
+    animation: slpSheen 5.5s ease-in-out infinite;
+    pointer-events: none;
+    opacity: 0.55;
+}
+
+@keyframes slpSheen {
+    0% {
+        left: -120%;
+        opacity: 0.0;
+    }
+
+    10% {
+        opacity: 0.55;
+    }
+
+    35% {
+        left: 140%;
+        opacity: 0.15;
+    }
+
+    100% {
+        left: 140%;
+        opacity: 0.0;
+    }
+}
+
+/* Respect reduced-motion for sheen */
+@media (prefers-reduced-motion: reduce) {
+    .slp-continue-btn:not(:disabled)::after {
+        animation: none;
+    }
+}
