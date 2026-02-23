@@ -533,7 +533,7 @@ export default function App() {
       <SectionWrapper id="how-it-works" background="offwhite" topBorder={false} className="pt-14 md:pt-20">
         <SectionHeading
           title="How It Works"
-          subtitle="A clear, three-step process. Simple to use, whatever your level of technical experience."
+          subtitle="A clear, three-step process. Simple to use whenever you need a trusted second opinion."
         />
 
         <div ref={howItWorksRef} className="grid md:grid-cols-3 gap-14 md:gap-16 max-w-4xl mx-auto relative">
