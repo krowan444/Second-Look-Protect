@@ -228,7 +228,7 @@ p {
 
 /* ─── Premium gold gradient — Get Protection buttons ─────────────────────── */
 .btn-gold-gradient {
-    background: linear-gradient(135deg, #D4AF37 0%, #E6C65C 50%, #C9A227 100%);
+    background: linear-gradient(135deg, #C6A544 0%, #D2B356 50%, #B8962E 100%);
     color: #ffffff !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -236,9 +236,9 @@ p {
 }
 
 .btn-gold-gradient:hover {
-    background: linear-gradient(135deg, #E6C65C 0%, #F2D879 50%, #D4AF37 100%);
+    background: linear-gradient(135deg, #D2B356 0%, #E0C46A 50%, #C6A544 100%);
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(212, 175, 55, 0.35);
+    box-shadow: 0 6px 14px rgba(198, 165, 68, 0.25);
 }
 
 .btn-gold-gradient:active {
