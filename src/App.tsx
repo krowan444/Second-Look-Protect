@@ -1105,7 +1105,22 @@ export default function App() {
             size="lg"
             onClick={handleGetProtection}
             aria-label="Get protection — start your fraud check now"
-            className="bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] border-0 font-semibold w-full sm:w-auto justify-center"
+            className="text-[#0B1E36] border-0 font-semibold w-full sm:w-auto justify-center"
+            style={{
+              background: 'linear-gradient(135deg, #C8A95A 0%, #E3C87A 100%)',
+              boxShadow: '0 2px 8px rgba(180,140,50,0.28)',
+              transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+            }}
+            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.transform = 'translateY(-2px)';
+              el.style.boxShadow = '0 4px 20px rgba(201,168,76,0.45), 0 2px 8px rgba(180,140,50,0.28)';
+            }}
+            onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.transform = 'translateY(0)';
+              el.style.boxShadow = '0 2px 8px rgba(180,140,50,0.28)';
+            }}
           >
             🛡️ Protect Me Now
           </Button>
