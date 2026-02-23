@@ -474,6 +474,14 @@ export default function App() {
                 Real people. Real guidance. When it matters most.
               </p>
 
+              {/* Care environment trust badge */}
+              <div className="mt-4 flex justify-center">
+                <span className="inline-flex items-center gap-2 bg-[#C9A84C]/10 border border-[#C9A84C]/25 text-[#0B1E36] text-xs font-medium px-4 py-1.5 rounded-full">
+                  <Shield className="w-3.5 h-3.5 text-[#C9A84C] shrink-0" aria-hidden="true" />
+                  Suitable for care environments &amp; safeguarding teams.
+                </span>
+              </div>
+
               {/* Hero phone + email nudge */}
               <div className="mt-5 flex flex-col gap-1.5">
                 <p className="text-slate-400 text-sm">
