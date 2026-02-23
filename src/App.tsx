@@ -13,7 +13,7 @@ import { SupportPage } from './pages/SupportPage';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import {
   Shield, CheckCircle, Search, Lock, AlertTriangle,
-  Phone, Star, ArrowRight, Users,
+  Phone, Star, ArrowRight, Users, Mail,
 } from 'lucide-react';
 
 /* ─── Data ─────────────────────────────────────────────────────────────── */
@@ -510,6 +510,68 @@ export default function App() {
           aria-hidden="true"
         />
       </section>
+
+      {/* ── Simple 4-Step Explainer ───────────────────────────────────── */}
+      <SectionWrapper background="offwhite" topBorder={false}>
+        <div className="max-w-2xl mx-auto text-center mb-12">
+          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-4">
+            How it works
+          </p>
+          <h2 className="text-[#0B1E36]">
+            Simple. Calm. Clear.
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* Step 1 */}
+          <div className="flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-full bg-[#C9A84C]/12 flex items-center justify-center mb-5" aria-hidden="true">
+              <Mail className="w-5 h-5 text-[#C9A84C]" />
+            </div>
+            <p className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase mb-2">Step 1</p>
+            <h4 className="text-[#0B1E36] font-semibold mb-2">You receive something</h4>
+            <p className="text-slate-500 text-sm leading-relaxed">
+              A message, email, link, call, or invoice that feels uncertain.
+            </p>
+          </div>
+
+          {/* Step 2 */}
+          <div className="flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-full bg-[#C9A84C]/12 flex items-center justify-center mb-5" aria-hidden="true">
+              <ArrowRight className="w-5 h-5 text-[#C9A84C]" />
+            </div>
+            <p className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase mb-2">Step 2</p>
+            <h4 className="text-[#0B1E36] font-semibold mb-2">You send it to us</h4>
+            <p className="text-slate-500 text-sm leading-relaxed">
+              Forward it through our app, portal, or WhatsApp.
+            </p>
+          </div>
+
+          {/* Step 3 */}
+          <div className="flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-full bg-[#C9A84C]/12 flex items-center justify-center mb-5" aria-hidden="true">
+              <Shield className="w-5 h-5 text-[#C9A84C]" />
+            </div>
+            <p className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase mb-2">Step 3</p>
+            <h4 className="text-[#0B1E36] font-semibold mb-2">We review it carefully</h4>
+            <p className="text-slate-500 text-sm leading-relaxed">
+              Our UK-based experts check for warning signs and hidden risks.
+            </p>
+          </div>
+
+          {/* Step 4 */}
+          <div className="flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-full bg-[#C9A84C]/12 flex items-center justify-center mb-5" aria-hidden="true">
+              <CheckCircle className="w-5 h-5 text-[#C9A84C]" />
+            </div>
+            <p className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase mb-2">Step 4</p>
+            <h4 className="text-[#0B1E36] font-semibold mb-2">You get a clear answer</h4>
+            <p className="text-slate-500 text-sm leading-relaxed">
+              Simple guidance on whether it's safe — and what to do next.
+            </p>
+          </div>
+        </div>
+      </SectionWrapper>
 
       {/* ── The Problem ──────────────────────────────────────────────── */}
       <SectionWrapper background="offwhite" topBorder={false} className="pt-16 md:pt-20 pb-12 md:pb-16">
