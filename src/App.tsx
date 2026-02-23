@@ -462,7 +462,7 @@ export default function App() {
               <p className="text-slate-200 text-sm font-medium mb-3">Start in 60 seconds</p>
 
               <div className="flex flex-col gap-1.5 mb-5">
-                <p className="text-slate-300/85 text-sm">✓ UK-based specialists</p>
+                <p className="text-slate-300/85 text-sm">✓ No login or passwords required</p>
                 <p className="text-slate-300/85 text-sm">✓ Human-reviewed by UK specialists</p>
                 <p className="text-slate-300/85 text-sm">✓ Supporting safeguarding decisions</p>
               </div>
