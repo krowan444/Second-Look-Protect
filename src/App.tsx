@@ -650,7 +650,7 @@ export default function App() {
       </SectionWrapper>
 
       {/* ── View Our Plans CTA ─────────────────────────────────────────── */}
-      <SectionWrapper background="white" topBorder className="py-12 md:py-14">
+      <SectionWrapper background="white" topBorder className="py-8 md:py-10">
         <div className="text-center">
           <Button variant="primary" size="lg" className="inline-flex" as="a" href="#pricing">
             View Our Plans <ArrowRight className="w-5 h-5" aria-hidden="true" />
@@ -669,7 +669,7 @@ export default function App() {
       </SectionWrapper>
 
       {/* ── The Problem ──────────────────────────────────────────────── */}
-      <SectionWrapper background="offwhite" topBorder={false} className="pt-16 md:pt-20 pb-12 md:pb-16">
+      <SectionWrapper background="offwhite" topBorder={false} className="pt-10 md:pt-14 pb-12 md:pb-16">
         <SectionHeading
           title="The internet should not feel like a minefield."
           subtitle="Every day, convincing fake messages, websites, and calls target innocent people. They look like your bank, your delivery service, or even your family. One wrong click can cost you everything."
