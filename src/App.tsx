@@ -604,21 +604,6 @@ export default function App() {
           ))}
         </div>
 
-        <div className="mt-16 text-center">
-          <Button variant="primary" size="lg" className="inline-flex" as="a" href="#pricing">
-            View Our Plans <ArrowRight className="w-5 h-5" aria-hidden="true" />
-          </Button>
-          <div className="mt-4 flex flex-col items-center gap-0.5">
-            <p className="text-slate-400 text-xs tracking-wide">Questions? Speak directly with us:</p>
-            <a
-              href="mailto:hello@secondlookprotect.co.uk"
-              className="text-[#A8853C] hover:text-[#C9A84C] transition-colors duration-200 font-medium text-sm"
-              aria-label="Email hello@secondlookprotect.co.uk"
-            >
-              hello@secondlookprotect.co.uk
-            </a>
-          </div>
-        </div>
       </SectionWrapper>
 
       {/* ── Who This Is For ──────────────────────────────────────────────── */}
@@ -644,6 +629,25 @@ export default function App() {
               </li>
             ))}
           </ul>
+        </div>
+      </SectionWrapper>
+
+      {/* ── View Our Plans CTA ─────────────────────────────────────────── */}
+      <SectionWrapper background="white" topBorder className="py-12 md:py-14">
+        <div className="text-center">
+          <Button variant="primary" size="lg" className="inline-flex" as="a" href="#pricing">
+            View Our Plans <ArrowRight className="w-5 h-5" aria-hidden="true" />
+          </Button>
+          <div className="mt-4 flex flex-col items-center gap-0.5">
+            <p className="text-slate-400 text-xs tracking-wide">Questions? Speak directly with us:</p>
+            <a
+              href="mailto:hello@secondlookprotect.co.uk"
+              className="text-[#A8853C] hover:text-[#C9A84C] transition-colors duration-200 font-medium text-sm"
+              aria-label="Email hello@secondlookprotect.co.uk"
+            >
+              hello@secondlookprotect.co.uk
+            </a>
+          </div>
         </div>
       </SectionWrapper>
 
