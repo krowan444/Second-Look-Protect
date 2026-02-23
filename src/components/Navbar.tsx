@@ -112,7 +112,9 @@ export function Navbar({ onGetProtection }: NavbarProps) {
                         className="flex items-center gap-3 text-white focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#C9A84C] rounded-sm"
                         aria-label="Second Look Protect — Return to top"
                     >
-                        <Shield className="w-7 h-7 text-[#C9A84C]" aria-hidden="true" />
+                        <span className="shield-logo relative inline-flex" aria-hidden="true">
+                            <Shield className="w-7 h-7 text-[#C9A84C]" aria-hidden="true" />
+                        </span>
                         <span className="text-lg font-semibold tracking-tight" style={{ fontFamily: "'Merriweather', serif" }}>
                             Second Look Protect
                         </span>
