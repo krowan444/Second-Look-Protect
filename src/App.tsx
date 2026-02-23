@@ -609,10 +609,10 @@ export default function App() {
       {/* ── Who This Is For ──────────────────────────────────────────────── */}
       <SectionWrapper background="white" topBorder>
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-4">
+          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-6">
             Who this is for
           </p>
-          <h2 className="text-[#0B1E36] mb-10">
+          <h2 className="text-[#0B1E36] mb-12">
             Designed for real people who want extra reassurance online.
           </h2>
 
