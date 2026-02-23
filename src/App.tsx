@@ -573,6 +573,32 @@ export default function App() {
         </div>
       </SectionWrapper>
 
+      {/* ── Who This Is For ──────────────────────────────────────────────── */}
+      <SectionWrapper background="white" topBorder>
+        <div className="max-w-2xl mx-auto text-center">
+          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-4">
+            Who this is for
+          </p>
+          <h2 className="text-[#0B1E36] mb-10">
+            Designed for real people who want extra reassurance online.
+          </h2>
+
+          <ul className="space-y-5 text-left max-w-md mx-auto" role="list">
+            {[
+              'Independent individuals wanting a trusted second opinion',
+              'Concerned family members supporting loved ones',
+              'Care home residents or retirement community members',
+              'Older adults who want reassurance without technical complexity',
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-[#C9A84C] shrink-0 mt-0.5" aria-hidden="true" />
+                <span className="text-slate-600 text-base leading-relaxed">{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </SectionWrapper>
+
       {/* ── The Problem ──────────────────────────────────────────────── */}
       <SectionWrapper background="offwhite" topBorder={false} className="pt-16 md:pt-20 pb-12 md:pb-16">
         <SectionHeading
