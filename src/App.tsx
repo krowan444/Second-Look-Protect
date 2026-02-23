@@ -218,6 +218,18 @@ export default function App() {
   const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service'>(getInitialPage);
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const howItWorksRef = React.useRef<HTMLDivElement>(null);
+  const [howItWorksInView, setHowItWorksInView] = React.useState(false);
+  React.useEffect(() => {
+    const el = howItWorksRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setHowItWorksInView(true); obs.disconnect(); } },
+      { threshold: 0.12 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   async function handleSubscribe(planKey: string) {
     const interval = isYearly ? 'yearly' : 'monthly';
@@ -649,43 +661,53 @@ export default function App() {
       </SectionWrapper>
 
       {/* ── How It Works ─────────────────────────────────────────────── */}
-      <SectionWrapper id="how-it-works" background="white" topBorder className="pt-14 md:pt-20">
+      <SectionWrapper id="how-it-works" background="offwhite" topBorder className="pt-14 md:pt-20">
         <SectionHeading
           title="How It Works"
           subtitle="A clear, three-step process. Simple to use, whatever your level of technical experience."
         />
 
-        <div className="grid md:grid-cols-3 gap-12 max-w-4xl mx-auto relative">
+        <div ref={howItWorksRef} className="grid md:grid-cols-3 gap-14 md:gap-16 max-w-4xl mx-auto relative">
           {/* Connector line */}
           <div
-            className="hidden md:block absolute top-11 left-[18%] right-[18%] h-px bg-slate-300"
+            className="hidden md:block absolute top-[35px] left-[18%] right-[18%] h-px bg-slate-300"
             aria-hidden="true"
           />
 
           {[
             {
               step: '1',
-              title: 'Receive & Pause',
-              body: 'You receive a suspicious email, text, or payment request. Instead of acting on it immediately, you pause.',
               gold: false,
+              headline: 'Receive something suspicious?',
+              sub: '(call, text, email, link, message)',
             },
             {
               step: '2',
-              title: 'Send for a Second Look',
-              body: "If something doesn't feel right — a call, text, email, website, or payment request — just press Get Protection and send it to us. No logins, no confusion — we'll handle everything for you.",
               gold: false,
+              headline: 'Press GET PROTECTION and upload it.',
+              sub: '(no login needed)',
             },
             {
               step: '3',
-              title: 'Get the Verdict',
-              body: 'Our experts carefully analyse the threat, send a clear risk report directly to your phone, and guide you step-by-step on exactly what to do next.',
               gold: true,
+              headline: 'Our experts analyse the threat and send you a clear risk report with exactly what to do next.',
+              sub: '',
             },
-          ].map(({ step, title, body, gold }) => (
-            <div key={step} className="relative flex flex-col items-center text-center">
+          ].map(({ step, headline, sub, gold }, i) => (
+            <div
+              key={step}
+              className="relative flex flex-col items-center text-center"
+              style={{
+                opacity: howItWorksInView ? 1 : 0,
+                transform: howItWorksInView ? 'translateY(0)' : 'translateY(18px)',
+                transition: 'opacity 0.65s ease, transform 0.65s ease',
+                transitionDelay: `${i * 160}ms`,
+              }}
+            >
+              {/* Step number circle */}
               <div
                 className={[
-                  'w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold mb-8 relative z-10',
+                  'w-[72px] h-[72px] rounded-full flex items-center justify-center text-2xl font-bold mb-6 relative z-10',
                   gold
                     ? 'bg-[#C9A84C] text-[#0B1E36] shadow-lg'
                     : 'bg-white text-[#0B1E36] border-2 border-slate-200 shadow-sm',
@@ -694,8 +716,21 @@ export default function App() {
               >
                 {step}
               </div>
-              <h3 className="mb-3">{title}</h3>
-              <p className="text-slate-600 text-base leading-relaxed">{body}</p>
+
+              {/* Step label */}
+              <p className="text-[#C9A84C] text-[10px] font-semibold tracking-[0.18em] uppercase mb-3">
+                Step {step}
+              </p>
+
+              {/* Headline */}
+              <h3 className="text-[#0B1E36] text-base font-semibold leading-snug mb-3 max-w-[210px]">
+                {headline}
+              </h3>
+
+              {/* Sub-text */}
+              {sub && (
+                <p className="text-slate-400 text-sm leading-relaxed">{sub}</p>
+              )}
             </div>
           ))}
         </div>
