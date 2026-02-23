@@ -209,7 +209,7 @@ export function Navbar({ onGetProtection }: NavbarProps) {
                     aria-label="Get Protection"
                     className="fab-pulse btn-gold-gradient flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm active:scale-95"
                 >
-                    <Shield className="w-4 h-4 text-[#0B1E36]" aria-hidden="true" />
+                    <Shield className="w-4 h-4 text-white" aria-hidden="true" />
                     Get Protection
                 </button>
             </div>
