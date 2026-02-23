@@ -608,28 +608,45 @@ export default function App() {
 
       {/* ── Who This Is For ──────────────────────────────────────────────── */}
       <SectionWrapper background="white" topBorder>
-        <div className="max-w-xl mx-auto text-center">
+        {/* Header — centred */}
+        <div className="max-w-xl mx-auto text-center mb-10">
           <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-6">
             Who this is for
           </p>
-          <h2 className="text-[#0B1E36] mb-12">
+          <h2 className="text-[#0B1E36]">
             Designed for real people who want extra reassurance online.
           </h2>
-
-          <ul className="space-y-5 max-w-md mx-auto" role="list">
-            {[
-              'Independent individuals wanting a trusted second opinion',
-              'Concerned family members supporting loved ones',
-              'Care home residents or retirement community members',
-              'Older adults who want reassurance without technical complexity',
-            ].map((item) => (
-              <li key={item} className="flex items-center justify-center gap-3">
-                <CheckCircle className="w-5 h-5 text-[#C9A84C] shrink-0" aria-hidden="true" />
-                <span className="text-slate-700 text-base leading-relaxed">{item}</span>
-              </li>
-            ))}
-          </ul>
         </div>
+
+        {/* 2-col card grid */}
+        <ul
+          className="max-w-[900px] mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4"
+          role="list"
+        >
+          {[
+            'Individuals wanting a trusted second opinion',
+            'Family members supporting loved ones',
+            'Care home or retirement community residents',
+            'Older adults wanting reassurance without complexity',
+          ].map((item) => (
+            <li
+              key={item}
+              className="flex items-center gap-4 bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4"
+            >
+              {/* Icon badge */}
+              <div
+                className="w-9 h-9 rounded-full bg-[#C9A84C]/12 flex items-center justify-center shrink-0"
+                aria-hidden="true"
+              >
+                <CheckCircle className="w-5 h-5 text-[#C9A84C]" />
+              </div>
+              {/* Text */}
+              <span className="text-[#0B1E36] font-medium text-[15px] leading-snug">
+                {item}
+              </span>
+            </li>
+          ))}
+        </ul>
       </SectionWrapper>
 
       {/* ── View Our Plans CTA ─────────────────────────────────────────── */}
