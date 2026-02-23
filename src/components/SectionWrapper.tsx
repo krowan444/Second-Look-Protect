@@ -30,7 +30,7 @@ export function SectionWrapper({
             id={id}
             className={[
                 bgClasses[background],
-                'pt-20 pb-20 md:pt-28 md:pb-28',
+                'py-10 md:py-16',
                 topBorder ? 'border-t border-slate-200' : '',
                 className,
             ].filter(Boolean).join(' ')}
