@@ -428,7 +428,7 @@ export default function App() {
                   size="lg"
                   onClick={handleGetProtection}
                   aria-label="Get protection — start your fraud check in 60 seconds"
-                  className="bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] border-0 font-semibold w-full sm:w-auto justify-center"
+                  className="btn-gold-gradient border-0 font-semibold w-full sm:w-auto justify-center"
                 >
                   Get Protection
                 </Button>

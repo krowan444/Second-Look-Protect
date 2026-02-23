@@ -225,3 +225,23 @@ p {
         animation: fabPulse 3.5s ease-in-out infinite;
     }
 }
+
+/* ─── Premium gold gradient — Get Protection buttons ─────────────────────── */
+.btn-gold-gradient {
+    background: linear-gradient(135deg, #D4AF37 0%, #E6C65C 50%, #C9A227 100%);
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.25s ease;
+}
+
+.btn-gold-gradient:hover {
+    background: linear-gradient(135deg, #E6C65C 0%, #F2D879 50%, #D4AF37 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(212, 175, 55, 0.35);
+}
+
+.btn-gold-gradient:active {
+    transform: scale(0.98);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}

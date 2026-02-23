@@ -134,11 +134,7 @@ export function Navbar({ onGetProtection }: NavbarProps) {
                         <Button
                             variant="secondary"
                             size="md"
-                            className="bg-[#C9A84C] text-white border-[#B8963E]
-                                       shadow-sm
-                                       hover:bg-[#C9A84C] hover:border-[#B8963E] hover:text-white
-                                       hover:-translate-y-px hover:shadow-[0_4px_18px_rgba(11,30,54,0.35)]
-                                       transition-all duration-200 ease-out"
+                            className="btn-gold-gradient"
                             onClick={onGetProtection}
                         >
                             Get Protection
@@ -211,9 +207,7 @@ export function Navbar({ onGetProtection }: NavbarProps) {
                 <button
                     onClick={onGetProtection}
                     aria-label="Get Protection"
-                    className="fab-pulse flex items-center gap-2 px-5 py-3 rounded-full
-                               bg-[#C9A84C] text-[#0B1E36] font-semibold text-sm
-                               shadow-lg hover:bg-[#D9BC78] active:scale-95 transition-colors duration-200"
+                    className="fab-pulse btn-gold-gradient flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm active:scale-95"
                 >
                     <Shield className="w-4 h-4 text-[#0B1E36]" aria-hidden="true" />
                     Get Protection
