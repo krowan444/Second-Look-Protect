@@ -530,7 +530,7 @@ export default function App() {
       </section>
 
       {/* ── How It Works ─────────────────────────────────────────────── */}
-      <SectionWrapper id="how-it-works" background="offwhite" topBorder={false} className="pt-14 md:pt-20">
+      <SectionWrapper id="how-it-works" background="offwhite" topBorder={false} className="pt-14 md:pt-20 pb-10 md:pb-14">
         <SectionHeading
           title="How It Works"
           subtitle="A clear, three-step process. Simple to use whenever you need a trusted second opinion."
@@ -607,7 +607,7 @@ export default function App() {
       </SectionWrapper>
 
       {/* ── Who This Is For ──────────────────────────────────────────────── */}
-      <SectionWrapper background="white" topBorder>
+      <SectionWrapper background="white" topBorder className="pt-12 md:pt-14">
         {/* Header — centred */}
         <div className="max-w-xl mx-auto text-center mb-10">
           <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-6">
