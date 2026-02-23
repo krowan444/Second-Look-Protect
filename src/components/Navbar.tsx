@@ -112,8 +112,22 @@ export function Navbar({ onGetProtection }: NavbarProps) {
                         className="flex items-center gap-3 text-white focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#C9A84C] rounded-sm"
                         aria-label="Second Look Protect — Return to top"
                     >
-                        <span className="shield-logo relative inline-flex" aria-hidden="true">
+                        <span className="slp-shield relative inline-flex" aria-hidden="true">
                             <Shield className="w-7 h-7 text-[#C9A84C]" aria-hidden="true" />
+                            {/* Stroke-dasharray outline trace — same path as Lucide Shield v0.546 */}
+                            <svg
+                                aria-hidden="true"
+                                className="absolute inset-0 overflow-visible pointer-events-none"
+                                width="28" height="28"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    className="shield-outline-shimmer"
+                                    d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+                                />
+                            </svg>
                         </span>
                         <span className="text-lg font-semibold tracking-tight" style={{ fontFamily: "'Merriweather', serif" }}>
                             Second Look Protect

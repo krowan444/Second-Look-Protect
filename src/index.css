@@ -334,53 +334,47 @@ p {
     }
 }
 
-/* ─── Header shield logo shimmer ─────────────────────────────────────────── */
-.shield-logo {
-    overflow: hidden;
+/* ─── Header shield logo — SVG stroke outline trace ─────────────────────── */
+.shield-outline-shimmer {
+    fill: none;
+    stroke: rgba(212, 184, 94, 0.95);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 14 220;
+    stroke-dashoffset: 260;
+    filter: drop-shadow(0 0 4px rgba(212, 184, 94, 0.35));
+    opacity: 0;
+    animation: shieldOutlineTrace 7s ease-in-out infinite;
 }
 
-.shield-logo::after {
-    content: "";
-    position: absolute;
-    top: -50%;
-    left: -120%;
-    width: 60%;
-    height: 200%;
-    background: linear-gradient(115deg,
-            rgba(255, 255, 255, 0) 0%,
-            rgba(255, 255, 255, 0.25) 45%,
-            rgba(255, 255, 255, 0.4) 50%,
-            rgba(255, 255, 255, 0.25) 55%,
-            rgba(255, 255, 255, 0) 100%);
-    transform: rotate(12deg);
-    animation: shieldShimmer 6.5s ease-in-out infinite;
-    pointer-events: none;
-    opacity: 0.35;
-}
-
-@keyframes shieldShimmer {
+@keyframes shieldOutlineTrace {
     0% {
-        left: -120%;
         opacity: 0;
+        stroke-dashoffset: 260;
     }
 
-    10% {
-        opacity: 0.35;
+    8% {
+        opacity: 0.9;
     }
 
-    35% {
-        left: 140%;
-        opacity: 0.15;
+    30% {
+        opacity: 0.9;
+        stroke-dashoffset: 0;
+    }
+
+    40% {
+        opacity: 0;
     }
 
     100% {
-        left: 140%;
         opacity: 0;
+        stroke-dashoffset: 0;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .shield-logo::after {
+    .shield-outline-shimmer {
         animation: none;
     }
 }
