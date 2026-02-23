@@ -343,6 +343,9 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             <p className="text-slate-400 text-sm mb-5">
                                 No registration required. UK-based. Human-verified.
                             </p>
+                            <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                                You can upload a screenshot, paste a link, or copy the message — whichever is easiest for you.
+                            </p>
                         </div>
                         <div className="space-y-3 mb-10" role="radiogroup" aria-label="Submission type">
                             {OPTIONS.map((opt) => (
