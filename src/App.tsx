@@ -708,6 +708,33 @@ export default function App() {
         </div>
       </SectionWrapper>
 
+      {/* ── Reassurance — No shame ─────────────────────────────────────── */}
+      <SectionWrapper background="offwhite" topBorder>
+        <div className="max-w-2xl mx-auto text-center">
+          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-4">
+            Peace of mind
+          </p>
+
+          <h2 className="text-[#0B1E36] mb-6">
+            You don't need to have been scammed to protect yourself.
+          </h2>
+
+          <p className="text-slate-600 text-lg leading-relaxed mb-6">
+            Most members join after experiencing uncertainty — not after losing money.
+          </p>
+
+          <div className="space-y-3 text-slate-600 text-base leading-relaxed mb-8">
+            <p>Sometimes it's just a message that feels slightly off.</p>
+            <p>A phone call that doesn't sit right.</p>
+            <p>An email that creates doubt.</p>
+          </div>
+
+          <p className="text-slate-600 text-base leading-relaxed">
+            Second Look Protect exists so you can pause, check, and move forward with confidence — before anything goes wrong.
+          </p>
+        </div>
+      </SectionWrapper>
+
       {/* ── Pricing ──────────────────────────────────────────────────── */}
       <SectionWrapper id="pricing" background="navy">
         <SectionHeading
