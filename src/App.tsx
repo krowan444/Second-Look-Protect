@@ -598,7 +598,7 @@ export default function App() {
 
               {/* Sub-text */}
               {sub && (
-                <p className="text-slate-400 text-sm leading-relaxed">{sub}</p>
+                <p className="text-slate-600 text-sm leading-relaxed">{sub}</p>
               )}
             </div>
           ))}
