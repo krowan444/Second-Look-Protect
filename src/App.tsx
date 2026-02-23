@@ -463,7 +463,7 @@ export default function App() {
 
               <div className="flex flex-col gap-1.5 mb-5">
                 <p className="text-slate-300/85 text-sm">✓ No login or passwords required</p>
-                <p className="text-slate-300/85 text-sm">✓ Human-reviewed by UK specialists</p>
+                <p className="text-slate-300/85 text-sm">✓ Reviewed by UK safeguarding specialists</p>
                 <p className="text-slate-300/85 text-sm">✓ Supporting safeguarding decisions</p>
               </div>
 
