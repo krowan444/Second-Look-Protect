@@ -674,7 +674,7 @@ export default function App() {
             {
               step: '2',
               title: 'Send for a Second Look',
-              body: 'Forward the message, screenshot, or link to our secure portal or dedicated WhatsApp number.',
+              body: "If something doesn't feel right — a call, text, email, website, or payment request — just press Get Protection and send it to us. No logins, no confusion — we'll handle everything for you.",
               gold: false,
             },
             {
