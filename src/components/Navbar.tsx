@@ -200,17 +200,33 @@ export function Navbar({ onGetProtection }: NavbarProps) {
                 </div>
             )}
 
-            {/* ── Sticky mobile call FAB ──────────────────────────────────── */}
-            <a
-                href={`tel:${MOBILE}`}
-                aria-label={`Call us now on ${MOBILE_DISPLAY}`}
-                className="md:hidden fixed bottom-6 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-full
-                           bg-[#C9A84C] text-[#0B1E36] font-semibold text-sm shadow-xl
-                           hover:bg-[#D9BC78] active:scale-95 transition-all duration-200"
-            >
-                <Phone className="w-4 h-4" aria-hidden="true" />
-                Call Now
-            </a>
+            {/* ── Sticky mobile FAB pair ───────────────────────────────────── */}
+            <div className="md:hidden fixed bottom-6 right-4 z-50 flex items-center gap-2">
+                {/* Get Protection */}
+                <button
+                    onClick={onGetProtection}
+                    aria-label="Get Protection"
+                    className="flex items-center gap-2 px-4 py-3 rounded-full
+                               bg-[#0B1E36] text-white font-semibold text-sm shadow-xl
+                               border border-[#C9A84C]/40
+                               active:scale-95 transition-all duration-200"
+                >
+                    <Shield className="w-4 h-4 text-[#C9A84C]" aria-hidden="true" />
+                    Get Protection
+                </button>
+
+                {/* Call Now — unchanged styling */}
+                <a
+                    href={`tel:${MOBILE}`}
+                    aria-label={`Call us now on ${MOBILE_DISPLAY}`}
+                    className="flex items-center gap-2 px-4 py-3 rounded-full
+                               bg-[#C9A84C] text-[#0B1E36] font-semibold text-sm shadow-xl
+                               hover:bg-[#D9BC78] active:scale-95 transition-all duration-200"
+                >
+                    <Phone className="w-4 h-4" aria-hidden="true" />
+                    Call Now
+                </a>
+            </div>
         </>
     );
 }
