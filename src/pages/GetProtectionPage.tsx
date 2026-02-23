@@ -335,22 +335,14 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                                 Step 1 of 2 — Choose your check type
                             </p>
                             <h1 className="text-[#0B1E36] mb-3" style={{ fontFamily: "'Merriweather', serif" }}>
-                                Get your message checked — fast.
+                                Not sure if something is safe? Let's take a second look.
                             </h1>
                             <p className="text-slate-500 text-base leading-relaxed max-w-prose mb-3">
-                                If something feels suspicious, you're in the right place. Upload a screenshot or paste a link/message and we'll review it and send you a clear risk report — what's real, what's risky, and what to do next.
+                                If something doesn't feel right, simply upload it below — we'll review it and send you a clear, easy-to-understand risk report explaining what's safe, what's risky, and what to do next.
                             </p>
                             <p className="text-slate-400 text-sm mb-5">
                                 No registration required. UK-based. Human-verified.
                             </p>
-                            <div className="mb-2">
-                                <p className="text-slate-600 text-sm font-semibold mb-2">What happens next:</p>
-                                <ol className="list-decimal list-inside text-slate-500 text-sm leading-relaxed space-y-1">
-                                    <li>Send a screenshot or link</li>
-                                    <li>We review it</li>
-                                    <li>You receive a risk report and next steps</li>
-                                </ol>
-                            </div>
                         </div>
                         <div className="space-y-3 mb-10" role="radiogroup" aria-label="Submission type">
                             {OPTIONS.map((opt) => (
