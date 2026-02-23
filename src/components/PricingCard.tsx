@@ -107,7 +107,7 @@ export function PricingCard({
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] focus-visible:ring-offset-2',
                 isLoading ? 'opacity-70 cursor-not-allowed' : '',
                 variant === 'primary'
-                    ? 'bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] active:scale-[0.98]'
+                    ? 'btn-gold-gradient active:scale-[0.98]'
                     : 'border border-white/20 text-white hover:bg-white/10 focus-visible:ring-offset-[#112540]',
             ].join(' ')}
         >
