@@ -680,7 +680,7 @@ export default function App() {
             {
               step: '3',
               title: 'Get the Verdict',
-              body: 'Within minutes, our experts analyse the threat and tell you exactly what to do next.',
+              body: 'Our experts carefully analyse the threat, send a clear risk report directly to your phone, and guide you step-by-step on exactly what to do next.',
               gold: true,
             },
           ].map(({ step, title, body, gold }) => (
