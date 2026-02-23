@@ -801,7 +801,7 @@ export default function App() {
       {/* ── Reassurance — No shame ─────────────────────────────────────── */}
       <SectionWrapper background="offwhite" topBorder>
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-4">
+          <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-4 text-center w-full">
             Peace of mind
           </p>
 
