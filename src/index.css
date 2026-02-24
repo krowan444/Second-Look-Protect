@@ -220,10 +220,11 @@ p {
         /* Retina standard (Chrome 113+, Firefox 89+) */
         background-image: image-set(url('/hero-portrait-mobile.png') 1x,
                 url('/hero-portrait-mobile.png') 2x);
-        background-position: center top;
-        background-size: auto 100%;
+        background-position: right center !important;
+        background-size: auto 100% !important;
+
         /* fit by height — zoomed out */
-        background-repeat: no-repeat;
+        background-repeat: no-repeat !important;
     }
 }
 
