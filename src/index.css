@@ -265,6 +265,11 @@ p {
     .hero-bg [role="list"] span[role="listitem"] {
         white-space: nowrap !important;
     }
+
+    /* Extra space between "As AI technology…" and "Send us suspicious…" */
+    .hero-bg h1~p.text-sm.mb-4 {
+        margin-bottom: 2.5rem !important;
+    }
 }
 
 /* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */
