@@ -214,6 +214,12 @@ p {
         background-position: right center !important;
         background-repeat: no-repeat !important;
     }
+
+    /* Move eyebrow line higher — reduce hero content top padding */
+    .hero-bg>.relative {
+        padding-top: 5.5rem !important;
+        /* down from 8rem (pt-32) */
+    }
 }
 
 /* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */
