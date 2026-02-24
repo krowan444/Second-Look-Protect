@@ -224,7 +224,12 @@ p {
     /* Add breathing space between headline and body text */
     .hero-bg h1 {
         margin-bottom: 1.25rem !important;
-        /* reduced ~30% from 5rem */
+    }
+
+    /* Reduce gap between eyebrow and headline */
+    .hero-bg .animate-fade-in-up:first-child {
+        margin-bottom: 1.4rem !important;
+        /* down from 2rem (mb-8) */
     }
 }
 
