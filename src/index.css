@@ -250,6 +250,11 @@ p {
     .hero-bg h1~p.text-slate-400 {
         max-width: 100% !important;
     }
+
+    /* Lower floating Get Protection button */
+    .fixed.bottom-6.right-4 {
+        bottom: 0.25rem !important;
+    }
 }
 
 /* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */
