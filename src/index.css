@@ -207,6 +207,17 @@ p {
     filter: none;
 }
 
+/* ─── Portrait-mobile hero image swap ──────────────────────────────────────── */
+/* Fires ONLY when width ≤ 767px AND orientation = portrait.                   */
+/* All other rules (gradients, overlays, size, z-index, etc.) are untouched.   */
+@media (max-width: 767px) and (orientation: portrait) {
+    .hero-bg {
+        background-image: url('/hero-portrait.webp');
+        background-position: center center;
+    }
+}
+
+
 /* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */
 @media (max-width: 767px) {
     @keyframes fabPulse {
