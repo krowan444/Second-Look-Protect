@@ -227,6 +227,15 @@ p {
         /* fit by height — zoomed out */
         background-repeat: no-repeat !important;
     }
+
+    /* Hero text — reduce ~12% for headline, ~6% for body */
+    .hero-bg h1 {
+        font-size: 0.88em !important;
+    }
+
+    .hero-bg p {
+        font-size: 0.94em !important;
+    }
 }
 
 /* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */
