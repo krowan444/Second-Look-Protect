@@ -240,6 +240,11 @@ p {
     .hero-bg h1~p.text-lg {
         max-width: 100% !important;
     }
+
+    /* Hide em dashes on portrait mobile */
+    .hero-emdash {
+        display: none !important;
+    }
 }
 
 /* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */

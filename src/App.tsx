@@ -407,7 +407,7 @@ export default function App() {
 
               {/* Supporting text */}
               <p className="animate-fade-in-up animate-delay-200 text-slate-300 text-lg leading-relaxed mb-3 max-w-lg">
-                Send us suspicious texts, emails, links, WhatsApp messages, or screenshots — and we&rsquo;ll verify what&rsquo;s real, what&rsquo;s risky, and what to do next.
+                Send us suspicious texts, emails, links, WhatsApp messages, or screenshots<span className="hero-emdash"> —</span> and we&rsquo;ll verify what&rsquo;s real, what&rsquo;s risky, and what to do next.
               </p>
               <p className="animate-fade-in-up animate-delay-200 text-slate-400 text-sm leading-relaxed mb-3 max-w-lg">
                 Supporting individuals, families, and care environments against increasingly sophisticated scams and AI-driven fraud.
