@@ -253,7 +253,7 @@ p {
 
     /* Lower floating Get Protection button */
     .fixed.bottom-6.right-4 {
-        bottom: 0 !important;
+        bottom: 5vh !important;
     }
 
     /* Reduce gap above footer */
