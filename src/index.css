@@ -210,7 +210,7 @@ p {
 /* ─── Portrait-mobile hero: less zoom ──────────────────────────────────────── */
 @media (max-width: 767px) and (orientation: portrait) {
     .hero-bg {
-        background-size: auto 83% !important;
+        background-size: auto 58% !important;
         background-position: right 20% !important;
         background-repeat: no-repeat !important;
     }
