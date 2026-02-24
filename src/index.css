@@ -229,7 +229,11 @@ p {
     /* Reduce gap between eyebrow and headline */
     .hero-bg .animate-fade-in-up:first-child {
         margin-bottom: 1rem !important;
-        /* down from 2rem (mb-8) */
+    }
+
+    /* Constrain body paragraphs to left half of screen */
+    .hero-bg h1~p {
+        max-width: 50vw !important;
     }
 }
 
