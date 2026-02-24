@@ -217,7 +217,7 @@ p {
 
     /* Move eyebrow line higher — reduce hero content top padding */
     .hero-bg>.relative {
-        padding-top: 4.75rem !important;
+        padding-top: 5.5rem !important;
         /* down from 8rem (pt-32) */
     }
 
