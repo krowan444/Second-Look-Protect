@@ -207,18 +207,18 @@ p {
     filter: none;
 }
 
-/* ─── Mobile-landscape header scroll-shrink ────────────────────────────────── */
+/* ─── Mobile-landscape header size reduction (always 50%) ──────────────────── */
 @media (max-height: 500px) and (orientation: landscape) {
-    header[role="banner"].landscape-shrunk nav {
+    header[role="banner"] nav {
         padding-top: 0.15rem !important;
         padding-bottom: 0.15rem !important;
     }
 
-    header[role="banner"].landscape-shrunk nav * {
+    header[role="banner"] nav * {
         font-size: 0.65em;
     }
 
-    header[role="banner"].landscape-shrunk nav svg {
+    header[role="banner"] nav svg {
         width: 0.75rem;
         height: 0.75rem;
     }
