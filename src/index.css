@@ -258,7 +258,7 @@ p {
 
     /* Reduce gap above footer */
     footer[role="contentinfo"] {
-        padding-top: 3.25rem !important;
+        padding-top: 2.5rem !important;
     }
 
     /* Keep benefit chips on one line */
