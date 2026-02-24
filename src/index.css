@@ -245,6 +245,11 @@ p {
     .hero-emdash {
         display: none !important;
     }
+
+    /* Let "Supporting individuals…" paragraph span full width */
+    .hero-bg h1~p.text-slate-400 {
+        max-width: 100% !important;
+    }
 }
 
 /* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */
