@@ -22,11 +22,27 @@ interface NavbarProps {
 export function Navbar({ onGetProtection }: NavbarProps) {
     const [isScrolled, setIsScrolled] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [isLandscapeShrunk, setIsLandscapeShrunk] = useState(false);
 
     useEffect(() => {
         const onScroll = () => setIsScrolled(window.scrollY > 40);
         window.addEventListener('scroll', onScroll, { passive: true });
         return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
+    /* Mobile-landscape scroll shrink */
+    useEffect(() => {
+        const mq = window.matchMedia('(max-height: 500px) and (orientation: landscape)');
+        const update = () => {
+            setIsLandscapeShrunk(mq.matches && window.scrollY > 10);
+        };
+        window.addEventListener('scroll', update, { passive: true });
+        mq.addEventListener('change', update);
+        update();
+        return () => {
+            window.removeEventListener('scroll', update);
+            mq.removeEventListener('change', update);
+        };
     }, []);
 
     useEffect(() => {
@@ -55,6 +71,7 @@ export function Navbar({ onGetProtection }: NavbarProps) {
                     isScrolled
                         ? 'bg-[#112540]/98 backdrop-blur-md shadow-lg'
                         : 'bg-[#112540]',
+                    isLandscapeShrunk ? 'landscape-shrunk' : '',
                 ].join(' ')}
             >
                 {/* ── Top contact announcement bar (desktop only) ─────────── */}

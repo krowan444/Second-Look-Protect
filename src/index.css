@@ -207,6 +207,23 @@ p {
     filter: none;
 }
 
+/* ─── Mobile-landscape header scroll-shrink ────────────────────────────────── */
+@media (max-height: 500px) and (orientation: landscape) {
+    header[role="banner"].landscape-shrunk nav {
+        padding-top: 0.15rem !important;
+        padding-bottom: 0.15rem !important;
+    }
+
+    header[role="banner"].landscape-shrunk nav * {
+        font-size: 0.65em;
+    }
+
+    header[role="banner"].landscape-shrunk nav svg {
+        width: 0.75rem;
+        height: 0.75rem;
+    }
+}
+
 /* ─── Portrait-mobile hero: less zoom ──────────────────────────────────────── */
 @media (max-width: 767px) and (orientation: portrait) {
     .hero-bg {
