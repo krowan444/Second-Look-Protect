@@ -260,6 +260,11 @@ p {
     footer[role="contentinfo"] {
         padding-top: 3.25rem !important;
     }
+
+    /* Keep benefit chips on one line */
+    .hero-bg [role="list"] span[role="listitem"] {
+        white-space: nowrap !important;
+    }
 }
 
 /* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */
