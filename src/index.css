@@ -228,7 +228,7 @@ p {
 
     /* Reduce gap between eyebrow and headline */
     .hero-bg .animate-fade-in-up:first-child {
-        margin-bottom: 1.4rem !important;
+        margin-bottom: 1rem !important;
         /* down from 2rem (mb-8) */
     }
 }
