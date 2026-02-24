@@ -221,7 +221,8 @@ p {
         background-image: image-set(url('/hero-portrait-mobile.png') 1x,
                 url('/hero-portrait-mobile.png') 2x);
         background-position: right center !important;
-        background-size: auto 100% !important;
+        background-size: contain !important;
+        /* zoom out — show full image */
 
         /* fit by height — zoomed out */
         background-repeat: no-repeat !important;
