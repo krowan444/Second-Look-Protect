@@ -207,33 +207,6 @@ p {
     filter: none;
 }
 
-/* ─── Portrait-mobile hero image swap ──────────────────────────────────────── */
-/* Fires ONLY when width ≤ 767px AND orientation = portrait.                   */
-/* All other rules (gradients, overlays, size, z-index, etc.) are untouched.   */
-@media (max-width: 767px) and (orientation: portrait) {
-    .hero-bg {
-        /* Fallback 1x */
-        background-image: url('/hero-portrait-mobile.png');
-        /* Retina webkit (Safari / older Chrome) */
-        background-image: -webkit-image-set(url('/hero-portrait-mobile.png') 1x,
-                url('/hero-portrait-mobile.png') 2x);
-        /* Retina standard (Chrome 113+, Firefox 89+) */
-        background-image: image-set(url('/hero-portrait-mobile.png') 1x,
-                url('/hero-portrait-mobile.png') 2x);
-        background-position: 65% 20% !important;
-        background-size: cover !important;
-        background-repeat: no-repeat !important;
-    }
-
-    /* Hero text — reduce ~12% for headline, ~6% for body */
-    .hero-bg h1 {
-        font-size: 0.88em !important;
-    }
-
-    .hero-bg p {
-        font-size: 0.94em !important;
-    }
-}
 
 /* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */
 @media (max-width: 767px) {
