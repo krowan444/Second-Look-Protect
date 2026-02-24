@@ -412,9 +412,7 @@ export default function App() {
               <p className="animate-fade-in-up animate-delay-200 text-slate-400 text-sm leading-relaxed mb-3 max-w-lg">
                 Supporting individuals, families, and care environments against increasingly sophisticated scams and AI-driven fraud.
               </p>
-              <p className="animate-fade-in-up animate-delay-200 text-[#C9A84C]/70 text-sm font-medium tracking-wide mb-8">
-                Independent. UK-based. Human-verified.
-              </p>
+
 
               {/* Benefit chips */}
               <div className="animate-fade-in-up animate-delay-300 flex flex-wrap gap-2 mb-10" role="list" aria-label="Key benefits">
