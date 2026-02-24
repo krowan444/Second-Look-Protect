@@ -207,6 +207,14 @@ p {
     filter: none;
 }
 
+/* ─── Portrait-mobile hero: less zoom ──────────────────────────────────────── */
+@media (max-width: 767px) and (orientation: portrait) {
+    .hero-bg {
+        background-size: contain !important;
+        background-position: right center !important;
+        background-repeat: no-repeat !important;
+    }
+}
 
 /* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */
 @media (max-width: 767px) {
