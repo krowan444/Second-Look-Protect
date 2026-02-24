@@ -211,7 +211,7 @@ p {
 @media (max-width: 767px) and (orientation: portrait) {
     .hero-bg {
         background-size: auto 35% !important;
-        background-position: calc(100% + 32.5vw) 9% !important;
+        background-position: calc(100% + 32.5vw) 11% !important;
         background-repeat: no-repeat !important;
     }
 
