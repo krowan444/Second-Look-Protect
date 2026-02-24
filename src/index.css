@@ -212,11 +212,18 @@ p {
 /* All other rules (gradients, overlays, size, z-index, etc.) are untouched.   */
 @media (max-width: 767px) and (orientation: portrait) {
     .hero-bg {
-        background-image: url('/hero-portrait.webp');
+        /* Fallback 1x */
+        background-image: url('/hero-portrait-mobile.png');
+        /* Retina webkit (Safari / older Chrome) */
+        background-image: -webkit-image-set(url('/hero-portrait-mobile.png') 1x,
+                url('/hero-portrait-mobile.png') 2x);
+        /* Retina standard (Chrome 113+, Firefox 89+) */
+        background-image: image-set(url('/hero-portrait-mobile.png') 1x,
+                url('/hero-portrait-mobile.png') 2x);
         background-position: center center;
+        background-size: cover;
     }
 }
-
 
 /* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */
 @media (max-width: 767px) {
