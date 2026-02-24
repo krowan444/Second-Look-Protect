@@ -268,7 +268,7 @@ p {
 
     /* Extra space between "As AI technology…" and "Send us suspicious…" */
     .hero-bg h1~p.text-sm.mb-4 {
-        margin-bottom: 2.5rem !important;
+        margin-bottom: 1.75rem !important;
     }
 }
 
