@@ -223,9 +223,8 @@ p {
 
     /* Add breathing space between headline and body text */
     .hero-bg h1 {
-        margin-bottom: 5rem !important;
-        /* increased gap */
-        /* up from 1.5rem (mb-6) */
+        margin-bottom: 3.5rem !important;
+        /* reduced ~30% from 5rem */
     }
 }
 
