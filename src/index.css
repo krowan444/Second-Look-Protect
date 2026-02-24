@@ -211,7 +211,7 @@ p {
 @media (max-width: 767px) and (orientation: portrait) {
     .hero-bg {
         background-size: contain !important;
-        background-position: right 30% !important;
+        background-position: right 20% !important;
         background-repeat: no-repeat !important;
     }
 
@@ -223,7 +223,8 @@ p {
 
     /* Add breathing space between headline and body text */
     .hero-bg h1 {
-        margin-bottom: 3.5rem !important;
+        margin-bottom: 5rem !important;
+        /* increased gap */
         /* up from 1.5rem (mb-6) */
     }
 }
