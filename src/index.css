@@ -241,6 +241,11 @@ p {
         max-width: 100% !important;
     }
 
+    /* Let "Supporting individuals…" paragraph span full width */
+    .hero-bg h1~p.text-slate-400 {
+        max-width: 100% !important;
+    }
+
     /* Hide em dashes on portrait mobile */
     .hero-emdash {
         display: none !important;
