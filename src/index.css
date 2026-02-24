@@ -235,6 +235,11 @@ p {
     .hero-bg h1~p {
         max-width: 50vw !important;
     }
+
+    /* Let "Send us suspicious…" paragraph span full width */
+    .hero-bg h1~p.text-lg {
+        max-width: 100% !important;
+    }
 }
 
 /* ─── Mobile-only FAB pulse ──────────────────────────────────────────────── */
