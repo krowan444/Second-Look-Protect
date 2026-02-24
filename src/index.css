@@ -220,7 +220,7 @@ p {
         /* Retina standard (Chrome 113+, Firefox 89+) */
         background-image: image-set(url('/hero-portrait-mobile.png') 1x,
                 url('/hero-portrait-mobile.png') 2x);
-        background-position: right 35% !important;
+        background-position: right 25% !important;
         background-size: contain !important;
         /* zoom out — show full image */
 
