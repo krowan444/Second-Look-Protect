@@ -1,11 +1,12 @@
 import React from 'react';
-import { Shield, Lock, Clock, BadgeCheck } from 'lucide-react';
+import { Shield, Lock, Clock, BadgeCheck, CheckCircle } from 'lucide-react';
 
 const BADGES = [
     { icon: BadgeCheck, label: 'UK-Based Experts' },
     { icon: Lock, label: 'Fully Confidential' },
     { icon: Shield, label: 'Independent Service' },
     { icon: Clock, label: 'Priority Response Available' },
+    { icon: CheckCircle, label: 'Human-Reviewed, Clear Guidance' },
 ];
 
 interface TrustBadgeProps {
@@ -18,7 +19,7 @@ export function TrustBadge({ light = false }: TrustBadgeProps) {
     const dividerColor = light ? 'bg-white/15' : 'bg-slate-300';
 
     return (
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3" role="list" aria-label="Trust credentials">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3" role="list" aria-label="Trust credentials">
             {BADGES.map((badge, i) => (
                 <React.Fragment key={badge.label}>
                     <div className={`flex items-center gap-2 text-sm font-medium ${textColor}`} role="listitem">
