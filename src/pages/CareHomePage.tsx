@@ -141,6 +141,9 @@ const CARE_CSS = `
     .care-sticky-bar {
       display: flex !important;
     }
+    .care-page-btn-primary {
+      display: none !important;
+    }
   }
 
   /* Sticky bar — hidden by default */
