@@ -251,7 +251,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
 
     // Is the submit button ready?
     const typeSpecificReady = selectedOption === 'screenshot' ? true // image is optional
-        : selectedOption === 'link' ? linkValue.trim().length > 0
+        : selectedOption === 'link' ? true // link is optional
             : selectedOption === 'contact' ? contactValue.trim().length > 0
                 : false;
     const canSubmit = !isSubmitting
@@ -323,7 +323,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             <span className="text-slate-500 text-base">No judgement. No pressure. Just clarity.</span>
                         </p>
                         <p className="text-slate-400 text-sm leading-relaxed mb-10">
-                            You've taken the right step. There's no need to rush or respond while we review this for you.
+                            You've done the right thing. There's no need to rush. We will review this for you.
                         </p>
                         <Button
                             onClick={onBack}
