@@ -316,7 +316,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                     </p>
                 </div>
                 <main className="flex-1 flex items-center justify-center px-6 py-16">
-                    <div className="max-w-md w-full text-center bg-white rounded-2xl shadow-sm border border-slate-100 px-8 py-12">
+                    <div className="max-w-md w-full text-center bg-[#FAFAF8] rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.15)] border border-white/10 px-8 py-12">
                         <div className="w-20 h-20 rounded-full bg-[#C9A84C]/15 flex items-center justify-center mx-auto mb-8">
                             <CheckCircle className="w-10 h-10 text-[#C9A84C]" />
                         </div>
@@ -348,7 +348,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
             <div className="min-h-screen bg-[#0B1E36] flex flex-col">
                 {Navbar}
                 <main className="flex-1 flex items-start justify-center px-6 py-12 md:py-20">
-                    <div className="w-full max-w-xl bg-white rounded-2xl shadow-sm border border-slate-100 px-6 md:px-10 py-8 md:py-12">
+                    <div className="w-full max-w-xl bg-[#FAFAF8] rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.15)] border border-white/10 px-6 md:px-10 py-8 md:py-12">
                         <div className="mb-8"><StepIndicator step={1} total={2} /></div>
                         <div className="mb-10">
                             <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-3">
