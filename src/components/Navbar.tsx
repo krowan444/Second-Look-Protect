@@ -10,7 +10,6 @@ const MOBILE_DISPLAY = '07907 614821';
 const NAV_LINKS = [
     { label: 'How It Works', href: '#how-it-works' },
     { label: 'Plans', href: '#pricing' },
-    { label: 'Reviews', href: '#testimonials' },
     { label: 'FAQ', href: '#faq' },
     { label: 'Contact', href: '#contact' },
 ];

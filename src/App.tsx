@@ -1047,19 +1047,29 @@ export default function App() {
         </div>
       </SectionWrapper>
 
-      {/* ── Testimonials ─────────────────────────────────────────────── */}
+      {/* ── Early Access ─────────────────────────────────────────────── */}
       <SectionWrapper id="testimonials" background="offwhite" topBorder>
-        <SectionHeading
-          title="What Our Members Say"
-          subtitle="Accounts from people who use Second Look Protect to stay safe online."
-        />
+        <div className="max-w-2xl mx-auto text-center">
+          <SectionHeading
+            title="Helping shape the future of safeguarding — together"
+          />
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {TESTIMONIALS.map((t) => (
-            <div key={t.author}>
-              <TestimonialCard {...t} />
-            </div>
-          ))}
+          <p className="text-slate-600 text-lg leading-relaxed mb-6">
+            Second Look Protect is currently in early rollout.
+          </p>
+
+          <div className="space-y-4 text-slate-600 text-base leading-relaxed mb-8">
+            <p>
+              We are working with local care environments and early users to refine and improve the service based on real-world feedback.
+            </p>
+            <p>
+              If you join today, you're not just using the service — you're helping shape how modern safeguarding support should feel: calm, simple, and human.
+            </p>
+          </div>
+
+          <p className="text-slate-500 text-sm leading-relaxed" style={{ opacity: 0.85 }}>
+            Early partners help guide new features, improve clarity, and ensure the experience remains supportive and easy to use.
+          </p>
         </div>
       </SectionWrapper>
 
