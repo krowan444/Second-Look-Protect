@@ -56,7 +56,7 @@ export function CareHomePage() {
             <section
                 style={{
                     textAlign: 'center',
-                    padding: '3rem 1.5rem 2rem',
+                    padding: '1.5rem 1.5rem 1.5rem',
                     maxWidth: '620px',
                     margin: '0 auto',
                 }}
@@ -81,11 +81,12 @@ export function CareHomePage() {
             {/* ── 3. Primary action buttons ─────────────────────────────────── */}
             <section
                 style={{
-                    maxWidth: '440px',
+                    maxWidth: '380px',
                     margin: '0 auto',
                     padding: '0 1.5rem 2.5rem',
                     display: 'flex',
                     flexDirection: 'column',
+                    alignItems: 'center',
                     gap: '0.875rem',
                 }}
             >
