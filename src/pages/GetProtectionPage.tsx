@@ -612,7 +612,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                                 >
                                     Privacy Policy
                                 </a>
-                                .
+                                , and that this service provides guidance to help me decide what to do next and does not provide financial advice.
                             </span>
                         </label>
                         {consentError && (
