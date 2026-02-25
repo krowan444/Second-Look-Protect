@@ -265,27 +265,36 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
 
     /* ── Shared nav bar ───────────────────────────────────────────────────── */
     const Navbar = (
-        <nav className="bg-[#112540] border-b border-white/10 px-6 md:px-10 py-4 flex items-center justify-between">
-            <button
-                onClick={step === 2 && !submitted ? () => setStep(1) : onBack}
-                className="flex items-center gap-2 text-slate-300 hover:text-white text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] rounded"
-                aria-label={step === 2 && !submitted ? 'Go back to option selection' : 'Return to home page'}
-            >
-                <ArrowLeft className="w-4 h-4" />
-                {step === 2 && !submitted ? 'Back' : 'Back to home'}
-            </button>
-            <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
-                <span className="text-white text-sm font-semibold tracking-wide">Second Look Protect</span>
+        <>
+            <nav className="bg-[#0B1E36] border-b border-white/10 px-6 md:px-10 py-4 flex items-center justify-between">
+                <button
+                    onClick={step === 2 && !submitted ? () => setStep(1) : onBack}
+                    className="flex items-center gap-2 text-slate-300 hover:text-white text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] rounded"
+                    aria-label={step === 2 && !submitted ? 'Go back to option selection' : 'Return to home page'}
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    {step === 2 && !submitted ? 'Back' : 'Back to home'}
+                </button>
+                <div className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
+                    <span className="text-white text-sm font-semibold tracking-tight" style={{ fontFamily: "'Merriweather', serif" }}>
+                        Second Look <span className="text-[#C9A84C]">Protect</span>
+                    </span>
+                </div>
+            </nav>
+            <div className="bg-[#112540] text-center py-2 border-b border-white/5">
+                <p className="text-slate-400 text-xs tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    You are taking a second look.
+                </p>
             </div>
-        </nav>
+        </>
     );
 
     /* ── Confirmation screen ──────────────────────────────────────────────── */
     if (submitted) {
         return (
-            <div className="min-h-screen bg-[#F9F9F7] flex flex-col">
-                <nav className="bg-[#112540] border-b border-white/10 px-6 py-4">
+            <div className="min-h-screen bg-[#F4F2ED] flex flex-col">
+                <nav className="bg-[#0B1E36] border-b border-white/10 px-6 md:px-10 py-4 flex items-center justify-between">
                     <button
                         onClick={onBack}
                         className="flex items-center gap-2 text-slate-300 hover:text-white text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] rounded"
@@ -294,9 +303,20 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                         <ArrowLeft className="w-4 h-4" />
                         Back to home
                     </button>
+                    <div className="flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
+                        <span className="text-white text-sm font-semibold tracking-tight" style={{ fontFamily: "'Merriweather', serif" }}>
+                            Second Look <span className="text-[#C9A84C]">Protect</span>
+                        </span>
+                    </div>
                 </nav>
+                <div className="bg-[#112540] text-center py-2 border-b border-white/5">
+                    <p className="text-slate-400 text-xs tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>
+                        You are taking a second look.
+                    </p>
+                </div>
                 <main className="flex-1 flex items-center justify-center px-6 py-16">
-                    <div className="max-w-md w-full text-center">
+                    <div className="max-w-md w-full text-center bg-white rounded-2xl shadow-sm border border-slate-100 px-8 py-12">
                         <div className="w-20 h-20 rounded-full bg-[#C9A84C]/15 flex items-center justify-center mx-auto mb-8">
                             <CheckCircle className="w-10 h-10 text-[#C9A84C]" />
                         </div>
@@ -325,10 +345,10 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
     /* ── Step 1: Select option ────────────────────────────────────────────── */
     if (step === 1) {
         return (
-            <div className="min-h-screen bg-[#F9F9F7] flex flex-col">
+            <div className="min-h-screen bg-[#F4F2ED] flex flex-col">
                 {Navbar}
                 <main className="flex-1 flex items-start justify-center px-6 py-12 md:py-20">
-                    <div className="w-full max-w-xl">
+                    <div className="w-full max-w-xl bg-white rounded-2xl shadow-sm border border-slate-100 px-6 md:px-10 py-8 md:py-12">
                         <div className="mb-8"><StepIndicator step={1} total={2} /></div>
                         <div className="mb-10">
                             <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-3">
@@ -387,10 +407,10 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
 
     /* ── Step 2: Submit details ───────────────────────────────────────────── */
     return (
-        <div className="min-h-screen bg-[#F9F9F7] flex flex-col">
+        <div className="min-h-screen bg-[#F4F2ED] flex flex-col">
             {Navbar}
             <main className="flex-1 flex items-start justify-center px-6 py-12 md:py-20">
-                <div className="w-full max-w-xl">
+                <div className="w-full max-w-xl bg-white rounded-2xl shadow-sm border border-slate-100 px-6 md:px-10 py-8 md:py-12">
                     <div className="mb-8"><StepIndicator step={2} total={2} /></div>
 
                     <div className="mb-10">
