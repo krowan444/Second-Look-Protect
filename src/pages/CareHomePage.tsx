@@ -185,7 +185,7 @@ export function CareHomePage() {
 
                 {/* ── 4. BUTTONS — immediately after steps ───────────────────────── */}
                 <section style={{
-                    maxWidth: '380px', margin: '0 auto',
+                    maxWidth: '460px', margin: '0 auto',
                     padding: '0 1.5rem 2rem',
                     display: 'flex', flexDirection: 'column', alignItems: 'center',
                     gap: '12px',
