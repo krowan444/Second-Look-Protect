@@ -122,7 +122,7 @@ export function CareHomePage() {
                     </div>
                     {/* Identity lines */}
                     <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '4px' }}>
-                        Safeguarding support provided by your care home
+                        Trusted safeguarding support provided by your care home
                     </p>
                     <p style={{ color: '#64748b', fontSize: '0.72rem' }}>
                         Prepared for residents of <strong style={{ color: '#94a3b8' }}>(Care Home Name)</strong>
@@ -148,9 +148,9 @@ export function CareHomePage() {
                 <section style={{ padding: '12px 1.5rem 14px' }}>
                     <div className="care-page-steps">
                         {[
-                            { icon: <Mail style={{ width: 20, height: 20, color: GOLD }} aria-hidden="true" />, step: 'Step 1', text: 'Share the message or call you received' },
-                            { icon: <Search style={{ width: 20, height: 20, color: GOLD }} aria-hidden="true" />, step: 'Step 2', text: 'We check it carefully for you' },
-                            { icon: <CheckCircle style={{ width: 20, height: 20, color: GOLD }} aria-hidden="true" />, step: 'Step 3', text: 'You get clear, simple guidance' },
+                            { icon: <Mail style={{ width: 22, height: 22, color: GOLD }} aria-hidden="true" />, step: 'Step 1', text: 'Share the message or call you received' },
+                            { icon: <Search style={{ width: 22, height: 22, color: GOLD }} aria-hidden="true" />, step: 'Step 2', text: 'We check it carefully for you' },
+                            { icon: <CheckCircle style={{ width: 22, height: 22, color: GOLD }} aria-hidden="true" />, step: 'Step 3', text: 'You get clear, simple guidance' },
                         ].map((item) => (
                             <div key={item.step} className="care-page-step">
                                 {/* Icon circle */}
@@ -167,7 +167,7 @@ export function CareHomePage() {
                                     <span style={{
                                         display: 'block', fontSize: '0.6rem', fontWeight: 700,
                                         letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-                                        color: '#A8853C', marginBottom: 2, textAlign: 'center',
+                                        color: 'rgba(168,133,60,0.7)', marginBottom: 2, textAlign: 'center',
                                     }}>
                                         {item.step}
                                     </span>
@@ -190,6 +190,9 @@ export function CareHomePage() {
                     display: 'flex', flexDirection: 'column', alignItems: 'center',
                     gap: '12px',
                 }}>
+                    <p style={{ color: '#94a3b8', fontSize: '0.78rem', marginBottom: '10px' }}>
+                        You are safe to check first.
+                    </p>
                     <a href={GET_PROTECTION_URL} className="care-page-btn-primary" aria-label="Get Protection Now" style={{ marginBottom: '12px' }}>
                         <Shield style={{ width: 18, height: 18, flexShrink: 0 }} aria-hidden="true" />
                         Get Protection Now
