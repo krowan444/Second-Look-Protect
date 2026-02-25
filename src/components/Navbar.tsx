@@ -219,7 +219,7 @@ export function Navbar({ onGetProtection }: NavbarProps) {
             )}
 
             {/* ── Sticky mobile FAB — single primary action ────────────────── */}
-            <div className="md:hidden fixed bottom-6 right-4 z-50">
+            <div className="md:hidden fixed bottom-6 right-4 z-50 home-fab-old">
                 <button
                     onClick={onGetProtection}
                     aria-label="Get Protection"

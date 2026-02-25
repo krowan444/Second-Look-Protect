@@ -1383,6 +1383,8 @@ export default function App() {
           .home-sticky-bar button:active { filter: brightness(0.95); }
           /* Bottom padding to prevent content overlap */
           .home-sticky-padded { padding-bottom: 76px !important; }
+          /* Hide old floating FAB */
+          .home-fab-old { display: none !important; }
         }
       `}</style>
       <div className="home-sticky-bar" aria-label="Quick action">
