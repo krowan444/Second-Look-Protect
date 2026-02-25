@@ -429,10 +429,13 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                                 </a>
                                 <a
                                     href="mailto:hello@secondlookprotect.co.uk"
-                                    className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
+                                    className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 w-full"
                                 >
-                                    <Mail className="w-5 h-5 text-[#C9A84C]" />
-                                    Email — hello@secondlookprotect.co.uk
+                                    <Mail className="w-5 h-5 text-[#C9A84C] shrink-0" />
+                                    <span className="flex flex-col items-start leading-tight">
+                                        <span className="text-base">Email</span>
+                                        <span className="text-sm font-normal text-slate-500">hello@secondlookprotect.co.uk</span>
+                                    </span>
                                 </a>
                             </div>
                         </div>
@@ -728,10 +731,13 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             </a>
                             <a
                                 href="mailto:hello@secondlookprotect.co.uk"
-                                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
+                                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 w-full"
                             >
-                                <Mail className="w-5 h-5 text-[#C9A84C]" />
-                                Email — hello@secondlookprotect.co.uk
+                                <Mail className="w-5 h-5 text-[#C9A84C] shrink-0" />
+                                <span className="flex flex-col items-start leading-tight">
+                                    <span className="text-base">Email</span>
+                                    <span className="text-sm font-normal text-slate-500">hello@secondlookprotect.co.uk</span>
+                                </span>
                             </a>
                         </div>
                     </div>
