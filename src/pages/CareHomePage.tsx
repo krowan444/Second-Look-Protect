@@ -7,7 +7,7 @@ const NAVY_LIGHT = '#112540';
 const GOLD = '#C9A84C';
 
 /* ─── Placeholder values (replace before going live) ───────────────────── */
-const GET_PROTECTION_URL = '/get-protection';
+const GET_PROTECTION_URL = '/care/submit';
 const SUPPORT_PHONE_CALL = '01604385888';
 const SUPPORT_PHONE_TEXT = '07907614821';
 

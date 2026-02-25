@@ -206,18 +206,19 @@ function scrollToSection(id: string) {
 
 export default function App() {
   // Initialise page from URL so /subscription-success works on direct load / Stripe redirect
-  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' {
+  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' | 'care-submit' {
     const path = window.location.pathname;
     if (path.startsWith('/subscription-success')) return 'subscription-success';
     if (path.startsWith('/get-protection')) return 'get-protection';
     if (path.startsWith('/privacy-policy')) return 'privacy-policy';
     if (path.startsWith('/support')) return 'support';
     if (path.startsWith('/terms-of-service')) return 'terms-of-service';
+    if (path.startsWith('/care/submit')) return 'care-submit';
     if (path.startsWith('/care')) return 'care';
     return 'home';
   }
 
-  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care'>(getInitialPage);
+  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' | 'care-submit'>(getInitialPage);
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const howItWorksRef = React.useRef<HTMLDivElement>(null);
@@ -351,6 +352,19 @@ export default function App() {
         onBack={() => {
           window.history.replaceState(null, '', '/');
           setPage('home');
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }}
+      />
+    );
+  }
+
+  // ── Early return: Care Submit page (care-scoped submission flow) ──────
+  if (page === 'care-submit') {
+    return (
+      <GetProtectionPage
+        onBack={() => {
+          window.history.pushState(null, '', '/care');
+          setPage('care');
           window.scrollTo({ top: 0, behavior: 'instant' });
         }}
       />
