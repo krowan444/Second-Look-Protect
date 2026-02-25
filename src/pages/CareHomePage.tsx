@@ -82,6 +82,52 @@ const CARE_CSS = `
   @media (min-width: 640px) {
     .care-page-trust { flex-direction: row; gap: 2rem; justify-content: center; }
   }
+
+  /* ── MOBILE PORTRAIT ONLY — readability & alignment for elderly users ── */
+  @media (max-width: 480px) and (orientation: portrait) {
+    /* Identity lines — larger, better contrast */
+    .care-page-identity-1 {
+      font-size: 0.95rem !important;
+      color: #b0bec5 !important;
+    }
+    .care-page-identity-2 {
+      font-size: 0.88rem !important;
+      color: #90a4ae !important;
+    }
+
+    /* Headline — slightly larger */
+    .care-page h1 {
+      font-size: clamp(1.3rem, 4.5vw, 1.9rem) !important;
+    }
+
+    /* Steps — centered card content, larger text */
+    .care-page-step {
+      justify-content: center;
+      text-align: center;
+      padding: 14px 16px;
+    }
+    .care-page-step > div:last-child {
+      text-align: center;
+    }
+    .care-page-step-label {
+      font-size: 0.72rem !important;
+    }
+    .care-page-step-text {
+      font-size: 1.05rem !important;
+      line-height: 1.5 !important;
+    }
+
+    /* Support lines — more readable */
+    .care-page-support-line {
+      font-size: 0.88rem !important;
+      color: #78909c !important;
+    }
+    .care-page-safe-line {
+      font-size: 0.92rem !important;
+      color: #b0bec5 !important;
+      font-weight: 500 !important;
+    }
+  }
 `;
 
 /* ─── Component ────────────────────────────────────────────────────────── */
@@ -121,10 +167,10 @@ export function CareHomePage() {
                         </span>
                     </div>
                     {/* Identity lines */}
-                    <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '4px' }}>
+                    <p className="care-page-identity-1" style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '4px' }}>
                         Trusted safeguarding support provided by your care home
                     </p>
-                    <p style={{ color: '#64748b', fontSize: '0.72rem' }}>
+                    <p className="care-page-identity-2" style={{ color: '#64748b', fontSize: '0.72rem' }}>
                         Prepared for residents of <strong style={{ color: '#94a3b8' }}>(Care Home Name)</strong>
                     </p>
                 </header>
@@ -164,21 +210,21 @@ export function CareHomePage() {
                                 </div>
                                 {/* Text */}
                                 <div>
-                                    <span style={{
+                                    <span className="care-page-step-label" style={{
                                         display: 'block', fontSize: '0.6rem', fontWeight: 700,
                                         letterSpacing: '0.12em', textTransform: 'uppercase' as const,
                                         color: 'rgba(168,133,60,0.7)', marginBottom: 2, textAlign: 'center',
                                     }}>
                                         {item.step}
                                     </span>
-                                    <p style={{ fontSize: '0.92rem', color: '#e2e8f0', fontWeight: 500, textAlign: 'center' }}>
+                                    <p className="care-page-step-text" style={{ fontSize: '0.92rem', color: '#e2e8f0', fontWeight: 500, textAlign: 'center' }}>
                                         {item.text}
                                     </p>
                                 </div>
                             </div>
                         ))}
                     </div>
-                    <p style={{ color: '#475569', fontSize: '0.72rem', marginTop: '10px' }}>
+                    <p className="care-page-support-line" style={{ color: '#475569', fontSize: '0.72rem', marginTop: '10px' }}>
                         Clear support without pressure or judgement.
                     </p>
                 </section>
@@ -190,7 +236,7 @@ export function CareHomePage() {
                     display: 'flex', flexDirection: 'column', alignItems: 'center',
                     gap: '12px',
                 }}>
-                    <p style={{ color: '#94a3b8', fontSize: '0.78rem', marginBottom: '10px' }}>
+                    <p className="care-page-safe-line" style={{ color: '#94a3b8', fontSize: '0.78rem', marginBottom: '10px' }}>
                         You are safe to check first.
                     </p>
                     <a href={GET_PROTECTION_URL} className="care-page-btn-primary" aria-label="Get Protection Now" style={{ marginBottom: '12px' }}>
