@@ -190,7 +190,7 @@ export function CareHomePage() {
                     display: 'flex', flexDirection: 'column', alignItems: 'center',
                     gap: '12px',
                 }}>
-                    <a href={GET_PROTECTION_URL} className="care-page-btn-primary" aria-label="Get Protection Now">
+                    <a href={GET_PROTECTION_URL} className="care-page-btn-primary" aria-label="Get Protection Now" style={{ marginBottom: '12px' }}>
                         <Shield style={{ width: 18, height: 18, flexShrink: 0 }} aria-hidden="true" />
                         Get Protection Now
                     </a>
