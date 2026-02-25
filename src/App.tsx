@@ -1137,7 +1137,7 @@ export default function App() {
               </div>
               <div>
                 <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-1">General Enquiries</p>
-                <p className="text-[#0B1E36] font-semibold text-xs break-all">hello@secondlookprotect.co.uk</p>
+                <p className="text-[#0B1E36] font-semibold text-sm" style={{ wordBreak: 'break-word' }}>hello@​secondlookprotect.​co.uk</p>
                 <p className="text-slate-400 text-xs mt-1">Questions, billing, partnerships</p>
               </div>
             </a>
@@ -1153,7 +1153,7 @@ export default function App() {
               </div>
               <div>
                 <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-1">Technical Support</p>
-                <p className="text-[#0B1E36] font-semibold text-xs break-all">support@secondlookprotect.co.uk</p>
+                <p className="text-[#0B1E36] font-semibold text-sm" style={{ wordBreak: 'break-word' }}>support@​secondlookprotect.​co.uk</p>
                 <p className="text-slate-400 text-xs mt-1">App/portal access, technical issues</p>
               </div>
             </a>
