@@ -378,7 +378,7 @@ export default function App() {
 
   // ── Home page ────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 selection:bg-[#C9A84C]/30 selection:text-[#0B1E36]">
+    <div className="min-h-screen bg-slate-50 selection:bg-[#C9A84C]/30 selection:text-[#0B1E36] home-sticky-padded">
       <Navbar onGetProtection={handleGetProtection} />
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
@@ -1338,6 +1338,59 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* ── Sticky bottom CTA — mobile portrait only ───────────────────── */}
+      <style>{`
+        .home-sticky-bar { display: none; }
+        @media (max-width: 480px) and (orientation: portrait) {
+          .home-sticky-bar {
+            display: flex !important;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
+            padding: 12px 20px;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+            background: rgba(11,30,54,0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(201,168,76,0.15);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+          }
+          .home-sticky-bar button {
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            width: 100%; max-width: 340px;
+            padding: 14px 1.5rem;
+            border-radius: 9999px; border: none; cursor: pointer;
+            background: linear-gradient(135deg, #C6A544 0%, #D2B356 50%, #B8962E 100%);
+            color: #0B1E36; font-size: 16px; font-weight: 700;
+            box-shadow: 0 4px 18px rgba(201,168,76,0.28);
+            transition: filter 0.18s ease;
+            position: relative; overflow: hidden;
+          }
+          .home-sticky-bar button::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 60%; height: 100%;
+            background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%);
+            animation: home-shimmer 4.5s ease-in-out infinite;
+          }
+          @keyframes home-shimmer {
+            0%, 85% { left: -100%; }
+            100%    { left: 150%; }
+          }
+          .home-sticky-bar button:active { filter: brightness(0.95); }
+          /* Bottom padding to prevent content overlap */
+          .home-sticky-padded { padding-bottom: 76px !important; }
+        }
+      `}</style>
+      <div className="home-sticky-bar" aria-label="Quick action">
+        <button onClick={handleGetProtection} aria-label="Get Protection Now">
+          <Shield className="w-[18px] h-[18px]" aria-hidden="true" />
+          Get Protection Now
+        </button>
+      </div>
     </div>
   );
 }
