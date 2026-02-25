@@ -222,6 +222,20 @@ p {
         width: 0.75rem;
         height: 0.75rem;
     }
+
+    /* Scrollable mobile menu */
+    #mobile-menu {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding-top: 3rem !important;
+        padding-bottom: 2rem !important;
+    }
+
+    #mobile-menu nav a {
+        font-size: 1.1rem !important;
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }
 }
 
 /* ─── Portrait-mobile hero: less zoom ──────────────────────────────────────── */
