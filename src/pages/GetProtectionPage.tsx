@@ -293,7 +293,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
     /* ── Confirmation screen ──────────────────────────────────────────────── */
     if (submitted) {
         return (
-            <div className="min-h-screen bg-[#F4F2ED] flex flex-col">
+            <div className="min-h-screen bg-[#0B1E36] flex flex-col">
                 <nav className="bg-[#0B1E36] border-b border-white/10 px-6 md:px-10 py-4 flex items-center justify-between">
                     <button
                         onClick={onBack}
@@ -345,7 +345,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
     /* ── Step 1: Select option ────────────────────────────────────────────── */
     if (step === 1) {
         return (
-            <div className="min-h-screen bg-[#F4F2ED] flex flex-col">
+            <div className="min-h-screen bg-[#0B1E36] flex flex-col">
                 {Navbar}
                 <main className="flex-1 flex items-start justify-center px-6 py-12 md:py-20">
                     <div className="w-full max-w-xl bg-white rounded-2xl shadow-sm border border-slate-100 px-6 md:px-10 py-8 md:py-12">
@@ -407,7 +407,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
 
     /* ── Step 2: Submit details ───────────────────────────────────────────── */
     return (
-        <div className="min-h-screen bg-[#F4F2ED] flex flex-col">
+        <div className="min-h-screen bg-[#0B1E36] flex flex-col">
             {Navbar}
             <main className="flex-1 flex items-start justify-center px-6 py-12 md:py-20">
                 <div className="w-full max-w-xl bg-white rounded-2xl shadow-sm border border-slate-100 px-6 md:px-10 py-8 md:py-12">
