@@ -8,7 +8,8 @@ const GOLD = '#C9A84C';
 
 /* ─── Placeholder values (replace before going live) ───────────────────── */
 const GET_PROTECTION_URL = '/get-protection';
-const SUPPORT_PHONE = '(SUPPORT_PHONE)';
+const SUPPORT_PHONE_CALL = '01604385888';
+const SUPPORT_PHONE_TEXT = '07907614821';
 
 /* ─── Scoped styles — ONLY affect .care-page-* classes ─────────────────── */
 const CARE_CSS = `
@@ -41,6 +42,7 @@ const CARE_CSS = `
     background: transparent; color: #C9A84C;
     font-size: 18px; font-weight: 600;
     border: 2px solid #C9A84C;
+    white-space: nowrap;
     transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
   }
   .care-page-btn-secondary:hover {
@@ -192,13 +194,13 @@ export function CareHomePage() {
                         <Shield style={{ width: 18, height: 18, flexShrink: 0 }} aria-hidden="true" />
                         Get Protection Now
                     </a>
-                    <a href={`tel:${SUPPORT_PHONE}`} className="care-page-btn-secondary" aria-label="Call for Support">
+                    <a href={`tel:${SUPPORT_PHONE_CALL}`} className="care-page-btn-secondary" aria-label="Call for Support on 01604 385888">
                         <Phone style={{ width: 18, height: 18, flexShrink: 0 }} aria-hidden="true" />
-                        Call for Support — {SUPPORT_PHONE}
+                        Call for Support — 01604 385888
                     </a>
-                    <a href={`sms:${SUPPORT_PHONE}`} className="care-page-btn-secondary" aria-label="Text for Support">
+                    <a href={`sms:${SUPPORT_PHONE_TEXT}`} className="care-page-btn-secondary" aria-label="Text for Support on 07907 614821">
                         <Mail style={{ width: 18, height: 18, flexShrink: 0 }} aria-hidden="true" />
-                        Text for Support — {SUPPORT_PHONE}
+                        Text for Support — 07907 614821
                     </a>
                 </section>
 
