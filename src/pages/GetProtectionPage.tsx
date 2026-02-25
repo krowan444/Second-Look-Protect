@@ -373,19 +373,31 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                                         selected={selectedOption === opt.id}
                                         onClick={() => handleOptionSelect(opt.id)}
                                     />
+                                    {selectedOption === opt.id && (
+                                        <div
+                                            className="flex flex-col gap-3 pl-2"
+                                            style={{
+                                                animation: 'slpFadeIn 0.3s ease-out',
+                                            }}
+                                        >
+                                            <style>{`@keyframes slpFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+                                            <p className="text-[#A8853C] text-sm font-medium">
+                                                You chose: {opt.title}
+                                            </p>
+                                            <Button
+                                                onClick={handleContinue}
+                                                size="lg"
+                                                className="slp-continue-btn w-full justify-center font-semibold border-0"
+                                                aria-label="Continue to step 2"
+                                            >
+                                                Continue <ChevronRight className="w-5 h-5" />
+                                            </Button>
+                                        </div>
+                                    )}
                                 </React.Fragment>
                             ))}
                         </div>
                         <div className="flex flex-col gap-3">
-                            <Button
-                                onClick={handleContinue}
-                                disabled={!selectedOption}
-                                size="lg"
-                                className="slp-continue-btn w-full justify-center font-semibold border-0"
-                                aria-label="Continue to step 2"
-                            >
-                                Continue <ChevronRight className="w-5 h-5" />
-                            </Button>
                             <p className="text-center text-slate-400 text-xs">Your submission is treated with full confidentiality.</p>
                             <p className="text-center text-slate-400 text-xs leading-relaxed">
                                 We will never ask for passwords, OTPs, full banking details, or ask you to move money. If unsure, contact us directly via our official website or{' '}
