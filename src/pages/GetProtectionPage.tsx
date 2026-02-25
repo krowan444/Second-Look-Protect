@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Shield, Upload, Link2, Phone, ArrowLeft, CheckCircle, ChevronRight, Image, X } from 'lucide-react';
 import { Button } from '../components/Button';
 import { getSupabase } from '../lib/supabaseClient';
@@ -123,6 +123,11 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
     const [consentError, setConsentError] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    /* ── Scroll to top on every step change (scoped to this page only) ──── */
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [step, submitted]);
 
     // Click tracking
     function trackEvent(event: string, data: Record<string, string>) {
@@ -338,7 +343,10 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                 {Navbar}
                 <main className="flex-1 flex items-start justify-center px-6 py-12 md:py-20">
                     <div className="w-full max-w-xl bg-[#FAFAF8] rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.15)] border border-white/10 px-6 md:px-10 py-8 md:py-12">
-                        <div className="mb-8"><StepIndicator step={1} total={2} /></div>
+                        <div className="flex items-center justify-between mb-8">
+                            <StepIndicator step={1} total={2} />
+                            <span className="text-slate-400 text-xs">Step 1 of 2</span>
+                        </div>
                         <div className="mb-10">
                             <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-3">
                                 Step 1 of 2 — Choose your check type
@@ -401,7 +409,10 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
             {Navbar}
             <main className="flex-1 flex items-start justify-center px-6 py-12 md:py-20">
                 <div className="w-full max-w-xl bg-[#FAFAF8] rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.15)] border border-white/10 px-6 md:px-10 py-8 md:py-12">
-                    <div className="mb-8"><StepIndicator step={2} total={2} /></div>
+                    <div className="flex items-center justify-between mb-8">
+                        <StepIndicator step={2} total={2} />
+                        <span className="text-slate-400 text-xs">Step 2 of 2</span>
+                    </div>
 
                     <div className="mb-10">
                         <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-3">
