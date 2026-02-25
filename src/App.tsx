@@ -459,7 +459,7 @@ export default function App() {
                   size="lg"
                   onClick={handleGetProtection}
                   aria-label="Get protection — start your fraud check in 60 seconds"
-                  className="btn-gold-gradient border-0 font-semibold w-full sm:w-auto justify-center"
+                  className="btn-gold-gradient border-0 font-semibold w-full sm:w-auto justify-center home-hero-cta"
                 >
                   Get Protection
                 </Button>
@@ -1383,6 +1383,8 @@ export default function App() {
           .home-sticky-bar button:active { filter: brightness(0.95); }
           /* Bottom padding to prevent content overlap */
           .home-sticky-padded { padding-bottom: 76px !important; }
+          /* Hide original hero Get Protection button */
+          .home-hero-cta { display: none !important; }
         }
       `}</style>
       <div className="home-sticky-bar" aria-label="Quick action">
