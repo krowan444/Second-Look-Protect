@@ -251,6 +251,10 @@ export function CareHomePage() {
                         <Mail style={{ width: 18, height: 18, flexShrink: 0 }} aria-hidden="true" />
                         Text for Support — 07907 614821
                     </a>
+                    <a href="mailto:hello@secondlookprotect.co.uk" className="care-page-btn-secondary" aria-label="Email Support at hello@secondlookprotect.co.uk">
+                        <Mail style={{ width: 18, height: 18, flexShrink: 0 }} aria-hidden="true" />
+                        Email Support — hello@secondlookprotect.co.uk
+                    </a>
                 </section>
 
                 {/* ── 5. Trust strip ──────────────────────────────────────────────── */}
