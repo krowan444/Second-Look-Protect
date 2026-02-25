@@ -127,6 +127,14 @@ const CARE_CSS = `
       color: #b0bec5 !important;
       font-weight: 500 !important;
     }
+
+    /* Email button — wrap to two lines on mobile portrait */
+    .care-email-btn {
+      white-space: normal !important;
+      min-height: 64px !important;
+    }
+    .care-email-btn .care-email-label { font-size: 1rem; }
+    .care-email-btn .care-email-addr { font-size: 0.82rem; opacity: 0.75; }
   }
 `;
 
@@ -251,9 +259,12 @@ export function CareHomePage() {
                         <Mail style={{ width: 18, height: 18, flexShrink: 0 }} aria-hidden="true" />
                         Text for Support — 07907 614821
                     </a>
-                    <a href="mailto:hello@secondlookprotect.co.uk" className="care-page-btn-secondary" aria-label="Email Support at hello@secondlookprotect.co.uk">
-                        <Mail style={{ width: 18, height: 18, flexShrink: 0 }} aria-hidden="true" />
-                        Email Support — hello@secondlookprotect.co.uk
+                    <a href="mailto:hello@secondlookprotect.co.uk" className="care-page-btn-secondary care-email-btn" aria-label="Email Support at hello@secondlookprotect.co.uk">
+                        <Mail style={{ width: 18, height: 18, flexShrink: 0, alignSelf: 'center' }} aria-hidden="true" />
+                        <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
+                            <span className="care-email-label">Email Support</span>
+                            <span className="care-email-addr">hello@secondlookprotect.co.uk</span>
+                        </span>
                     </a>
                 </section>
 
