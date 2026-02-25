@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Shield, Upload, Link2, Phone, ArrowLeft, CheckCircle, ChevronRight, Image, X, MessageSquare } from 'lucide-react';
+import { Shield, Upload, Link2, Phone, ArrowLeft, CheckCircle, ChevronRight, Image, X, MessageSquare, Mail } from 'lucide-react';
 import { Button } from '../components/Button';
 import { getSupabase } from '../lib/supabaseClient';
 
@@ -402,10 +402,6 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                         </div>
                         <div className="flex flex-col gap-3">
                             <p className="text-center text-slate-400 text-xs">Your submission is treated with full confidentiality.</p>
-                            <p className="text-center text-slate-400 text-xs leading-relaxed">
-                                We will never ask for passwords, OTPs, full banking details, or ask you to move money. If unsure, contact us directly via our official website or{' '}
-                                <a href="mailto:hello@secondlookprotect.co.uk" className="underline underline-offset-1 hover:text-slate-600 transition-colors">hello@secondlookprotect.co.uk</a>.
-                            </p>
                         </div>
                         <div className="mt-10 pt-8 border-t border-slate-200 flex flex-wrap justify-center gap-6 text-slate-400 text-xs">
                             <span>✓ ICO Registered</span>
@@ -430,6 +426,13 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                                 >
                                     <MessageSquare className="w-5 h-5 text-[#C9A84C]" />
                                     Text — 07907 614821
+                                </a>
+                                <a
+                                    href="mailto:hello@secondlookprotect.co.uk"
+                                    className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
+                                >
+                                    <Mail className="w-5 h-5 text-[#C9A84C]" />
+                                    Email — hello@secondlookprotect.co.uk
                                 </a>
                             </div>
                         </div>
@@ -697,10 +700,6 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             {isSubmitting ? 'Submitting…' : 'Submit for Review'}
                         </Button>
                         <p className="text-center text-slate-400 text-xs">Your submission is treated with full confidentiality.</p>
-                        <p className="text-center text-slate-400 text-xs leading-relaxed">
-                            We will never ask for passwords, OTPs, full banking details, or ask you to move money. If unsure, contact us directly via our official website or{' '}
-                            <a href="mailto:hello@secondlookprotect.co.uk" className="underline underline-offset-1 hover:text-slate-600 transition-colors">hello@secondlookprotect.co.uk</a>.
-                        </p>
                     </div>
 
                     <div className="mt-10 pt-8 border-t border-slate-200 flex flex-wrap justify-center gap-6 text-slate-400 text-xs">
@@ -726,6 +725,13 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             >
                                 <MessageSquare className="w-5 h-5 text-[#C9A84C]" />
                                 Text — 07907 614821
+                            </a>
+                            <a
+                                href="mailto:hello@secondlookprotect.co.uk"
+                                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
+                            >
+                                <Mail className="w-5 h-5 text-[#C9A84C]" />
+                                Email — hello@secondlookprotect.co.uk
                             </a>
                         </div>
                     </div>
