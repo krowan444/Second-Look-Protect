@@ -210,17 +210,17 @@ p {
 /* ─── Mobile-landscape header size reduction (always 50%) ──────────────────── */
 @media (max-height: 500px) and (orientation: landscape) {
     header[role="banner"] nav {
-        padding-top: 0.15rem !important;
-        padding-bottom: 0.15rem !important;
+        padding-top: 0.05rem !important;
+        padding-bottom: 0.05rem !important;
     }
 
     header[role="banner"] nav * {
-        font-size: 0.65em;
+        font-size: 0.35em;
     }
 
     header[role="banner"] nav svg {
-        width: 0.75rem;
-        height: 0.75rem;
+        width: 0.4rem;
+        height: 0.4rem;
     }
 
     /* Scrollable mobile menu */
