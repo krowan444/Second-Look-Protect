@@ -894,11 +894,24 @@ export default function App() {
           ))}
         </div>
 
-        <div className="mt-10 mx-auto max-w-lg text-center space-y-2">
-          <p className="text-slate-400 text-sm text-center">
-            Simple cancellations: Just email us to stop your subscription at any time.
+        <div className="mt-14 mx-auto max-w-lg text-center space-y-3">
+          <p className="text-slate-300 text-sm font-medium tracking-wide">
+            Simple cancellations:
           </p>
-          <p className="text-slate-500 text-xs text-center">
+          <p className="text-slate-400 text-sm leading-relaxed">
+            Just email{' '}
+            <a
+              href="mailto:support@secondlookprotect.co.uk"
+              className="text-slate-200 font-medium hover:text-[#C9A84C] transition-colors duration-200"
+            >
+              support@secondlookprotect.co.uk
+            </a>
+            {' '}and we'll take care of it for you. Stop anytime.
+          </p>
+          <p className="text-slate-500 text-xs" style={{ opacity: 0.8 }}>
+            Real human support. No forms. No hassle.
+          </p>
+          <p className="text-slate-500 text-xs text-center mt-4">
             All plans include a 14-day free trial. · Prices shown in GBP.
           </p>
         </div>
