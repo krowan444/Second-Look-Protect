@@ -135,7 +135,42 @@ const CARE_CSS = `
     }
     .care-email-btn .care-email-label { font-size: 1rem; }
     .care-email-btn .care-email-addr { font-size: 0.82rem; opacity: 0.75; }
+
+    /* ── Sticky bottom bar (mobile portrait only) ── */
+    .care-page { padding-bottom: 76px !important; }
+    .care-sticky-bar {
+      display: flex !important;
+    }
   }
+
+  /* Sticky bar — hidden by default */
+  .care-sticky-bar {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 50;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 20px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    background: rgba(11,30,54,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(201,168,76,0.15);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+  }
+  .care-sticky-bar a {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    width: 100%; max-width: 340px;
+    padding: 14px 1.5rem;
+    border-radius: 9999px; border: none;
+    text-decoration: none;
+    background: linear-gradient(135deg, #C6A544 0%, #D2B356 50%, #B8962E 100%);
+    color: #0B1E36; font-size: 16px; font-weight: 700;
+    box-shadow: 0 4px 18px rgba(201,168,76,0.28);
+    transition: filter 0.18s ease;
+  }
+  .care-sticky-bar a:active { filter: brightness(0.95); }
 `;
 
 /* ─── Component ────────────────────────────────────────────────────────── */
@@ -319,6 +354,14 @@ export function CareHomePage() {
                     </p>
                 </footer>
 
+            </div>
+
+            {/* ── Sticky bottom bar — shown only on mobile portrait via CSS ── */}
+            <div className="care-sticky-bar" aria-label="Quick action">
+                <a href={GET_PROTECTION_URL}>
+                    <Shield style={{ width: 18, height: 18 }} aria-hidden="true" />
+                    Get Protection
+                </a>
             </div>
         </>
     );
