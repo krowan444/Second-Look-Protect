@@ -11,6 +11,7 @@ import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { SupportPage } from './pages/SupportPage';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
+import { CareHomePage } from './pages/CareHomePage';
 import {
   Shield, CheckCircle, Search, Lock, AlertTriangle,
   Phone, Star, ArrowRight, Users, Mail,
@@ -205,17 +206,18 @@ function scrollToSection(id: string) {
 
 export default function App() {
   // Initialise page from URL so /subscription-success works on direct load / Stripe redirect
-  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' {
+  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' {
     const path = window.location.pathname;
     if (path.startsWith('/subscription-success')) return 'subscription-success';
     if (path.startsWith('/get-protection')) return 'get-protection';
     if (path.startsWith('/privacy-policy')) return 'privacy-policy';
     if (path.startsWith('/support')) return 'support';
     if (path.startsWith('/terms-of-service')) return 'terms-of-service';
+    if (path.startsWith('/care')) return 'care';
     return 'home';
   }
 
-  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service'>(getInitialPage);
+  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care'>(getInitialPage);
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const howItWorksRef = React.useRef<HTMLDivElement>(null);
@@ -353,6 +355,11 @@ export default function App() {
         }}
       />
     );
+  }
+
+  // ── Early return: Care Home page ──────────────────────────────────────
+  if (page === 'care') {
+    return <CareHomePage />;
   }
 
   // ── Home page ────────────────────────────────────────────────────────────

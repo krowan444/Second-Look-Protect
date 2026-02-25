@@ -414,3 +414,85 @@ p {
         animation: none;
     }
 }
+
+/* ─── Care Home Page (scoped under .care-page) ────────────────────────────── */
+
+.care-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    border-radius: 9999px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    text-align: center;
+}
+
+.care-btn-primary {
+    background: #C9A84C;
+    color: #0B1E36;
+    border-color: #C9A84C;
+}
+
+.care-btn-primary:hover {
+    background: #D9BC78;
+    border-color: #D9BC78;
+}
+
+.care-btn-secondary {
+    background: transparent;
+    color: #C9A84C;
+    border-color: #C9A84C;
+}
+
+.care-btn-secondary:hover {
+    background: #C9A84C;
+    color: #0B1E36;
+}
+
+.care-steps-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+    .care-steps-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+}
+
+.care-step-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.care-trust-strip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+    .care-trust-strip {
+        flex-direction: row;
+        justify-content: center;
+        gap: 2rem;
+        max-width: 720px;
+    }
+}
