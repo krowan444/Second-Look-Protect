@@ -165,11 +165,11 @@ export function CareHomePage() {
                                     <span style={{
                                         display: 'block', fontSize: '0.6rem', fontWeight: 700,
                                         letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-                                        color: '#A8853C', marginBottom: 2,
+                                        color: '#A8853C', marginBottom: 2, textAlign: 'center',
                                     }}>
                                         {item.step}
                                     </span>
-                                    <p style={{ fontSize: '0.92rem', color: '#e2e8f0', fontWeight: 500, textAlign: 'left' }}>
+                                    <p style={{ fontSize: '0.92rem', color: '#e2e8f0', fontWeight: 500, textAlign: 'center' }}>
                                         {item.text}
                                     </p>
                                 </div>
@@ -194,11 +194,11 @@ export function CareHomePage() {
                     </a>
                     <a href={`tel:${SUPPORT_PHONE}`} className="care-page-btn-secondary" aria-label="Call for Support">
                         <Phone style={{ width: 18, height: 18, flexShrink: 0 }} aria-hidden="true" />
-                        Call for Support
+                        Call for Support — {SUPPORT_PHONE}
                     </a>
                     <a href={`sms:${SUPPORT_PHONE}`} className="care-page-btn-secondary" aria-label="Text for Support">
                         <Mail style={{ width: 18, height: 18, flexShrink: 0 }} aria-hidden="true" />
-                        Text for Support
+                        Text for Support — {SUPPORT_PHONE}
                     </a>
                 </section>
 
