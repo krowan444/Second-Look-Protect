@@ -172,6 +172,19 @@ const CARE_CSS = `
     color: #0B1E36; font-size: 16px; font-weight: 700;
     box-shadow: 0 4px 18px rgba(201,168,76,0.28);
     transition: filter 0.18s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .care-sticky-bar a::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%);
+    animation: care-shimmer 4.5s ease-in-out infinite;
+  }
+  @keyframes care-shimmer {
+    0%, 85% { left: -100%; }
+    100%    { left: 150%; }
   }
   .care-sticky-bar a:active { filter: brightness(0.95); }
 `;
@@ -363,7 +376,7 @@ export function CareHomePage() {
             <div className="care-sticky-bar" aria-label="Quick action">
                 <a href={GET_PROTECTION_URL}>
                     <Shield style={{ width: 18, height: 18 }} aria-hidden="true" />
-                    Get Protection
+                    Get Protection Now
                 </a>
             </div>
         </>
