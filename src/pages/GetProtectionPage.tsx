@@ -421,7 +421,6 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             <p className="text-center text-slate-400 text-xs">Your submission is treated with full confidentiality.</p>
                         </div>
                         <div className="mt-10 pt-8 border-t border-slate-200 flex flex-wrap justify-center gap-6 text-slate-400 text-xs">
-                            <span>✓ ICO Registered</span>
                             <span>✓ UK-Based Specialists</span>
                             <span>✓ Human-Reviewed</span>
                         </div>
@@ -724,7 +723,6 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                     </div>
 
                     <div className="mt-10 pt-8 border-t border-slate-200 flex flex-wrap justify-center gap-6 text-slate-400 text-xs">
-                        <span>✓ ICO Registered</span>
                         <span>✓ UK-Based Specialists</span>
                         <span>✓ Human-Reviewed</span>
                     </div>
