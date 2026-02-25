@@ -3,6 +3,22 @@ import { Shield, Upload, Link2, Phone, ArrowLeft, CheckCircle, ChevronRight, Ima
 import { Button } from '../components/Button';
 import { getSupabase } from '../lib/supabaseClient';
 
+/* ── Mobile-portrait-only overrides for support buttons ── */
+const SLP_MOBILE_CSS = `
+@media (max-width: 480px) and (orientation: portrait) {
+  .slp-support-btn {
+    padding: 0.65rem 1.25rem !important;
+    font-size: 0.875rem !important;
+  }
+  .slp-email-label {
+    font-size: 0.875rem !important;
+  }
+  .slp-email-addr {
+    font-size: 0.75rem !important;
+  }
+}
+`;
+
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
 interface NavigationProps {
@@ -343,6 +359,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
     if (step === 1) {
         return (
             <div className="min-h-screen bg-[#0B1E36] flex flex-col">
+                <style>{SLP_MOBILE_CSS}</style>
                 {Navbar}
                 <main className="flex-1 flex items-start justify-center px-6 py-12 md:py-20">
                     <div className="w-full max-w-xl bg-[#FAFAF8] rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.15)] border border-white/10 px-6 md:px-10 py-8 md:py-12">
@@ -415,26 +432,26 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             <div className="flex flex-col gap-3 max-w-md mx-auto">
                                 <a
                                     href="tel:01604385888"
-                                    className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
+                                    className="slp-support-btn inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
                                 >
                                     <Phone className="w-5 h-5 text-[#C9A84C]" />
                                     Call — 01604 385888
                                 </a>
                                 <a
                                     href="sms:07907614821"
-                                    className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
+                                    className="slp-support-btn inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
                                 >
                                     <MessageSquare className="w-5 h-5 text-[#C9A84C]" />
                                     Text — 07907 614821
                                 </a>
                                 <a
                                     href="mailto:hello@secondlookprotect.co.uk"
-                                    className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 w-full"
+                                    className="slp-support-btn inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 w-full"
                                 >
-                                    <Mail className="w-5 h-5 text-[#C9A84C] shrink-0" />
+                                    <Mail className="w-5 h-5 text-[#C9A84C] shrink-0 self-center" />
                                     <span className="flex flex-col items-start leading-tight">
-                                        <span className="text-base">Email</span>
-                                        <span className="text-sm font-normal text-slate-500">hello@secondlookprotect.co.uk</span>
+                                        <span className="slp-email-label text-base">Email</span>
+                                        <span className="slp-email-addr text-sm font-normal text-slate-500">hello@secondlookprotect.co.uk</span>
                                     </span>
                                 </a>
                             </div>
@@ -448,6 +465,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
     /* ── Step 2: Submit details ───────────────────────────────────────────── */
     return (
         <div className="min-h-screen bg-[#0B1E36] flex flex-col">
+            <style>{SLP_MOBILE_CSS}</style>
             {Navbar}
             <main className="flex-1 flex items-start justify-center px-6 py-12 md:py-20">
                 <div className="w-full max-w-xl bg-[#FAFAF8] rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.15)] border border-white/10 px-6 md:px-10 py-8 md:py-12">
@@ -717,26 +735,26 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                         <div className="flex flex-col gap-3 max-w-md mx-auto">
                             <a
                                 href="tel:01604385888"
-                                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
+                                className="slp-support-btn inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
                             >
                                 <Phone className="w-5 h-5 text-[#C9A84C]" />
                                 Call — 01604 385888
                             </a>
                             <a
                                 href="sms:07907614821"
-                                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
+                                className="slp-support-btn inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
                             >
                                 <MessageSquare className="w-5 h-5 text-[#C9A84C]" />
                                 Text — 07907 614821
                             </a>
                             <a
                                 href="mailto:hello@secondlookprotect.co.uk"
-                                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 w-full"
+                                className="slp-support-btn inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 w-full"
                             >
-                                <Mail className="w-5 h-5 text-[#C9A84C] shrink-0" />
+                                <Mail className="w-5 h-5 text-[#C9A84C] shrink-0 self-center" />
                                 <span className="flex flex-col items-start leading-tight">
-                                    <span className="text-base">Email</span>
-                                    <span className="text-sm font-normal text-slate-500">hello@secondlookprotect.co.uk</span>
+                                    <span className="slp-email-label text-base">Email</span>
+                                    <span className="slp-email-addr text-sm font-normal text-slate-500">hello@secondlookprotect.co.uk</span>
                                 </span>
                             </a>
                         </div>
