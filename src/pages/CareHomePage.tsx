@@ -146,7 +146,7 @@ export function CareHomePage() {
                 <section style={{ padding: '12px 1.5rem 14px' }}>
                     <div className="care-page-steps">
                         {[
-                            { icon: <Mail style={{ width: 20, height: 20, color: GOLD }} aria-hidden="true" />, step: 'Step 1', text: 'Show us what you received' },
+                            { icon: <Mail style={{ width: 20, height: 20, color: GOLD }} aria-hidden="true" />, step: 'Step 1', text: 'Share the message or call you received' },
                             { icon: <Search style={{ width: 20, height: 20, color: GOLD }} aria-hidden="true" />, step: 'Step 2', text: 'We check it carefully for you' },
                             { icon: <CheckCircle style={{ width: 20, height: 20, color: GOLD }} aria-hidden="true" />, step: 'Step 3', text: 'You get clear, simple guidance' },
                         ].map((item) => (
