@@ -1067,7 +1067,7 @@ export default function App() {
             </p>
           </div>
 
-          <p className="text-slate-500 text-sm leading-relaxed" style={{ opacity: 0.85 }}>
+          <p className="text-slate-500 text-sm leading-relaxed text-center mx-auto max-w-xl" style={{ opacity: 0.85 }}>
             Early partners help guide new features, improve clarity, and ensure the experience remains supportive and easy to use.
           </p>
         </div>
