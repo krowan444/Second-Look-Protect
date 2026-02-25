@@ -412,6 +412,27 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             <span>✓ UK-Based Specialists</span>
                             <span>✓ Human-Reviewed</span>
                         </div>
+
+                        {/* ── Support section ── */}
+                        <div className="mt-8 pt-6 border-t border-slate-200 text-center">
+                            <p className="text-slate-400 text-xs font-medium tracking-wide uppercase mb-4">Need help instead?</p>
+                            <div className="flex flex-col gap-3 max-w-md mx-auto">
+                                <a
+                                    href="tel:01604385888"
+                                    className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
+                                >
+                                    <Phone className="w-5 h-5 text-[#C9A84C]" />
+                                    Call — 01604 385888
+                                </a>
+                                <a
+                                    href="sms:07907614821"
+                                    className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
+                                >
+                                    <MessageSquare className="w-5 h-5 text-[#C9A84C]" />
+                                    Text — 07907 614821
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </main>
             </div>
@@ -691,19 +712,19 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                     {/* ── Support section ── */}
                     <div className="mt-8 pt-6 border-t border-slate-200 text-center">
                         <p className="text-slate-400 text-xs font-medium tracking-wide uppercase mb-4">Need help instead?</p>
-                        <div className="flex flex-col sm:flex-row gap-3 max-w-sm mx-auto">
+                        <div className="flex flex-col gap-3 max-w-md mx-auto">
                             <a
                                 href="tel:01604385888"
-                                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-sm font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200"
+                                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
                             >
-                                <Phone className="w-4 h-4 text-[#C9A84C]" />
+                                <Phone className="w-5 h-5 text-[#C9A84C]" />
                                 Call — 01604 385888
                             </a>
                             <a
                                 href="sms:07907614821"
-                                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-sm font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200"
+                                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg border border-[#C9A84C]/40 text-[#0B1E36] text-base font-semibold hover:bg-[#C9A84C]/10 transition-colors duration-200 whitespace-nowrap"
                             >
-                                <MessageSquare className="w-4 h-4 text-[#C9A84C]" />
+                                <MessageSquare className="w-5 h-5 text-[#C9A84C]" />
                                 Text — 07907 614821
                             </a>
                         </div>
