@@ -904,90 +904,133 @@ export default function App() {
         </div>
 
         {/* Core System strip */}
-        <div className="mt-20 pt-16 border-t border-white/10 grid md:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div
+          className="mt-20 pt-16 border-t border-white/10 relative"
+          style={{ background: 'linear-gradient(180deg, rgba(201,168,76,0.03) 0%, transparent 60%)' }}
+        >
+          {/* Scoped hover style — desktop only */}
+          <style>{`
+            .feature-card {
+              transition: transform 0.25s ease, box-shadow 0.25s ease;
+              border-radius: 1rem;
+              padding: 1.5rem;
+            }
+            @media (hover: hover) and (min-width: 768px) {
+              .feature-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 20px rgba(201,168,76,0.08);
+              }
+            }
+            .risk-dot { position: relative; display: inline-flex; }
+            .risk-dot::after {
+              content: '';
+              position: absolute;
+              inset: -3px;
+              border-radius: 50%;
+              opacity: 0.25;
+            }
+            .risk-dot-green::after { box-shadow: 0 0 8px 2px rgba(74,222,128,0.5); }
+            .risk-dot-yellow::after { box-shadow: 0 0 8px 2px rgba(250,204,21,0.5); }
+            .risk-dot-red::after { box-shadow: 0 0 8px 2px rgba(248,113,113,0.5); }
+          `}</style>
 
-          {/* Forward-to-Check */}
-          <div>
-            <h4 className="text-white text-base font-semibold mb-4 flex items-center gap-2">
-              <span className="text-[#C9A84C] text-lg" aria-hidden="true">📨</span>
-              Forward-to-Check System
-            </h4>
-            <p className="text-slate-400 text-sm mb-4 leading-relaxed font-medium italic">
-              No portals. No logins. No confusion.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-300">
-              {['Forward suspicious emails', 'Send WhatsApp screenshots', 'Submit website links'].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <span className="text-[#C9A84C] mt-0.5" aria-hidden="true">→</span>
-                  {item}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
+
+            {/* Forward-to-Check */}
+            <div className="feature-card">
+              <h4 className="text-white font-bold mb-5 flex items-center gap-2" style={{ fontSize: '1.05rem' }}>
+                <span className="text-[#C9A84C] text-lg" aria-hidden="true">📨</span>
+                Forward-to-Check System
+              </h4>
+              <p className="text-slate-400 text-sm mb-5 leading-relaxed font-medium italic" style={{ opacity: 0.92 }}>
+                No portals. No logins. No confusion.
+              </p>
+              <ul className="space-y-3 text-sm text-slate-300" style={{ opacity: 0.92 }}>
+                {['Forward suspicious emails', 'Send WhatsApp screenshots', 'Submit website links'].map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <span className="text-[#C9A84C] mt-0.5" aria-hidden="true">→</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-slate-400 text-sm mt-6 italic leading-relaxed">
+                &ldquo;If you can forward a message, you can stay safe.&rdquo;
+              </p>
+            </div>
+
+            {/* Risk Assessment */}
+            <div className="feature-card">
+              <h4 className="text-white font-bold mb-5 flex items-center gap-2" style={{ fontSize: '1.05rem' }}>
+                <Shield className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
+                Guardian Risk Assessment
+              </h4>
+              <p className="text-slate-400 text-sm mb-6 leading-relaxed" style={{ opacity: 0.92 }}>Every review includes a clear, structured verdict:</p>
+              <ul className="space-y-4 text-sm">
+                <li className="flex items-start gap-3">
+                  <span className="risk-dot risk-dot-green text-green-400 text-base mt-0.5" aria-label="Green">&#x1F7E2;</span>
+                  <span className="text-slate-200 leading-snug">
+                    <strong className="text-white block">Low Risk</strong>
+                    <span style={{ opacity: 0.85 }}>No immediate warning signs detected</span>
+                  </span>
                 </li>
-              ))}
-            </ul>
-            <p className="text-slate-500 text-xs mt-5 italic">
-              &ldquo;If you can forward a message, you can stay safe.&rdquo;
-            </p>
-          </div>
-
-          {/* Risk Assessment */}
-          <div>
-            <h4 className="text-white text-base font-semibold mb-4 flex items-center gap-2">
-              <Shield className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
-              Guardian Risk Assessment
-            </h4>
-            <p className="text-slate-400 text-sm mb-5 leading-relaxed">Every review includes a clear, structured verdict:</p>
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-start gap-3">
-                <span className="text-green-400 text-base" aria-label="Green">&#x1F7E2;</span>
-                <span className="text-slate-200"><strong className="text-white">Low Risk</strong> – No immediate warning signs detected</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-yellow-400 text-base" aria-label="Amber">&#x1F7E1;</span>
-                <span className="text-slate-200"><strong className="text-white">Caution</strong> – Warning indicators present</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-red-400 text-base" aria-label="Red">&#x1F534;</span>
-                <span className="text-slate-200"><strong className="text-white">High Risk</strong> – Strong scam indicators detected</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Flexible Membership */}
-          <div>
-            <h4 className="text-white text-base font-semibold mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
-              Flexible Membership
-            </h4>
-            <ul className="space-y-3 text-sm text-slate-300">
-              {[
-                'Monthly rolling — no lock-in',
-                'Cancel any time from your account',
-                'Save 2 months on annual billing',
-                'Switch plan at any time',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-[#C9A84C] shrink-0 mt-0.5" aria-hidden="true" />
-                  {item}
+                <li className="flex items-start gap-3">
+                  <span className="risk-dot risk-dot-yellow text-yellow-400 text-base mt-0.5" aria-label="Amber">&#x1F7E1;</span>
+                  <span className="text-slate-200 leading-snug">
+                    <strong className="text-white block">Caution</strong>
+                    <span style={{ opacity: 0.85 }}>Warning indicators present</span>
+                  </span>
                 </li>
-              ))}
-            </ul>
-          </div>
+                <li className="flex items-start gap-3">
+                  <span className="risk-dot risk-dot-red text-red-400 text-base mt-0.5" aria-label="Red">&#x1F534;</span>
+                  <span className="text-slate-200 leading-snug">
+                    <strong className="text-white block">High Risk</strong>
+                    <span style={{ opacity: 0.85 }}>Strong scam indicators detected</span>
+                  </span>
+                </li>
+              </ul>
+            </div>
 
-          {/* Peace of Mind */}
-          <div>
-            <h4 className="text-white text-base font-semibold mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
-              Peace of mind for you — and the people who care about you
-            </h4>
-            <p className="text-slate-400 text-sm leading-relaxed">
-              Families and loved ones know there's always a calm, trusted second opinion available when something doesn't feel right. Support without judgement — for you and the people who care about you.
-            </p>
-          </div>
+            {/* Flexible Membership */}
+            <div className="feature-card">
+              <h4 className="text-white text-base font-bold mb-5 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
+                Flexible Membership
+              </h4>
+              <ul className="space-y-3.5 text-sm text-slate-300" style={{ opacity: 0.92 }}>
+                {[
+                  'Monthly rolling — no lock-in',
+                  'Cancel any time from your account',
+                  'Save 2 months on annual billing',
+                  'Switch plan at any time',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-[#C9A84C] shrink-0 mt-0.5" aria-hidden="true" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
 
+            {/* Peace of Mind */}
+            <div className="feature-card">
+              <h4 className="text-white text-base font-bold mb-5 flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
+                Peace of mind for you — and the people who care about you
+              </h4>
+              <p className="text-slate-400 text-sm leading-relaxed" style={{ opacity: 0.92 }}>
+                Families and loved ones know there's always a calm, trusted second opinion available when something doesn't feel right.
+              </p>
+              <p className="text-slate-400 text-sm leading-relaxed mt-3" style={{ opacity: 0.92 }}>
+                Support without judgement — for you and the people who care about you.
+              </p>
+            </div>
+
+          </div>
         </div>
 
         {/* Section-wide centered tagline */}
-        <div className="w-full flex justify-center mt-8">
-          <p className="text-slate-500 text-xs text-center">Clear. Calm. Structured.</p>
+        <div className="w-full flex justify-center mt-10">
+          <p className="text-slate-400 text-sm text-center tracking-wide" style={{ opacity: 0.7 }}>Clear. Calm. Structured.</p>
         </div>
       </SectionWrapper>
 
