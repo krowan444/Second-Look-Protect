@@ -317,10 +317,13 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             Request received.
                         </h1>
                         <p className="text-slate-400 text-xs mb-4">You are taking a second look.</p>
-                        <p className="text-slate-600 text-lg leading-relaxed mb-10">
+                        <p className="text-slate-600 text-lg leading-relaxed mb-4">
                             A UK-based specialist will review your submission and respond promptly.
                             <br /><br />
                             <span className="text-slate-500 text-base">No judgement. No pressure. Just clarity.</span>
+                        </p>
+                        <p className="text-slate-400 text-sm leading-relaxed mb-10">
+                            You've taken the right step. There's no need to rush or respond while we review this for you.
                         </p>
                         <Button
                             onClick={onBack}
