@@ -265,29 +265,22 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
 
     /* ── Shared nav bar ───────────────────────────────────────────────────── */
     const Navbar = (
-        <>
-            <nav className="bg-[#0B1E36] border-b border-white/10 px-6 md:px-10 py-4 flex items-center justify-between">
-                <button
-                    onClick={step === 2 && !submitted ? () => setStep(1) : onBack}
-                    className="flex items-center gap-2 text-slate-300 hover:text-white text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] rounded"
-                    aria-label={step === 2 && !submitted ? 'Go back to option selection' : 'Return to home page'}
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    {step === 2 && !submitted ? 'Back' : 'Back to home'}
-                </button>
-                <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
-                    <span className="text-white text-sm font-semibold tracking-tight" style={{ fontFamily: "'Merriweather', serif" }}>
-                        Second Look <span className="text-[#C9A84C]">Protect</span>
-                    </span>
-                </div>
-            </nav>
-            <div className="bg-[#112540] text-center py-2 border-b border-white/5">
-                <p className="text-slate-400 text-xs tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    You are taking a second look.
-                </p>
+        <nav className="bg-[#0B1E36] border-b border-white/10 px-6 md:px-10 py-4 flex items-center justify-between">
+            <button
+                onClick={step === 2 && !submitted ? () => setStep(1) : onBack}
+                className="flex items-center gap-2 text-slate-300 hover:text-white text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] rounded"
+                aria-label={step === 2 && !submitted ? 'Go back to option selection' : 'Return to home page'}
+            >
+                <ArrowLeft className="w-4 h-4" />
+                {step === 2 && !submitted ? 'Back' : 'Back to home'}
+            </button>
+            <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
+                <span className="text-white text-sm font-semibold tracking-tight" style={{ fontFamily: "'Merriweather', serif" }}>
+                    Second Look <span className="text-[#C9A84C]">Protect</span>
+                </span>
             </div>
-        </>
+        </nav>
     );
 
     /* ── Confirmation screen ──────────────────────────────────────────────── */
@@ -310,19 +303,15 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                         </span>
                     </div>
                 </nav>
-                <div className="bg-[#112540] text-center py-2 border-b border-white/5">
-                    <p className="text-slate-400 text-xs tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        You are taking a second look.
-                    </p>
-                </div>
                 <main className="flex-1 flex items-center justify-center px-6 py-16">
                     <div className="max-w-md w-full text-center bg-[#FAFAF8] rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.15)] border border-white/10 px-8 py-12">
                         <div className="w-20 h-20 rounded-full bg-[#C9A84C]/15 flex items-center justify-center mx-auto mb-8">
                             <CheckCircle className="w-10 h-10 text-[#C9A84C]" />
                         </div>
-                        <h1 className="text-[#0B1E36] mb-4" style={{ fontFamily: "'Merriweather', serif" }}>
+                        <h1 className="text-[#0B1E36] mb-2" style={{ fontFamily: "'Merriweather', serif" }}>
                             Request received.
                         </h1>
+                        <p className="text-slate-400 text-xs mb-4">You are taking a second look.</p>
                         <p className="text-slate-600 text-lg leading-relaxed mb-10">
                             A UK-based specialist will review your submission and respond promptly.
                             <br /><br />
@@ -354,9 +343,10 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-3">
                                 Step 1 of 2 — Choose your check type
                             </p>
-                            <h1 className="text-[#0B1E36] mb-3" style={{ fontFamily: "'Merriweather', serif" }}>
+                            <h1 className="text-[#0B1E36] mb-2" style={{ fontFamily: "'Merriweather', serif" }}>
                                 Not sure if something is safe? Let's take a second look.
                             </h1>
+                            <p className="text-slate-400 text-xs mb-3">You are taking a second look.</p>
                             <p className="text-slate-500 text-base leading-relaxed max-w-prose mb-3">
                                 If something doesn't feel right, simply upload it below — we'll review it and send you a clear, easy-to-understand risk report explaining what's safe, what's risky, and what to do next.
                             </p>
@@ -410,18 +400,19 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
         <div className="min-h-screen bg-[#0B1E36] flex flex-col">
             {Navbar}
             <main className="flex-1 flex items-start justify-center px-6 py-12 md:py-20">
-                <div className="w-full max-w-xl bg-white rounded-2xl shadow-sm border border-slate-100 px-6 md:px-10 py-8 md:py-12">
+                <div className="w-full max-w-xl bg-[#FAFAF8] rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.15)] border border-white/10 px-6 md:px-10 py-8 md:py-12">
                     <div className="mb-8"><StepIndicator step={2} total={2} /></div>
 
                     <div className="mb-10">
                         <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-3">
                             Step 2 of 2 — Provide details
                         </p>
-                        <h1 className="text-[#0B1E36] mb-3" style={{ fontFamily: "'Merriweather', serif" }}>
+                        <h1 className="text-[#0B1E36] mb-2" style={{ fontFamily: "'Merriweather', serif" }}>
                             {selectedOption === 'screenshot' ? 'Upload your screenshot'
                                 : selectedOption === 'link' ? 'Paste the suspicious link'
                                     : 'Enter the contact to verify'}
                         </h1>
+                        <p className="text-slate-400 text-xs mb-3">You are taking a second look.</p>
                         <p className="text-slate-500 text-base leading-relaxed max-w-prose">
                             {selectedOption === 'screenshot'
                                 ? 'Attach a screenshot if you have one — this is optional. Fill in your details below and we will still get back to you.'
