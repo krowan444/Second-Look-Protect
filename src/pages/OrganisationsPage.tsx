@@ -267,7 +267,7 @@ export function OrganisationsPage() {
                             {/* Text column */}
                             <div style={{ maxWidth: '480px' }}>
                                 <h1
-                                    className="text-[#0B1E36] mb-6"
+                                    className="text-[#0B1E36] mb-3"
                                     style={{
                                         fontFamily: "'Merriweather', serif",
                                         lineHeight: 1.25,
@@ -283,7 +283,7 @@ export function OrganisationsPage() {
                                     fontSize: '0.85rem',
                                     fontWeight: 500,
                                     letterSpacing: '0.03em',
-                                    marginBottom: '1.25rem',
+                                    marginBottom: '0.75rem',
                                 }}>
                                     UK-based &bull; Human-reviewed &bull; Built for care environments
                                 </p>
