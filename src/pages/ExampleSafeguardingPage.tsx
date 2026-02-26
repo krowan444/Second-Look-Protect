@@ -724,6 +724,40 @@ export function ExampleSafeguardingPage() {
                         </p>
                     </div>
 
+                    {/* Board Ready Layer */}
+                    <div style={{
+                        marginTop: '1.5rem',
+                        padding: '1.5rem 1.75rem',
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                    }}>
+                        <h3 style={{
+                            fontFamily: "'Merriweather', serif",
+                            color: '#0B1E36',
+                            fontSize: '0.92rem',
+                            fontWeight: 600,
+                            marginBottom: '0.75rem',
+                        }}>
+                            Suitable for safeguarding oversight and board-level review
+                        </h3>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            Second Look Protect is designed to provide structured safeguarding visibility without altering existing governance frameworks.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            The platform supports clearer incident tracking, trend identification and operational awareness &mdash; enabling safeguarding leads to provide informed updates within management and trustee discussions.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+                            Implementation can be introduced gradually, allowing organisations to evaluate alignment with internal policies and reporting standards.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.55, marginBottom: '0.5rem' }}>
+                            By centralising modern scam-related concerns into a structured workflow, organisations can reduce reactive handling and strengthen proactive safeguarding awareness.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                            Designed with sensitivity to safeguarding responsibilities, accountability structures and organisational oversight.
+                        </p>
+                    </div>
+
                     {/* Calm conversion CTA */}
                     <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
                         <Button
