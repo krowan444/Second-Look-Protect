@@ -911,7 +911,7 @@ export function OrganisationsPage() {
                             variant="primary"
                             size="lg"
                             as="a"
-                            href="mailto:organisations@secondlookprotect.co.uk?subject=Organisation%20safeguarding%20discussion"
+                            href="mailto:organisation@secondlookprotect.co.uk?subject=Organisation%20safeguarding%20discussion"
                         >
                             Book a safeguarding discussion
                         </Button>
@@ -939,11 +939,11 @@ export function OrganisationsPage() {
                                 fontSize: '0.9rem',
                             }}>
                                 <a
-                                    href="mailto:organisations@secondlookprotect.co.uk"
+                                    href="mailto:organisation@secondlookprotect.co.uk"
                                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                                 >
                                     <span style={{ color: '#64748b' }}>Email</span>
-                                    <span style={{ color: '#334155', fontWeight: 500 }}>organisations@secondlookprotect.co.uk</span>
+                                    <span style={{ color: '#334155', fontWeight: 500 }}>organisation@secondlookprotect.co.uk</span>
                                 </a>
                                 <a
                                     href="tel:07563887804"
