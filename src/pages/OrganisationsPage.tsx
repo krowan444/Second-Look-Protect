@@ -17,6 +17,10 @@ const ORGS_CSS = `
     background: linear-gradient(165deg, #F4F6F8 0%, #EEF1F5 40%, #F9F9F7 100%);
     border-bottom: 1px solid #e2e8f0;
   }
+  /* Desktop: top-align text and image so image sits level with headline */
+  @media (min-width: 768px) {
+    .orgs-hero-grid { align-items: start !important; }
+  }
   .orgs-hero-img {
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(11,30,54,0.10), 0 2px 8px rgba(0,0,0,0.04);
@@ -218,8 +222,8 @@ export function OrganisationsPage() {
                     aria-label="Organisations hero"
                     style={{ paddingTop: '140px' }}
                 >
-                    <div className="max-w-6xl mx-auto px-6 md:px-10 py-16 md:py-24">
-                        <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
+                    <div className="max-w-6xl mx-auto px-6 md:px-10 py-10 md:py-16">
+                        <div className="orgs-hero-grid grid md:grid-cols-2 gap-12 md:gap-16 items-center">
                             {/* Text column */}
                             <div style={{ maxWidth: '540px' }}>
                                 <h1
