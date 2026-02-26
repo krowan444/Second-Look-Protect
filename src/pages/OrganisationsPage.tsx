@@ -5,7 +5,7 @@ import { SectionWrapper, SectionHeading } from '../components/SectionWrapper';
 import { TrustBadge } from '../components/TrustBadge';
 import {
     Shield, CheckCircle, Users, Building2, Home, Landmark, Heart,
-    Upload, MessageSquare, BarChart3, Mail, ArrowRight,
+    Upload, MessageSquare, BarChart3, Mail, ArrowRight, Plus, Minus,
 } from 'lucide-react';
 
 /* ─── Scoped page styles (orgs-page only) ──────────────────────────────── */
@@ -218,6 +218,166 @@ const AUTHORITY_ITEMS = [
 
 /* ─── Environment selector options ─────────────────────────────────────── */
 const ENV_OPTIONS = ['Care home', 'Assisted living', 'Housing', 'Community', 'Other'];
+
+/* ─── Organisation FAQ data ──────────────────────────────────────────────── */
+const ORG_FAQS: { question: string; answer: React.ReactNode }[] = [
+    {
+        question: 'How does this support our existing safeguarding procedures?',
+        answer: (
+            <>
+                <p className="mb-3">Second Look Protect is designed to complement — not replace — your existing safeguarding processes.</p>
+                <p className="mb-3">When a suspicious message, call, or digital interaction arises, staff can submit it through the platform and receive clear, human-reviewed guidance. This supports confident decision-making while maintaining your internal reporting and escalation protocols.</p>
+                <p>The system acts as an additional layer of digital safeguarding support, helping staff respond consistently and calmly to emerging scam threats.</p>
+            </>
+        ),
+    },
+    {
+        question: 'Who reviews submitted cases?',
+        answer: (
+            <>
+                <p className="mb-3">All submitted cases are reviewed using a combination of structured analysis and human oversight.</p>
+                <p className="mb-3">We provide clear, reasoned guidance based on the content submitted, helping staff understand:</p>
+                <ul className="space-y-1 mb-3">
+                    <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">&bull;</span>What the risk level is</li>
+                    <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">&bull;</span>Why it may be suspicious</li>
+                    <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">&bull;</span>What practical next steps are appropriate</li>
+                </ul>
+                <p>The aim is not automation alone, but clarity and responsible safeguarding judgement.</p>
+            </>
+        ),
+    },
+    {
+        question: 'How is resident data handled and stored?',
+        answer: (
+            <>
+                <p className="mb-3">We take data protection seriously.</p>
+                <p className="mb-3">Second Look Protect is UK-based and designed with privacy in mind. Only the information necessary to assess a suspicious message or interaction is processed.</p>
+                <p>We do not sell data, and submissions are handled in line with appropriate UK data protection standards. Organisations receive clear guidance on what information should and should not be submitted to maintain safeguarding best practice.</p>
+            </>
+        ),
+    },
+    {
+        question: 'Can multiple staff members access the platform?',
+        answer: (
+            <>
+                <p className="mb-3">Yes.</p>
+                <p className="mb-3">Organisation access can be structured to support multiple authorised staff members.</p>
+                <p className="mb-3">This ensures safeguarding leads, managers, or designated team members can access submissions and guidance as appropriate within your internal governance framework.</p>
+                <p>Access is controlled and structured around organisational use.</p>
+            </>
+        ),
+    },
+    {
+        question: 'Do we receive safeguarding summaries or reporting?',
+        answer: (
+            <>
+                <p className="mb-3">Yes.</p>
+                <p className="mb-3">Organisations can receive periodic safeguarding insight summaries outlining:</p>
+                <ul className="space-y-1 mb-3">
+                    <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">&bull;</span>Number of submissions</li>
+                    <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">&bull;</span>Common scam types identified</li>
+                    <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">&bull;</span>Emerging patterns</li>
+                    <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">&bull;</span>Risk trends affecting residents</li>
+                </ul>
+                <p>This helps your team remain proactive and informed, supporting safeguarding awareness and reporting processes.</p>
+            </>
+        ),
+    },
+    {
+        question: 'How is pricing structured for organisations?',
+        answer: (
+            <>
+                <p className="mb-3">Organisation pricing is structured based on environment type, size, and expected usage.</p>
+                <p className="mb-3">Rather than fixed public tiers, we provide tailored pricing aligned to your safeguarding requirements.</p>
+                <p className="mb-3">This ensures fairness and suitability for different care and supported living environments.</p>
+                <p>You can request organisation pricing details directly through the page.</p>
+            </>
+        ),
+    },
+    {
+        question: 'What is required for onboarding?',
+        answer: (
+            <>
+                <p className="mb-3">Onboarding is simple and designed to avoid disruption.</p>
+                <p className="mb-3">Once agreed, your organisation receives:</p>
+                <ul className="space-y-1 mb-3">
+                    <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">&bull;</span>A dedicated access link</li>
+                    <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">&bull;</span>Clear usage guidance</li>
+                    <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">&bull;</span>Simple internal introduction materials</li>
+                </ul>
+                <p>No complex setup or technical integration is required. The system is designed to sit alongside your existing safeguarding framework without adding operational burden.</p>
+            </>
+        ),
+    },
+];
+
+/* ─── Local FAQ accordion for /organisations ─────────────────────────────── */
+function OrgsFaqSection() {
+    const [openIdx, setOpenIdx] = useState<number | null>(0);
+
+    return (
+        <section
+            id="org-faq"
+            style={{
+                background: '#ffffff',
+                borderTop: '1px solid #e2e8f0',
+                padding: '3.5rem 0 4rem',
+                scrollMarginTop: '140px',
+            }}
+        >
+            <div className="max-w-3xl mx-auto px-6 md:px-10">
+                <h2 style={{
+                    fontFamily: "'Merriweather', serif",
+                    color: '#0B1E36',
+                    textAlign: 'center',
+                    marginBottom: '2.5rem',
+                    fontSize: 'clamp(1.5rem, 2.8vw, 2.25rem)',
+                    fontWeight: 600,
+                }}>
+                    Organisation FAQs
+                </h2>
+
+                <div aria-label="Organisation frequently asked questions">
+                    {ORG_FAQS.map((item, idx) => {
+                        const isOpen = openIdx === idx;
+                        const panelId = `org-faq-panel-${idx}`;
+                        const triggerId = `org-faq-trigger-${idx}`;
+                        return (
+                            <div key={item.question} className="border-b border-slate-200 last:border-0">
+                                <h3>
+                                    <button
+                                        id={triggerId}
+                                        aria-expanded={isOpen}
+                                        aria-controls={panelId}
+                                        onClick={() => setOpenIdx(isOpen ? null : idx)}
+                                        className="w-full flex items-center justify-between gap-4 py-5 text-left text-[#0B1E36] font-semibold text-base
+                                            hover:text-[#1A3354] transition-colors duration-200
+                                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] focus-visible:ring-inset rounded-sm"
+                                    >
+                                        <span>{item.question}</span>
+                                        <span className="shrink-0 text-[#A8853C]" aria-hidden="true">
+                                            {isOpen ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                                        </span>
+                                    </button>
+                                </h3>
+                                <div
+                                    id={panelId}
+                                    role="region"
+                                    aria-labelledby={triggerId}
+                                    hidden={!isOpen}
+                                >
+                                    <div className="pb-5 text-slate-600 text-base leading-relaxed max-w-prose">
+                                        {typeof item.answer === 'string' ? <p>{item.answer}</p> : item.answer}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </section>
+    );
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    OrganisationsPage — standalone gateway page
@@ -667,6 +827,11 @@ export function OrganisationsPage() {
                         </ul>
                     </div>
                 </section>
+
+                {/* ═══════════════════════════════════════════════════════════════
+            SECTION — ORGANISATION FAQs
+            ═══════════════════════════════════════════════════════════════ */}
+                <OrgsFaqSection />
 
                 {/* ═══════════════════════════════════════════════════════════════
             SECTION 7 — FINAL CTA (Calm Close)
