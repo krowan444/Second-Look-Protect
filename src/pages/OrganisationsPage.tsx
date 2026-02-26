@@ -244,7 +244,7 @@ export function OrganisationsPage() {
                 <section
                     className="orgs-hero"
                     aria-label="Organisations hero"
-                    style={{ paddingTop: '140px' }}
+                    style={{ paddingTop: '140px', position: 'relative', zIndex: 0 }}
                 >
                     <div className="max-w-6xl mx-auto px-6 md:px-10 py-10 md:py-16">
                         <div className="orgs-hero-grid grid md:grid-cols-2 gap-12 md:gap-16 items-center">
