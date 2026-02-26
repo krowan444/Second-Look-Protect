@@ -622,6 +622,43 @@ export function ExampleSafeguardingPage() {
                         </div>
                     </section>
 
+                    {/* Authority Layer — Governance awareness */}
+                    <section style={{
+                        marginTop: '2.5rem',
+                        paddingTop: '2rem',
+                        paddingBottom: '0.5rem',
+                        borderTop: '1px solid #e2e8f0',
+                    }}>
+                        <div style={{
+                            background: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '12px',
+                            padding: '1.5rem 1.75rem',
+                        }}>
+                            <h3 style={{
+                                fontFamily: "'Merriweather', serif",
+                                color: '#0B1E36',
+                                fontSize: '0.95rem',
+                                fontWeight: 600,
+                                marginBottom: '0.75rem',
+                            }}>
+                                Safeguarding governance support
+                            </h3>
+                            <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1rem' }}>
+                                Second Look Protect is designed to support existing safeguarding structures within care and supported living environments. Case records are structured clearly, guidance is human-reviewed, and insight reporting is designed to assist oversight, supervision and governance discussions.
+                            </p>
+                            <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1rem' }}>
+                                Designed to complement existing safeguarding policies and reporting procedures &mdash; not replace them.
+                            </p>
+                            <p style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.55, marginBottom: '0.75rem' }}>
+                                Second Look Protect provides safeguarding guidance and organisational insight. Final safeguarding decisions remain with your designated leads and management team.
+                            </p>
+                            <p style={{ color: '#94a3b8', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                                Built with privacy-conscious design and sensitive information handling in mind.
+                            </p>
+                        </div>
+                    </section>
+
                     {/* Calm conversion CTA */}
                     <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
                         <Button
