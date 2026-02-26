@@ -464,6 +464,16 @@ export function ExampleSafeguardingPage() {
                     padding: '5rem 0 3rem',
                 }}>
                     <div className="max-w-4xl mx-auto px-6 md:px-10" style={{ textAlign: 'center' }}>
+                        <p style={{
+                            color: '#94a3b8',
+                            fontSize: '0.72rem',
+                            fontWeight: 500,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            marginBottom: '0.75rem',
+                        }}>
+                            Organisational safeguarding demonstration environment
+                        </p>
                         <span className="demo-badge">
                             <Shield style={{ width: '13px', height: '13px' }} />
                             Demo Environment
@@ -556,6 +566,10 @@ export function ExampleSafeguardingPage() {
                     {activeTab === 'dashboard' && <DashboardTab />}
                     {activeTab === 'case' && <ExampleCaseTab />}
                     {activeTab === 'report' && <MonthlyReportTab />}
+
+                    <p style={{ color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', marginTop: '1.25rem', marginBottom: '0' }}>
+                        Structured to reflect real safeguarding workflows.
+                    </p>
 
                     {/* What this delivers */}
                     <section style={{
@@ -977,6 +991,10 @@ export function ExampleSafeguardingPage() {
                             Back to organisations
                         </Button>
                     </div>
+
+                    <p style={{ color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', marginTop: '2rem' }}>
+                        Designed with calm, responsible safeguarding practice in mind.
+                    </p>
                 </main>
 
                 {/* Footer */}
