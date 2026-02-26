@@ -242,6 +242,12 @@ export function OrganisationsPage() {
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                     return;
                 }
+                // "Plans" scrolls to organisation options section on this page
+                if (href === '#pricing') {
+                    const el = document.getElementById('org-options');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
                 window.location.href = '/' + href;
             }
         }
