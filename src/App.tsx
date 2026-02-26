@@ -13,6 +13,7 @@ import { SupportPage } from './pages/SupportPage';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { CareHomePage } from './pages/CareHomePage';
 import { OrganisationsPage } from './pages/OrganisationsPage';
+import { ExampleSafeguardingPage } from './pages/ExampleSafeguardingPage';
 import {
   Shield, CheckCircle, Search, Lock, AlertTriangle,
   Phone, Star, ArrowRight, Users, Mail,
@@ -207,7 +208,7 @@ function scrollToSection(id: string) {
 
 export default function App() {
   // Initialise page from URL so /subscription-success works on direct load / Stripe redirect
-  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' | 'care-submit' | 'organisations' {
+  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' | 'care-submit' | 'organisations' | 'example-safeguarding' {
     const path = window.location.pathname;
     if (path.startsWith('/subscription-success')) return 'subscription-success';
     if (path.startsWith('/get-protection')) return 'get-protection';
@@ -215,12 +216,13 @@ export default function App() {
     if (path.startsWith('/support')) return 'support';
     if (path.startsWith('/terms-of-service')) return 'terms-of-service';
     if (path.startsWith('/organisations')) return 'organisations';
+    if (path.startsWith('/example-safeguarding-environment')) return 'example-safeguarding';
     if (path.startsWith('/care/submit')) return 'care-submit';
     if (path.startsWith('/care')) return 'care';
     return 'home';
   }
 
-  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' | 'care-submit' | 'organisations'>(getInitialPage);
+  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' | 'care-submit' | 'organisations' | 'example-safeguarding'>(getInitialPage);
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const howItWorksRef = React.useRef<HTMLDivElement>(null);
@@ -406,6 +408,11 @@ export default function App() {
   // ── Early return: Organisations page ──────────────────────────────────
   if (page === 'organisations') {
     return <OrganisationsPage />;
+  }
+
+  // ── Early return: Example Safeguarding page ────────────────────────────
+  if (page === 'example-safeguarding') {
+    return <ExampleSafeguardingPage />;
   }
 
   // ── Early return: Care Home page ──────────────────────────────────────

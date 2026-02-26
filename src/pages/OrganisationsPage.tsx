@@ -502,7 +502,8 @@ export function OrganisationsPage() {
                                     <Button
                                         variant="secondary"
                                         size="md"
-                                        onClick={() => scrollToId('org-example')}
+                                        as="a"
+                                        href="/example-safeguarding-environment"
                                         aria-label="View example safeguarding environment"
                                     >
                                         View safeguarding dashboard example
@@ -788,7 +789,7 @@ export function OrganisationsPage() {
                                     variant="primary"
                                     size="lg"
                                     as="a"
-                                    href="mailto:hello@secondlookprotect.co.uk?subject=Organisation%20safeguarding%20example"
+                                    href="/example-safeguarding-environment"
                                 >
                                     View example safeguarding environment
                                     <ArrowRight style={{ width: '18px', height: '18px' }} aria-hidden="true" />
