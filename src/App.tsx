@@ -512,27 +512,27 @@ export default function App() {
               </div>
 
               {/* Hero phone + email nudge */}
-              <div className="mt-5 flex flex-col gap-1.5">
-                <p className="text-slate-400 text-sm">
-                  Prefer to talk?{' '}
-                  <a
-                    href="tel:07907614821"
-                    className="text-[#C9A84C] hover:text-[#D9BC78] font-medium transition-colors duration-200"
-                    aria-label="Call us on 07907 614821"
-                  >
+              <div className="hero-contact-card mt-5 flex flex-col gap-1.5">
+                <a
+                  href="tel:07907614821"
+                  className="hero-contact-row text-slate-400 text-sm no-underline"
+                  aria-label="Call us on 07907 614821"
+                >
+                  <span className="hero-contact-label">Prefer to talk?</span>
+                  <span className="hero-contact-value">
                     Call 07907 614821
-                  </a>
-                </p>
-                <p className="text-slate-400 text-sm">
-                  Prefer email?{' '}
-                  <a
-                    href="mailto:hello@secondlookprotect.co.uk"
-                    className="text-[#C9A84C] hover:text-[#D9BC78] font-medium transition-colors duration-200"
-                    aria-label="Email hello@secondlookprotect.co.uk"
-                  >
+                  </span>
+                </a>
+                <a
+                  href="mailto:hello@secondlookprotect.co.uk"
+                  className="hero-contact-row text-slate-400 text-sm no-underline"
+                  aria-label="Email hello@secondlookprotect.co.uk"
+                >
+                  <span className="hero-contact-label">Prefer email?</span>
+                  <span className="hero-contact-value hero-contact-value-email">
                     hello@secondlookprotect.co.uk
-                  </a>
-                </p>
+                  </span>
+                </a>
               </div>
             </div>
 
