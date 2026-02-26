@@ -1065,6 +1065,37 @@ export function ExampleSafeguardingPage() {
                         </p>
                     </div>
 
+                    {/* Decision Safety Net */}
+                    <div style={{
+                        marginTop: '1.5rem',
+                        padding: '1.5rem 1.75rem',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                    }}>
+                        <h3 style={{
+                            fontFamily: "'Merriweather', serif",
+                            color: '#0B1E36',
+                            fontSize: '0.92rem',
+                            fontWeight: 600,
+                            marginBottom: '0.75rem',
+                        }}>
+                            Exploring fit does not require commitment
+                        </h3>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            Second Look Protect can be reviewed and discussed without immediate implementation or structural change.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            Organisations are encouraged to evaluate alignment with their existing safeguarding procedures at a pace that feels appropriate.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+                            Initial conversations focus on understanding operational fit, oversight requirements and reporting preferences &mdash; not on imposing change.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.55 }}>
+                            The aim is clarity and support, not disruption.
+                        </p>
+                    </div>
+
                     <p style={{ color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', marginTop: '1.5rem' }}>
                         Structured safeguarding tools are increasingly viewed as a proactive step towards supporting staff and protecting residents as digital risks continue to develop.
                     </p>
