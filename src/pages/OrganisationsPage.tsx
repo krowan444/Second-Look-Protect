@@ -30,6 +30,26 @@ const ORGS_CSS = `
     object-fit: contain;
   }
 
+  /* Hero CTA buttons — scoped size override (not global) */
+  .orgs-hero-ctas {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  @media (min-width: 640px) {
+    .orgs-hero-ctas { flex-direction: row; gap: 14px; }
+  }
+  .orgs-hero-ctas button,
+  .orgs-hero-ctas a {
+    max-width: 420px;
+    width: 100%;
+    padding-top: 0.7rem !important;
+    padding-bottom: 0.7rem !important;
+    min-height: 48px !important;
+    font-size: 0.92rem !important;
+  }
+
   /* Reassurance badges */
   .orgs-badge {
     display: inline-flex;
@@ -256,10 +276,10 @@ export function OrganisationsPage() {
                                 </div>
 
                                 {/* CTAs */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }} className="sm:flex-row sm:!gap-4">
+                                <div className="orgs-hero-ctas">
                                     <Button
                                         variant="primary"
-                                        size="lg"
+                                        size="md"
                                         onClick={() => scrollToId('org-options')}
                                         aria-label="Explore organisation options"
                                     >
@@ -267,7 +287,7 @@ export function OrganisationsPage() {
                                     </Button>
                                     <Button
                                         variant="secondary"
-                                        size="lg"
+                                        size="md"
                                         onClick={() => scrollToId('org-example')}
                                         aria-label="View example safeguarding environment"
                                     >
