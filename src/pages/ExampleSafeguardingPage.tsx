@@ -3,7 +3,7 @@ import { Navbar } from '../components/Navbar';
 import {
     Shield, AlertTriangle, CheckCircle, FileText, BarChart3,
     TrendingUp, Download, Phone, Globe, UserCheck, Clock,
-    ArrowLeft,
+    ArrowLeft, ArrowRight, Eye, ClipboardList,
 } from 'lucide-react';
 import { Button } from '../components/Button';
 
@@ -501,11 +501,44 @@ export function ExampleSafeguardingPage() {
                             <span><Shield style={{ width: '13px', height: '13px' }} /> Built for safeguarding workflows</span>
                             <span><Globe style={{ width: '13px', height: '13px' }} /> Designed for care environments</span>
                         </div>
+
+                        <p style={{
+                            color: '#94a3b8',
+                            fontSize: '0.88rem',
+                            marginTop: '1.25rem',
+                        }}>
+                            Designed for safeguarding leads, care managers and support teams.
+                        </p>
                     </div>
                 </header>
 
                 {/* Main content */}
                 <main className="max-w-4xl mx-auto px-6 md:px-10" style={{ padding: '2rem 1.5rem 4rem' }}>
+
+                    {/* Scenario framing */}
+                    <div style={{
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '1.25rem 1.5rem',
+                        marginBottom: '2rem',
+                    }}>
+                        <p style={{
+                            color: '#94a3b8',
+                            fontSize: '0.78rem',
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            marginBottom: '8px',
+                        }}>
+                            Example scenario
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.65 }}>
+                            A resident receives a suspicious call claiming to be from their bank.
+                            Staff upload the details into Second Look Protect &rarr; clear human-reviewed guidance is returned &rarr; the incident contributes to monthly safeguarding insight to help identify emerging risks.
+                        </p>
+                    </div>
+
                     {/* Tab bar */}
                     <div className="demo-tab-bar">
                         {TABS.map((tab) => (
@@ -523,6 +556,85 @@ export function ExampleSafeguardingPage() {
                     {activeTab === 'dashboard' && <DashboardTab />}
                     {activeTab === 'case' && <ExampleCaseTab />}
                     {activeTab === 'report' && <MonthlyReportTab />}
+
+                    {/* What this delivers */}
+                    <section style={{
+                        marginTop: '3rem',
+                        paddingTop: '2.5rem',
+                        borderTop: '1px solid #e2e8f0',
+                    }}>
+                        <h2 style={{
+                            fontFamily: "'Merriweather', serif",
+                            color: '#0B1E36',
+                            textAlign: 'center',
+                            marginBottom: '2rem',
+                            fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+                            fontWeight: 600,
+                        }}>
+                            What this delivers for your organisation
+                        </h2>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="demo-card">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                    <Eye style={{ width: '18px', height: '18px', color: '#C9A84C' }} />
+                                    <h3 style={{ fontFamily: "'Merriweather', serif", color: '#0B1E36', fontSize: '0.95rem', fontWeight: 600 }}>
+                                        Clear safeguarding visibility
+                                    </h3>
+                                </div>
+                                <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                                    See all reported concerns in one place with structured tracking and status clarity.
+                                </p>
+                            </div>
+                            <div className="demo-card">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                    <UserCheck style={{ width: '18px', height: '18px', color: '#C9A84C' }} />
+                                    <h3 style={{ fontFamily: "'Merriweather', serif", color: '#0B1E36', fontSize: '0.95rem', fontWeight: 600 }}>
+                                        Human-reviewed guidance
+                                    </h3>
+                                </div>
+                                <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                                    Receive calm, plain-language responses designed to support real safeguarding decisions.
+                                </p>
+                            </div>
+                            <div className="demo-card">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                    <BarChart3 style={{ width: '18px', height: '18px', color: '#C9A84C' }} />
+                                    <h3 style={{ fontFamily: "'Merriweather', serif", color: '#0B1E36', fontSize: '0.95rem', fontWeight: 600 }}>
+                                        Monthly safeguarding insight
+                                    </h3>
+                                </div>
+                                <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                                    Identify patterns, emerging scam types and areas requiring additional awareness.
+                                </p>
+                            </div>
+                            <div className="demo-card">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                    <ClipboardList style={{ width: '18px', height: '18px', color: '#C9A84C' }} />
+                                    <h3 style={{ fontFamily: "'Merriweather', serif", color: '#0B1E36', fontSize: '0.95rem', fontWeight: 600 }}>
+                                        Audit-ready documentation
+                                    </h3>
+                                </div>
+                                <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                                    Maintain structured records that support governance, reporting and safeguarding oversight.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Calm conversion CTA */}
+                    <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
+                        <Button
+                            variant="secondary"
+                            size="md"
+                            as="a"
+                            href="/organisations"
+                            style={{ fontSize: '0.88rem' }}
+                        >
+                            Explore how this would work for your organisation
+                            <ArrowRight style={{ width: '16px', height: '16px' }} />
+                        </Button>
+                    </div>
 
                     {/* Back link */}
                     <div style={{ textAlign: 'center', marginTop: '3rem' }}>
