@@ -863,6 +863,37 @@ export function ExampleSafeguardingPage() {
                         </a>
                     </div>
 
+                    {/* Confidence Multiplier Layer */}
+                    <div style={{
+                        marginTop: '1.5rem',
+                        padding: '1.5rem 1.75rem',
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                    }}>
+                        <h3 style={{
+                            fontFamily: "'Merriweather', serif",
+                            color: '#0B1E36',
+                            fontSize: '0.92rem',
+                            fontWeight: 600,
+                            marginBottom: '0.75rem',
+                        }}>
+                            Designed through real safeguarding considerations
+                        </h3>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            Second Look Protect has been shaped around practical safeguarding realities &mdash; including evolving scam tactics, staff workflow pressures and the need for clear oversight.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+                            The structure shown here reflects how organisations may choose to introduce clearer visibility and calmer decision-making into modern safeguarding challenges.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.55, marginBottom: '0.5rem' }}>
+                            Structured to feel familiar within professional safeguarding environments.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                            Designed to evolve gradually alongside organisational learning and emerging risks.
+                        </p>
+                    </div>
+
                     {/* Calm conversion CTA */}
                     <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
                         <Button
