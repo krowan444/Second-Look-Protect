@@ -841,35 +841,79 @@ export function OrganisationsPage() {
                     borderTop: '1px solid #e2e8f0',
                     padding: '3.5rem 0 4rem',
                 }}>
-                    <div style={{ maxWidth: '520px', margin: '0 auto', textAlign: 'center', padding: '0 1.5rem' }}>
+                    <div style={{ maxWidth: '560px', margin: '0 auto', textAlign: 'center', padding: '0 1.5rem' }}>
                         <h2 style={{
                             fontFamily: "'Merriweather', serif",
                             color: '#0B1E36',
-                            marginBottom: '1.5rem',
+                            marginBottom: '1.25rem',
                             fontSize: 'clamp(1.5rem, 2.8vw, 2.25rem)',
                             fontWeight: 600,
                         }}>
-                            Interested in learning more?
+                            Discuss safeguarding support for your organisation
                         </h2>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }} className="sm:flex-row sm:!gap-4 sm:justify-center">
-                            <Button
-                                variant="primary"
-                                size="lg"
-                                as="a"
-                                href="mailto:hello@secondlookprotect.co.uk?subject=Organisation%20enquiry"
-                            >
-                                <Mail style={{ width: '18px', height: '18px' }} aria-hidden="true" />
-                                Request a conversation
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                size="lg"
-                                as="a"
-                                href="mailto:hello@secondlookprotect.co.uk"
-                            >
-                                Email hello@secondlookprotect.co.uk
-                            </Button>
+                        <p style={{
+                            color: '#475569',
+                            fontSize: '1rem',
+                            lineHeight: 1.7,
+                            marginBottom: '2rem',
+                        }}>
+                            Speak with us about suitability, onboarding, and organisation pricing. We&rsquo;re happy to answer questions and explore how Second Look Protect can fit your safeguarding framework.
+                        </p>
+
+                        <Button
+                            variant="primary"
+                            size="lg"
+                            as="a"
+                            href="mailto:organisations@secondlookprotect.co.uk?subject=Organisation%20safeguarding%20discussion"
+                        >
+                            Book a safeguarding discussion
+                        </Button>
+
+                        {/* Secondary contact block */}
+                        <div style={{
+                            marginTop: '2.5rem',
+                            paddingTop: '2rem',
+                            borderTop: '1px solid #e2e8f0',
+                        }}>
+                            <h3 style={{
+                                fontFamily: "'Merriweather', serif",
+                                color: '#0B1E36',
+                                fontSize: '1rem',
+                                fontWeight: 600,
+                                marginBottom: '1.25rem',
+                            }}>
+                                Organisation enquiries
+                            </h3>
+
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '10px',
+                                fontSize: '0.9rem',
+                            }}>
+                                <a
+                                    href="mailto:organisations@secondlookprotect.co.uk"
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                >
+                                    <span style={{ color: '#64748b' }}>Email</span>
+                                    <span style={{ color: '#334155', fontWeight: 500 }}>organisations@secondlookprotect.co.uk</span>
+                                </a>
+                                <a
+                                    href="tel:07563887804"
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                >
+                                    <span style={{ color: '#64748b' }}>Mobile</span>
+                                    <span style={{ color: '#334155', fontWeight: 500 }}>07563 887804</span>
+                                </a>
+                                <a
+                                    href="tel:01604000000"
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                >
+                                    <span style={{ color: '#64748b' }}>Landline</span>
+                                    <span style={{ color: '#334155', fontWeight: 500 }}>01604 000000</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </section>
