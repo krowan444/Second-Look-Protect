@@ -319,7 +319,7 @@ export function OrganisationsPage() {
                                         onClick={() => scrollToId('org-options')}
                                         aria-label="Explore organisation options"
                                     >
-                                        Explore organisation options
+                                        See how this works for your organisation
                                     </Button>
                                     <Button
                                         variant="secondary"
@@ -327,7 +327,7 @@ export function OrganisationsPage() {
                                         onClick={() => scrollToId('org-example')}
                                         aria-label="View example safeguarding environment"
                                     >
-                                        View example safeguarding environment
+                                        View safeguarding dashboard example
                                     </Button>
                                 </div>
                             </div>
