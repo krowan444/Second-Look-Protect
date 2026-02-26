@@ -244,6 +244,9 @@ function DashboardTab() {
 function ExampleCaseTab() {
     return (
         <div>
+            <p style={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                Example organisational output
+            </p>
             {/* Case header */}
             <div className="demo-card" style={{ marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
@@ -339,6 +342,9 @@ function ExampleCaseTab() {
 function MonthlyReportTab() {
     return (
         <div>
+            <p style={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                Example organisational output
+            </p>
             {/* Summary stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" style={{ marginBottom: '2rem' }}>
                 <div className="demo-card" style={{ textAlign: 'center' }}>
@@ -431,6 +437,9 @@ function MonthlyReportTab() {
                     Export PDF report (demo)
                 </Button>
             </div>
+            <p style={{ color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', marginTop: '1rem' }}>
+                Designed to support internal safeguarding updates and discussions.
+            </p>
         </div>
     );
 }
@@ -858,7 +867,10 @@ export function ExampleSafeguardingPage() {
                             Second Look Protect can be introduced gradually &mdash; allowing organisations to explore how it aligns with existing workflows before wider adoption.
                         </p>
                         <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1rem' }}>
-                            Many organisations begin with a small pilot group to evaluate fit, oversight integration and reporting value.
+                            Many organisations begin with a small evaluation phase to understand operational fit.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.82rem', lineHeight: 1.55, marginBottom: '0.75rem' }}>
+                            Structured to help safeguarding leads communicate clearly with management and oversight teams.
                         </p>
                         <p style={{ color: '#94a3b8', fontSize: '0.82rem', lineHeight: 1.55, marginBottom: '1.25rem' }}>
                             If you are reviewing this at management or trustee level, this page is designed to provide a clear overview of operational flow, governance alignment and safeguarding intent.
