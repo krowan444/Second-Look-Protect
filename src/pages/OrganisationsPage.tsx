@@ -281,7 +281,7 @@ export function OrganisationsPage() {
                                         fontWeight: 600,
                                     }}
                                 >
-                                    Digital safeguarding support for organisations supporting older adults
+                                    Digital safeguarding designed for care and supported living environments
                                 </h1>
 
                                 <p style={{
