@@ -21,8 +21,9 @@ const ORGS_CSS = `
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(11,30,54,0.10), 0 2px 8px rgba(0,0,0,0.04);
     width: 100%;
-    max-width: 520px;
+    max-width: 720px;
     height: auto;
+    object-fit: contain;
   }
 
   /* Reassurance badges */
