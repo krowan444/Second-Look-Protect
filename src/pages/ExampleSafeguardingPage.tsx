@@ -758,6 +758,37 @@ export function ExampleSafeguardingPage() {
                         </p>
                     </div>
 
+                    {/* Regulatory Conscious Layer */}
+                    <div style={{
+                        marginTop: '1.5rem',
+                        padding: '1.5rem 1.75rem',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                    }}>
+                        <h3 style={{
+                            fontFamily: "'Merriweather', serif",
+                            color: '#0B1E36',
+                            fontSize: '0.92rem',
+                            fontWeight: 600,
+                            marginBottom: '0.75rem',
+                        }}>
+                            Designed with regulated care environments in mind
+                        </h3>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            Second Look Protect has been developed with awareness of the structured safeguarding responsibilities present within regulated care and supported living environments.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+                            The platform supports clear documentation, structured workflows and responsible oversight &mdash; helping organisations respond to evolving scam risks while maintaining alignment with existing safeguarding expectations.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.55, marginBottom: '0.5rem' }}>
+                            Designed to complement established safeguarding procedures and professional judgement.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                            The system provides guidance and organisational insight while respecting the professional responsibilities of safeguarding leads and management teams.
+                        </p>
+                    </div>
+
                     {/* Calm conversion CTA */}
                     <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
                         <Button
