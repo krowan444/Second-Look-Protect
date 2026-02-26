@@ -820,6 +820,49 @@ export function ExampleSafeguardingPage() {
                         </p>
                     </div>
 
+                    {/* Silent Conversion Layer */}
+                    <div style={{
+                        marginTop: '1.5rem',
+                        padding: '1.5rem 1.75rem',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                    }}>
+                        <h3 style={{
+                            fontFamily: "'Merriweather', serif",
+                            color: '#0B1E36',
+                            fontSize: '0.92rem',
+                            fontWeight: 600,
+                            marginBottom: '0.75rem',
+                        }}>
+                            Considering how this could work within your organisation?
+                        </h3>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            Every care environment operates slightly differently. Safeguarding structures, reporting processes and team responsibilities vary.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            Second Look Protect can be introduced gradually &mdash; allowing organisations to explore how it aligns with existing workflows before wider adoption.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1rem' }}>
+                            Many organisations begin with a small pilot group to evaluate fit, oversight integration and reporting value.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.82rem', lineHeight: 1.55, marginBottom: '1.25rem' }}>
+                            If you are reviewing this at management or trustee level, this page is designed to provide a clear overview of operational flow, governance alignment and safeguarding intent.
+                        </p>
+                        <a
+                            href="/organisations"
+                            style={{
+                                color: '#64748b',
+                                fontSize: '0.85rem',
+                                textDecoration: 'none',
+                                borderBottom: '1px solid #cbd5e1',
+                                paddingBottom: '1px',
+                            }}
+                        >
+                            If helpful, we can discuss how this might align with your safeguarding processes &rarr;
+                        </a>
+                    </div>
+
                     {/* Calm conversion CTA */}
                     <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
                         <Button
