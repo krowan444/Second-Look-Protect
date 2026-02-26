@@ -34,7 +34,7 @@ const ORGS_CSS = `
   .orgs-hero-ctas {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
     align-items: flex-start;
   }
   .orgs-hero-ctas button,
@@ -483,7 +483,7 @@ export function OrganisationsPage() {
                                 </p>
 
                                 {/* Micro reassurance badges */}
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '3rem' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '3.5rem' }}>
                                     {['Supports safeguarding leads and managers', 'Clear case tracking and documentation', 'Designed to fit existing safeguarding workflows'].map((badge) => (
                                         <span key={badge} className="orgs-badge">{badge}</span>
                                     ))}
@@ -600,10 +600,20 @@ export function OrganisationsPage() {
                         background: '#F9F9F7',
                         borderTop: '1px solid #e2e8f0',
                         padding: '3.5rem 0 4rem',
+                        scrollMarginTop: '140px',
                     }}
                 >
                     <div className="max-w-6xl mx-auto px-6 md:px-10">
                         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                            <p style={{
+                                color: '#94a3b8',
+                                fontSize: '0.85rem',
+                                fontWeight: 500,
+                                letterSpacing: '0.03em',
+                                marginBottom: '0.75rem',
+                            }}>
+                                Explore how Second Look Protect adapts to different organisational settings.
+                            </p>
                             <h2 style={{
                                 fontFamily: "'Merriweather', serif",
                                 color: '#0B1E36',
