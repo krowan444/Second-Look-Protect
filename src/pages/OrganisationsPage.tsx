@@ -408,6 +408,18 @@ export function OrganisationsPage() {
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                     return;
                 }
+                // "FAQ" scrolls to local organisation FAQ section
+                if (href === '#faq') {
+                    const el = document.getElementById('org-faq');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
+                // "Contact" scrolls to local organisation contact section
+                if (href === '#contact') {
+                    const el = document.getElementById('org-contact');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
                 window.location.href = '/' + href;
             }
         }
@@ -836,11 +848,14 @@ export function OrganisationsPage() {
                 {/* ═══════════════════════════════════════════════════════════════
             SECTION 7 — FINAL CTA (Calm Close)
             ═══════════════════════════════════════════════════════════════ */}
-                <section style={{
-                    background: '#F9F9F7',
-                    borderTop: '1px solid #e2e8f0',
-                    padding: '3.5rem 0 4rem',
-                }}>
+                <section
+                    id="org-contact"
+                    style={{
+                        background: '#F9F9F7',
+                        borderTop: '1px solid #e2e8f0',
+                        padding: '3.5rem 0 4rem',
+                        scrollMarginTop: '140px',
+                    }}>
                     <div style={{ maxWidth: '560px', margin: '0 auto', textAlign: 'center', padding: '0 1.5rem' }}>
                         <h2 style={{
                             fontFamily: "'Merriweather', serif",
