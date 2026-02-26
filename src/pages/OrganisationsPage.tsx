@@ -279,6 +279,16 @@ export function OrganisationsPage() {
                                 </h1>
 
                                 <p style={{
+                                    color: '#94a3b8',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 500,
+                                    letterSpacing: '0.03em',
+                                    marginBottom: '1.25rem',
+                                }}>
+                                    UK-based &bull; Human-reviewed &bull; Built for care environments
+                                </p>
+
+                                <p style={{
                                     color: '#475569',
                                     fontSize: '1.1rem',
                                     lineHeight: 1.7,
