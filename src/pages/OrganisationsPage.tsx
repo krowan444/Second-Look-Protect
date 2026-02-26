@@ -34,7 +34,7 @@ const ORGS_CSS = `
   .orgs-hero-ctas {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     align-items: flex-start;
   }
   .orgs-hero-ctas button,
@@ -265,7 +265,7 @@ export function OrganisationsPage() {
                     <div className="max-w-6xl mx-auto px-6 md:px-10 py-10 md:py-16">
                         <div className="orgs-hero-grid grid md:grid-cols-2 gap-12 md:gap-16 items-center">
                             {/* Text column */}
-                            <div style={{ maxWidth: '540px' }}>
+                            <div style={{ maxWidth: '480px' }}>
                                 <h1
                                     className="text-[#0B1E36] mb-6"
                                     style={{
@@ -299,7 +299,7 @@ export function OrganisationsPage() {
                                 </p>
 
                                 {/* Micro reassurance badges */}
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '2.5rem' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '3rem' }}>
                                     {['Supports safeguarding leads and managers', 'Clear case tracking and documentation', 'Designed to fit existing safeguarding workflows'].map((badge) => (
                                         <span key={badge} className="orgs-badge">{badge}</span>
                                     ))}
