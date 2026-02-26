@@ -173,7 +173,7 @@ const ORG_CARDS = [
         title: 'Housing Associations / Extra Care',
         description: 'Safeguarding support for resident communities and tenancy support teams.',
         buttonLabel: 'View housing overview',
-        href: '/housing',
+        href: '/housing-associations',
         icon: Building2,
     },
     {
