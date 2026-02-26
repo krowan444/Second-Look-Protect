@@ -894,6 +894,34 @@ export function ExampleSafeguardingPage() {
                         </p>
                     </div>
 
+                    {/* Trust Momentum Loop */}
+                    <div style={{
+                        marginTop: '1.5rem',
+                        padding: '1.5rem 1.75rem',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                    }}>
+                        <h3 style={{
+                            fontFamily: "'Merriweather', serif",
+                            color: '#0B1E36',
+                            fontSize: '0.92rem',
+                            fontWeight: 600,
+                            marginBottom: '0.75rem',
+                        }}>
+                            Continuously evolving safeguarding support
+                        </h3>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            Safeguarding challenges continue to evolve &mdash; particularly as scam techniques and AI-driven impersonation become more sophisticated.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+                            Second Look Protect is developed with ongoing awareness of emerging patterns, ensuring guidance and structure remain relevant as risks change over time.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.55 }}>
+                            Development focuses on gradual refinement informed by real safeguarding experiences.
+                        </p>
+                    </div>
+
                     {/* Calm conversion CTA */}
                     <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
                         <Button
