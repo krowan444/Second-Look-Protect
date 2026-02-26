@@ -15,6 +15,7 @@ import { CareHomePage } from './pages/CareHomePage';
 import { OrganisationsPage } from './pages/OrganisationsPage';
 import { ExampleSafeguardingPage } from './pages/ExampleSafeguardingPage';
 import { CareHomesEnvironmentPage } from './pages/CareHomesEnvironmentPage';
+import { AssistedSupportedLivingPage } from './pages/AssistedSupportedLivingPage';
 import {
   Shield, CheckCircle, Search, Lock, AlertTriangle,
   Phone, Star, ArrowRight, Users, Mail,
@@ -209,7 +210,7 @@ function scrollToSection(id: string) {
 
 export default function App() {
   // Initialise page from URL so /subscription-success works on direct load / Stripe redirect
-  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' | 'care-submit' | 'organisations' | 'example-safeguarding' | 'care-homes' {
+  function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' | 'care-submit' | 'organisations' | 'example-safeguarding' | 'care-homes' | 'assisted-supported-living' {
     const path = window.location.pathname;
     if (path.startsWith('/subscription-success')) return 'subscription-success';
     if (path.startsWith('/get-protection')) return 'get-protection';
@@ -219,12 +220,13 @@ export default function App() {
     if (path.startsWith('/organisations')) return 'organisations';
     if (path.startsWith('/example-safeguarding-environment')) return 'example-safeguarding';
     if (path.startsWith('/care-homes')) return 'care-homes';
+    if (path.startsWith('/assisted-supported-living')) return 'assisted-supported-living';
     if (path.startsWith('/care/submit')) return 'care-submit';
     if (path.startsWith('/care')) return 'care';
     return 'home';
   }
 
-  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' | 'care-submit' | 'organisations' | 'example-safeguarding' | 'care-homes'>(getInitialPage);
+  const [page, setPage] = useState<'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' | 'care-submit' | 'organisations' | 'example-safeguarding' | 'care-homes' | 'assisted-supported-living'>(getInitialPage);
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const howItWorksRef = React.useRef<HTMLDivElement>(null);
@@ -420,6 +422,11 @@ export default function App() {
   // ── Early return: Care Homes Environment page ─────────────────────────
   if (page === 'care-homes') {
     return <CareHomesEnvironmentPage />;
+  }
+
+  // ── Early return: Assisted/Supported Living page ────────────────────
+  if (page === 'assisted-supported-living') {
+    return <AssistedSupportedLivingPage />;
   }
 
   // ── Early return: Care Home page ──────────────────────────────────────

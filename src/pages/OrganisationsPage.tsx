@@ -166,7 +166,7 @@ const ORG_CARDS = [
         title: 'Assisted / Supported Living',
         description: 'Independence-focused protection with a gentle safeguarding layer for residents and teams.',
         buttonLabel: 'View assisted living overview',
-        href: '/assisted',
+        href: '/assisted-supported-living',
         icon: Heart,
     },
     {
