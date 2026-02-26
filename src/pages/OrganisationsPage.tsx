@@ -525,7 +525,7 @@ export function OrganisationsPage() {
                 </section>
 
                 {/* ═══════════════════════════════════════════════════════════════
-            SECTION 2 — AUTHORITY LAYER (Quiet Trust)
+            SECTION — AUTHORITY LAYER (What it does)
             ═══════════════════════════════════════════════════════════════ */}
                 <section style={{
                     background: '#ffffff',
@@ -533,6 +533,16 @@ export function OrganisationsPage() {
                     padding: '3.5rem 0 4rem',
                 }}>
                     <div className="max-w-6xl mx-auto px-6 md:px-10">
+                        <p style={{
+                            color: '#94a3b8',
+                            fontSize: '0.85rem',
+                            fontWeight: 500,
+                            letterSpacing: '0.03em',
+                            textAlign: 'center',
+                            marginBottom: '0.75rem',
+                        }}>
+                            Designed specifically for safeguarding workflows
+                        </p>
                         <h2
                             style={{
                                 fontFamily: "'Merriweather', serif",
@@ -592,27 +602,72 @@ export function OrganisationsPage() {
                 </section>
 
                 {/* ═══════════════════════════════════════════════════════════════
-            SECTION 3 — ORGANISATION SELECTION (Core Gateway)
+            SECTION — HOW IT WORKS (moved up for flow)
+            ═══════════════════════════════════════════════════════════════ */}
+                <section
+                    id="how-it-works-org"
+                    style={{
+                        background: '#F9F9F7',
+                        borderTop: '1px solid #e2e8f0',
+                        padding: '2rem 0 3rem',
+                        scrollMarginTop: '140px',
+                    }}>
+                    <div className="max-w-6xl mx-auto px-6 md:px-10">
+                        <h2 style={{
+                            fontFamily: "'Merriweather', serif",
+                            color: '#0B1E36',
+                            textAlign: 'center',
+                            marginBottom: '2.5rem',
+                            fontSize: 'clamp(1.5rem, 2.8vw, 2.25rem)',
+                            fontWeight: 600,
+                        }}>
+                            How it works
+                        </h2>
+
+                        <div className="grid md:grid-cols-3 gap-6" style={{ maxWidth: '900px', margin: '0 auto' }}>
+                            {STEPS.map((step) => (
+                                <div key={step.num} className="orgs-step">
+                                    <div className="orgs-step-num" aria-hidden="true">{step.num}</div>
+                                    <h3 style={{
+                                        fontFamily: "'Merriweather', serif",
+                                        color: '#0B1E36',
+                                        fontSize: '1rem',
+                                        fontWeight: 600,
+                                        marginBottom: '0.5rem',
+                                    }}>
+                                        {step.title}
+                                    </h3>
+                                    <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.65 }}>
+                                        {step.description}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ═══════════════════════════════════════════════════════════════
+            SECTION — ENVIRONMENT SELECTOR (Who it's for)
             ═══════════════════════════════════════════════════════════════ */}
                 <section
                     id="org-options"
                     style={{
-                        background: '#F9F9F7',
+                        background: '#ffffff',
                         borderTop: '1px solid #e2e8f0',
                         padding: '3.5rem 0 4rem',
                         scrollMarginTop: '140px',
                     }}
                 >
                     <div className="max-w-6xl mx-auto px-6 md:px-10">
-                        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
                             <p style={{
                                 color: '#94a3b8',
                                 fontSize: '0.85rem',
                                 fontWeight: 500,
                                 letterSpacing: '0.03em',
-                                marginBottom: '0.75rem',
+                                marginBottom: '0.5rem',
                             }}>
-                                Explore how Second Look Protect adapts to different organisational settings.
+                                Supporting different care environments
                             </p>
                             <h2 style={{
                                 fontFamily: "'Merriweather', serif",
@@ -681,56 +736,21 @@ export function OrganisationsPage() {
                                 );
                             })}
                         </div>
-                    </div>
-                </section>
 
-                {/* ═══════════════════════════════════════════════════════════════
-            SECTION 4 — HOW IT WORKS (3 calm steps)
-            ═══════════════════════════════════════════════════════════════ */}
-                <section
-                    id="how-it-works-org"
-                    style={{
-                        background: '#ffffff',
-                        borderTop: '1px solid #e2e8f0',
-                        padding: '2rem 0 3rem',
-                        scrollMarginTop: '140px',
-                    }}>
-                    <div className="max-w-6xl mx-auto px-6 md:px-10">
-                        <h2 style={{
-                            fontFamily: "'Merriweather', serif",
-                            color: '#0B1E36',
+                        {/* Reassurance micro-line */}
+                        <p style={{
+                            color: '#94a3b8',
+                            fontSize: '0.82rem',
                             textAlign: 'center',
-                            marginBottom: '2.5rem',
-                            fontSize: 'clamp(1.5rem, 2.8vw, 2.25rem)',
-                            fontWeight: 600,
+                            marginTop: '2rem',
                         }}>
-                            How it works
-                        </h2>
-
-                        <div className="grid md:grid-cols-3 gap-6" style={{ maxWidth: '900px', margin: '0 auto' }}>
-                            {STEPS.map((step) => (
-                                <div key={step.num} className="orgs-step">
-                                    <div className="orgs-step-num" aria-hidden="true">{step.num}</div>
-                                    <h3 style={{
-                                        fontFamily: "'Merriweather', serif",
-                                        color: '#0B1E36',
-                                        fontSize: '1rem',
-                                        fontWeight: 600,
-                                        marginBottom: '0.5rem',
-                                    }}>
-                                        {step.title}
-                                    </h3>
-                                    <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.65 }}>
-                                        {step.description}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
+                            Each environment provides a simplified interface tailored to safeguarding workflows.
+                        </p>
                     </div>
                 </section>
 
                 {/* ═══════════════════════════════════════════════════════════════
-            SECTION 5 — PRE-ONBOARDING (Explore Example)
+            SECTION — PRE-ONBOARDING (Explore Example)
             ═══════════════════════════════════════════════════════════════ */}
                 <section
                     id="org-example"
@@ -749,7 +769,7 @@ export function OrganisationsPage() {
                             fontSize: 'clamp(1.5rem, 2.8vw, 2.25rem)',
                             fontWeight: 600,
                         }}>
-                            Explore how this could work for your organisation
+                            See how Second Look Protect fits your safeguarding environment
                         </h2>
 
                         <div style={{ maxWidth: '580px', margin: '0 auto', textAlign: 'center' }}>
@@ -806,7 +826,7 @@ export function OrganisationsPage() {
                 </section>
 
                 {/* ═══════════════════════════════════════════════════════════════
-            SECTION 6 — WHY ORGANISATIONS USE THIS (Benefits)
+            SECTION — WHY ORGANISATIONS USE THIS (Benefits)
             ═══════════════════════════════════════════════════════════════ */}
                 <section style={{
                     background: '#ffffff',
