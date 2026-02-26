@@ -236,6 +236,12 @@ export function OrganisationsPage() {
             const href = anchor.getAttribute('href');
             if (href && href.startsWith('#') && href.length > 1) {
                 e.preventDefault();
+                // "How it works" scrolls to local section on this page
+                if (href === '#how-it-works') {
+                    const el = document.getElementById('how-it-works-org');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
                 window.location.href = '/' + href;
             }
         }
@@ -493,11 +499,14 @@ export function OrganisationsPage() {
                 {/* ═══════════════════════════════════════════════════════════════
             SECTION 4 — HOW IT WORKS (3 calm steps)
             ═══════════════════════════════════════════════════════════════ */}
-                <section style={{
-                    background: '#ffffff',
-                    borderTop: '1px solid #e2e8f0',
-                    padding: '2rem 0 3rem',
-                }}>
+                <section
+                    id="how-it-works-org"
+                    style={{
+                        background: '#ffffff',
+                        borderTop: '1px solid #e2e8f0',
+                        padding: '2rem 0 3rem',
+                        scrollMarginTop: '140px',
+                    }}>
                     <div className="max-w-6xl mx-auto px-6 md:px-10">
                         <h2 style={{
                             fontFamily: "'Merriweather', serif",
