@@ -180,7 +180,7 @@ const ORG_CARDS = [
         title: 'Community Organisations',
         description: 'Support for charities and local groups helping older adults check suspicious contacts.',
         buttonLabel: 'View community overview',
-        href: '/community',
+        href: '/community-organisations',
         icon: Users,
     },
     {
