@@ -659,6 +659,37 @@ export function ExampleSafeguardingPage() {
                         </div>
                     </section>
 
+                    {/* Procurement Calm Layer */}
+                    <div style={{
+                        marginTop: '1.5rem',
+                        padding: '1.5rem 1.75rem',
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                    }}>
+                        <h3 style={{
+                            fontFamily: "'Merriweather', serif",
+                            color: '#0B1E36',
+                            fontSize: '0.92rem',
+                            fontWeight: 600,
+                            marginBottom: '0.75rem',
+                        }}>
+                            Designed to fit into existing safeguarding processes
+                        </h3>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            Second Look Protect is designed to support &mdash; not replace &mdash; existing safeguarding policies, reporting procedures and professional roles.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+                            The platform works alongside current workflows, helping staff respond to modern scam risks while maintaining established oversight structures. Organisations remain fully in control of decision-making and safeguarding actions.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.55, marginBottom: '0.5rem' }}>
+                            No complex setup required. Designed for simple adoption within care environments.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                            Pilot environments can be introduced gradually to evaluate fit within your organisation.
+                        </p>
+                    </div>
+
                     {/* Calm conversion CTA */}
                     <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
                         <Button
