@@ -300,7 +300,7 @@ export function OrganisationsPage() {
 
                                 {/* Micro reassurance badges */}
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '2.5rem' }}>
-                                    {['UK-based', 'Human-reviewed guidance', 'Designed to support existing safeguarding processes'].map((badge) => (
+                                    {['Supports safeguarding leads and managers', 'Clear case tracking and documentation', 'Designed to fit existing safeguarding workflows'].map((badge) => (
                                         <span key={badge} className="orgs-badge">{badge}</span>
                                     ))}
                                 </div>
