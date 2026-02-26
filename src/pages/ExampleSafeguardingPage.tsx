@@ -510,6 +510,16 @@ export function ExampleSafeguardingPage() {
                             Explore how Second Look Protect supports organisations through clear case tracking, human-reviewed guidance and safeguarding insight.
                         </p>
 
+                        <p style={{
+                            color: '#94a3b8',
+                            fontSize: '0.85rem',
+                            lineHeight: 1.6,
+                            maxWidth: '600px',
+                            margin: '0 auto 1.5rem',
+                        }}>
+                            As scam techniques continue to evolve &mdash; particularly through AI-enabled impersonation and increasingly convincing communication methods &mdash; many organisations are exploring more structured ways to support safeguarding decision-making.
+                        </p>
+
                         <div className="demo-notice" style={{ maxWidth: '420px', margin: '0 auto 1.5rem' }}>
                             <Shield style={{ width: '16px', height: '16px', color: '#C9A84C', flexShrink: 0 }} />
                             This is a view-only demonstration.
@@ -581,6 +591,9 @@ export function ExampleSafeguardingPage() {
                     </p>
 
                     {/* What this delivers */}
+                    <p style={{ color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', marginBottom: '0.5rem' }}>
+                        For many teams, introducing structured visibility around emerging risks becomes a natural extension of existing safeguarding practice.
+                    </p>
                     <section style={{
                         marginTop: '3rem',
                         paddingTop: '2.5rem',
@@ -989,6 +1002,41 @@ export function ExampleSafeguardingPage() {
                             <ArrowRight style={{ width: '16px', height: '16px' }} />
                         </Button>
                     </div>
+
+                    {/* Champion Framing Section */}
+                    <div style={{
+                        marginTop: '1.5rem',
+                        padding: '1.5rem 1.75rem',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                    }}>
+                        <h3 style={{
+                            fontFamily: "'Merriweather', serif",
+                            color: '#0B1E36',
+                            fontSize: '0.92rem',
+                            fontWeight: 600,
+                            marginBottom: '0.75rem',
+                        }}>
+                            Supporting safeguarding leadership conversations
+                        </h3>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            Second Look Protect is designed to provide a structured foundation for internal safeguarding discussions &mdash; offering clearer visibility, consistent documentation and calm guidance around emerging scam risks.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+                            For safeguarding leads reviewing modern risk exposure, the platform provides a way to introduce additional clarity without disrupting established processes.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.55, marginBottom: '0.5rem' }}>
+                            The structure demonstrated here is intended to support confident communication with management, trustees and oversight bodies.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                            Exploration does not require immediate structural change &mdash; organisations can evaluate alignment at their own pace.
+                        </p>
+                    </div>
+
+                    <p style={{ color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', marginTop: '1.5rem' }}>
+                        Structured safeguarding tools are increasingly viewed as a proactive step towards supporting staff and protecting residents as digital risks continue to develop.
+                    </p>
 
                     {/* Back link */}
                     <div style={{ textAlign: 'center', marginTop: '3rem' }}>
