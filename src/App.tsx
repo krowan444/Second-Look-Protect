@@ -236,6 +236,36 @@ export default function App() {
     return () => obs.disconnect();
   }, []);
 
+  /* ── Hash scroll: when homepage loads with /#section, scroll to it ─── */
+  React.useEffect(() => {
+    if (page !== 'home') return;
+
+    function scrollToHash(hash: string) {
+      if (!hash || hash.length < 2) return;
+      const id = hash.replace(/^#/, '');
+      let attempts = 0;
+      const maxAttempts = 10;
+      const tryScroll = () => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(tryScroll, 100);
+        }
+      };
+      tryScroll();
+    }
+
+    // On initial load
+    scrollToHash(window.location.hash);
+
+    // On hash change while on homepage
+    const onHashChange = () => scrollToHash(window.location.hash);
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [page]);
+
   async function handleSubscribe(planKey: string) {
     const interval = isYearly ? 'yearly' : 'monthly';
     const loadingKey = `${planKey}_${interval}`;
