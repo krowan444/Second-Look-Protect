@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* ─── Anchor scroll offset (header clearance for /#hash nav) ────────────── */
+#how-it-works,
+#pricing,
+#faq,
+#contact {
+    scroll-margin-top: 140px;
+}
+
 /* ─── Design Tokens ──────────────────────────────────────────────────────── */
 @theme {
     /* Brand colours */
