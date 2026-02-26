@@ -922,6 +922,34 @@ export function ExampleSafeguardingPage() {
                         </p>
                     </div>
 
+                    {/* Institutional Gravity Layer */}
+                    <div style={{
+                        marginTop: '1.5rem',
+                        padding: '1.5rem 1.75rem',
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                    }}>
+                        <h3 style={{
+                            fontFamily: "'Merriweather', serif",
+                            color: '#0B1E36',
+                            fontSize: '0.92rem',
+                            fontWeight: 600,
+                            marginBottom: '0.75rem',
+                        }}>
+                            Designed to integrate naturally into safeguarding environments
+                        </h3>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            Second Look Protect is structured to complement the realities of modern safeguarding &mdash; supporting teams, oversight structures and organisational processes without introducing unnecessary complexity.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+                            The platform is intended to sit alongside existing tools and workflows, helping organisations respond more confidently to emerging scam risks while maintaining familiar professional practices.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.55 }}>
+                            Designed to feel like a natural extension of existing safeguarding processes.
+                        </p>
+                    </div>
+
                     {/* Calm conversion CTA */}
                     <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
                         <Button
