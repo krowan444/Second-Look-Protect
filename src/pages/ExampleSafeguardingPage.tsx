@@ -1034,6 +1034,37 @@ export function ExampleSafeguardingPage() {
                         </p>
                     </div>
 
+                    {/* Loss Aversion Mirror */}
+                    <div style={{
+                        marginTop: '1.5rem',
+                        padding: '1.5rem 1.75rem',
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                    }}>
+                        <h3 style={{
+                            fontFamily: "'Merriweather', serif",
+                            color: '#0B1E36',
+                            fontSize: '0.92rem',
+                            fontWeight: 600,
+                            marginBottom: '0.75rem',
+                        }}>
+                            When safeguarding responses remain informal
+                        </h3>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            In many organisations, scam-related concerns are handled thoughtfully but informally &mdash; often through conversations, emails or ad-hoc notes.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '0.75rem' }}>
+                            As scam techniques become more sophisticated and AI-enabled impersonation increases, informal handling can make it harder to maintain visibility, track patterns or support consistent oversight.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+                            Introducing structured documentation and calm guidance does not replace professional judgement &mdash; it simply provides clearer visibility as risks evolve.
+                        </p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.55 }}>
+                            The intention is not to introduce complexity, but to reduce uncertainty.
+                        </p>
+                    </div>
+
                     <p style={{ color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', marginTop: '1.5rem' }}>
                         Structured safeguarding tools are increasingly viewed as a proactive step towards supporting staff and protecting residents as digital risks continue to develop.
                     </p>
