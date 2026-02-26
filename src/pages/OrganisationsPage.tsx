@@ -187,7 +187,7 @@ const ORG_CARDS = [
         title: 'Public Sector & Partnerships',
         description: 'For councils and safeguarding teams exploring partnership or pilot discussions.',
         buttonLabel: 'View partnership overview',
-        href: '/partners',
+        href: '/public-sector-partnerships',
         icon: Landmark,
     },
 ];
