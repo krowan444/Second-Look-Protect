@@ -159,7 +159,7 @@ const ORG_CARDS = [
         title: 'Care Homes',
         description: 'Structured safeguarding support with clear guidance and optional monthly insight summaries.',
         buttonLabel: 'View care home overview',
-        href: '/care',
+        href: '/care-homes',
         icon: Home,
     },
     {
