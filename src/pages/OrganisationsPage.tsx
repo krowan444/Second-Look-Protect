@@ -227,6 +227,22 @@ const ENV_OPTIONS = ['Care home', 'Assisted living', 'Housing', 'Community', 'Ot
 export function OrganisationsPage() {
     const [selectedEnv, setSelectedEnv] = useState('');
 
+    /* Intercept bare #hash clicks (e.g. from shared Navbar) and redirect to /#hash
+       so they navigate to the homepage section instead of doing nothing. */
+    React.useEffect(() => {
+        function handleHashClick(e: MouseEvent) {
+            const anchor = (e.target as HTMLElement).closest('a');
+            if (!anchor) return;
+            const href = anchor.getAttribute('href');
+            if (href && href.startsWith('#') && href.length > 1) {
+                e.preventDefault();
+                window.location.href = '/' + href;
+            }
+        }
+        document.addEventListener('click', handleHashClick, true);
+        return () => document.removeEventListener('click', handleHashClick, true);
+    }, []);
+
     function handleGetProtection() {
         window.history.pushState(null, '', '/get-protection');
         window.location.href = '/get-protection';
