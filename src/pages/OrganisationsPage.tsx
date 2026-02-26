@@ -37,9 +37,6 @@ const ORGS_CSS = `
     gap: 12px;
     align-items: flex-start;
   }
-  @media (min-width: 640px) {
-    .orgs-hero-ctas { flex-direction: row; gap: 14px; }
-  }
   .orgs-hero-ctas button,
   .orgs-hero-ctas a {
     max-width: 420px;
@@ -47,7 +44,14 @@ const ORGS_CSS = `
     padding-top: 0.7rem !important;
     padding-bottom: 0.7rem !important;
     min-height: 48px !important;
+    max-height: 56px !important;
     font-size: 0.92rem !important;
+  }
+
+  /* Card buttons — push to bottom for equal-height cards */
+  .orgs-card > a,
+  .orgs-card > button {
+    margin-top: auto !important;
   }
 
   /* Reassurance badges */
@@ -466,7 +470,7 @@ export function OrganisationsPage() {
                 <section style={{
                     background: '#ffffff',
                     borderTop: '1px solid #e2e8f0',
-                    padding: '3.5rem 0 4rem',
+                    padding: '2rem 0 3rem',
                 }}>
                     <div className="max-w-6xl mx-auto px-6 md:px-10">
                         <h2 style={{
