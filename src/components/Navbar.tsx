@@ -125,7 +125,7 @@ export function Navbar({ onGetProtection }: NavbarProps) {
                 >
                     {/* Brand */}
                     <a
-                        href="#"
+                        href="/"
                         className="flex items-center gap-3 text-white focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#C9A84C] rounded-sm"
                         aria-label="Second Look Protect — Return to top"
                     >
