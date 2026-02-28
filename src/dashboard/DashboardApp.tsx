@@ -105,54 +105,104 @@ export function DashboardApp() {
     async function loadProfile(uid: string, email: string) {
         try {
             const supabase = getSupabase();
+            console.log('[Dashboard] loadProfile called for uid:', uid, 'email:', email);
 
-            // Fetch profile
+            // Fetch profile — use maybeSingle() so no throw on zero rows
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
                 .select('id, role, organisation_id, full_name')
                 .eq('id', uid)
-                .single();
+                .maybeSingle();
 
-            if (profileError || !profile) {
-                setError('Profile not found. Please contact your administrator.');
+            console.log('[Dashboard] profile query result:', { profile, profileError });
+
+            // Distinguish query error from missing row
+            if (profileError) {
+                console.error('[Dashboard] Profile query error:', profileError);
+                setError('Unable to load profile. Please try again.');
                 setAuthState('unauthenticated');
                 return;
             }
 
-            const dashUser: DashboardUser = {
-                id: profile.id,
-                email,
-                role: profile.role as UserRole,
-                organisation_id: profile.organisation_id,
-                full_name: profile.full_name,
-            };
+            // Profile row not found — attempt auto-create fallback
+            if (!profile) {
+                console.warn('[Dashboard] No profile row found for uid:', uid, '— attempting auto-create');
+                const { error: insertErr } = await supabase
+                    .from('profiles')
+                    .insert({ id: uid, role: 'staff', is_active: true });
 
-            setUser(dashUser);
-
-            // Fetch organisation name
-            if (profile.organisation_id) {
-                const { data: org } = await supabase
-                    .from('organisations')
-                    .select('id, name')
-                    .eq('id', profile.organisation_id)
-                    .single();
-
-                if (org) {
-                    setOrganisation(org);
+                if (insertErr) {
+                    console.error('[Dashboard] Auto-create profile failed:', insertErr);
+                    setError('Profile not found. Please contact your administrator.');
+                    setAuthState('unauthenticated');
+                    return;
                 }
+
+                // Re-fetch after insert
+                const { data: newProfile, error: refetchErr } = await supabase
+                    .from('profiles')
+                    .select('id, role, organisation_id, full_name')
+                    .eq('id', uid)
+                    .maybeSingle();
+
+                if (refetchErr || !newProfile) {
+                    console.error('[Dashboard] Re-fetch after auto-create failed:', refetchErr);
+                    setError('Profile not found. Please contact your administrator.');
+                    setAuthState('unauthenticated');
+                    return;
+                }
+
+                // Use the newly created profile
+                return applyProfile(newProfile, email, supabase);
             }
 
-            setAuthState('authenticated');
+            // Profile exists — apply it (organisation_id may be null, that's valid)
+            return applyProfile(profile, email, supabase);
 
-            // Navigate to default if at bare /dashboard
-            if (window.location.pathname === '/dashboard' || window.location.pathname === '/dashboard/') {
-                const defaultPath = defaultPathForRole(dashUser.role);
-                window.history.replaceState(null, '', defaultPath);
-                setCurrentPath(defaultPath);
-            }
-        } catch {
-            setError('Failed to load profile. Please try again.');
+        } catch (err) {
+            console.error('[Dashboard] Unexpected error in loadProfile:', err);
+            setError('Unable to load profile. Please try again.');
             setAuthState('unauthenticated');
+        }
+    }
+
+    /* ── Apply a fetched profile to state ──────────────────────────────────── */
+    async function applyProfile(
+        profile: { id: string; role: string; organisation_id: string | null; full_name: string | null },
+        email: string,
+        supabase: ReturnType<typeof getSupabase>,
+    ) {
+        const dashUser: DashboardUser = {
+            id: profile.id,
+            email,
+            role: profile.role as UserRole,
+            organisation_id: profile.organisation_id,  // null is valid
+            full_name: profile.full_name,
+        };
+
+        setUser(dashUser);
+
+        // Fetch organisation name only if organisation_id is set
+        if (profile.organisation_id) {
+            const { data: org } = await supabase
+                .from('organisations')
+                .select('id, name')
+                .eq('id', profile.organisation_id)
+                .maybeSingle();
+
+            if (org) {
+                setOrganisation(org);
+            }
+        }
+
+        setError(null);
+        setAuthState('authenticated');
+
+        // Navigate to default if at bare /dashboard
+        if (window.location.pathname === '/dashboard' || window.location.pathname === '/dashboard/') {
+            const defaultPath = defaultPathForRole(dashUser.role);
+            window.history.replaceState(null, '', defaultPath);
+            setCurrentPath(defaultPath);
         }
     }
 
