@@ -11,6 +11,7 @@ import { SubmitCasePage } from './pages/SubmitCasePage';
 import { MyCasesPage } from './pages/MyCasesPage';
 import { ReviewQueuePage } from './pages/ReviewQueuePage';
 import { CasesPage } from './pages/CasesPage';
+import { CaseDetailPage } from './pages/CaseDetailPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PlatformOverviewPage } from './pages/PlatformOverviewPage';
@@ -21,14 +22,21 @@ import { BillingPage } from './pages/BillingPage';
 
 /* ─── Route resolver ─────────────────────────────────────────────────────── */
 
-function getPage(path: string): React.ReactNode {
+function getPage(path: string, navigate: (p: string) => void, userRole?: UserRole): React.ReactNode {
     const segments = path.replace('/dashboard', '').replace(/^\//, '') || 'overview';
-    switch (segments) {
+    const parts = segments.split('/');
+    const topSegment = parts[0];
+    const subSegment = parts[1] || '';
+    switch (topSegment) {
         case 'overview': return <OverviewPage />;
-        case 'submit': return <SubmitCasePage />;
+        case 'submit': return <SubmitCasePage onNavigate={navigate} />;
         case 'my-cases': return <MyCasesPage />;
-        case 'review-queue': return <ReviewQueuePage />;
-        case 'cases': return <CasesPage />;
+        case 'review-queue': return <ReviewQueuePage onNavigate={navigate} userRole={userRole} />;
+        case 'cases':
+            if (subSegment) {
+                return <CaseDetailPage caseId={subSegment} onNavigate={navigate} userRole={userRole} />;
+            }
+            return <CasesPage onNavigate={navigate} />;
         case 'reports': return <ReportsPage />;
         case 'settings': return <SettingsPage />;
         case 'platform': return <PlatformOverviewPage />;
@@ -213,7 +221,7 @@ export function DashboardApp() {
             onNavigate={navigate}
             onSignOut={handleSignOut}
         >
-            {getPage(currentPath)}
+            {getPage(currentPath, navigate, user?.role)}
         </DashboardLayout>
     );
 }
