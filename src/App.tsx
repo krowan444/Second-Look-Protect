@@ -19,6 +19,7 @@ import { AssistedSupportedLivingPage } from './pages/AssistedSupportedLivingPage
 import { HousingAssociationsPage } from './pages/HousingAssociationsPage';
 import { CommunityOrganisationsPage } from './pages/CommunityOrganisationsPage';
 import { PublicSectorPartnershipsPage } from './pages/PublicSectorPartnershipsPage';
+import { DashboardApp } from './dashboard/DashboardApp';
 import {
   Shield, CheckCircle, Search, Lock, AlertTriangle,
   Phone, Star, ArrowRight, Users, Mail,
@@ -212,6 +213,11 @@ function scrollToSection(id: string) {
 /* ─── Main App ─────────────────────────────────────────────────────────── */
 
 export default function App() {
+  // ── Dashboard routes — entirely separate shell ──────────────────────────
+  if (window.location.pathname.startsWith('/dashboard')) {
+    return <DashboardApp />;
+  }
+
   // Initialise page from URL so /subscription-success works on direct load / Stripe redirect
   function getInitialPage(): 'home' | 'get-protection' | 'subscription-success' | 'privacy-policy' | 'support' | 'terms-of-service' | 'care' | 'care-submit' | 'organisations' | 'example-safeguarding' | 'care-homes' | 'assisted-supported-living' | 'housing-associations' | 'community-organisations' | 'public-sector-partnerships' {
     const path = window.location.pathname;
