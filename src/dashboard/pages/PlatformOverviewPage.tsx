@@ -1,5 +1,5 @@
 import React from 'react';
-import { Globe, AlertTriangle, Building2, Shield, Activity } from 'lucide-react';
+import { Globe, AlertTriangle, Building2, Shield, Activity, Loader2, LayoutDashboard, Clock } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
 type OrgRow = {
@@ -58,6 +58,7 @@ export function PlatformOverviewPage() {
   const [orgs, setOrgs] = React.useState<OrgRow[]>([]);
   const [recentCases, setRecentCases] = React.useState<CaseRow[]>([]);
   const [orgNameById, setOrgNameById] = React.useState<Record<string, string>>({});
+  const [topRiskOrgs, setTopRiskOrgs] = React.useState<{ name: string; count: number }[]>([]);
 
   const [metrics, setMetrics] = React.useState<{
     orgTotal: number;
@@ -171,8 +172,21 @@ export function PlatformOverviewPage() {
 
       const openRows = (openCasesRows ?? []) as CaseRow[];
       const openCases = openRows.length;
-      const highRiskOpen = openRows.filter(c => c.risk_level === 'high').length;
+      const highRiskOpen = openRows.filter(c => ['high', 'critical'].includes((c.risk_level ?? '').toLowerCase())).length;
       const untriagedOpen = openRows.filter(c => !c.risk_level).length;
+
+      // Compute top risk orgs (orgs with most open high/critical cases)
+      const riskByOrg: Record<string, number> = {};
+      for (const c of openRows) {
+        if (['high', 'critical'].includes((c.risk_level ?? '').toLowerCase())) {
+          riskByOrg[c.organisation_id] = (riskByOrg[c.organisation_id] || 0) + 1;
+        }
+      }
+      const topRisk = Object.entries(riskByOrg)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([orgId, count]) => ({ name: nameMap[orgId] ?? orgId, count }));
+      setTopRiskOrgs(topRisk);
 
       // 4) Recent cases (top 10)
       const { data: recent, error: recentErr } = await supabase
@@ -271,71 +285,90 @@ export function PlatformOverviewPage() {
       )}
 
       {loading && !error && (
-        <div className="dashboard-placeholder-card">
-          <div className="dashboard-placeholder-icon"><Globe /></div>
-          <p className="dashboard-page-title" style={{ fontSize: '1.1rem' }}>Loading platform overview…</p>
-          <p className="dashboard-page-subtitle" style={{ textAlign: 'center', margin: '0.5rem auto 0' }}>
-            Pulling metrics from Supabase.
-          </p>
-          <span className="dashboard-placeholder-label">Loading</span>
+        <div className="dashboard-overview-loading">
+          <Loader2 className="dashboard-overview-spinner-icon" />
+          <p>Loading platform overview…</p>
         </div>
       )}
 
       {!loading && !error && (
-        <div style={{ display: 'grid', gap: 16 }}>
-          {/* Metric cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 16 }}>
-            <div className="dashboard-card" style={{ gridColumn: 'span 3', padding: 16, borderRadius: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div className="dashboard-muted-label">Organisations</div>
-                  <div className="dashboard-metric">{metrics.orgTotal}</div>
-                  <div className="dashboard-small-muted">
-                    Active {metrics.orgActive} · Paused {metrics.orgPaused} · Suspended {metrics.orgSuspended}
-                  </div>
-                </div>
-                <Building2 />
+        <div style={{ display: 'grid', gap: '1.5rem' }}>
+
+          {/* Platform Status */}
+          {(() => {
+            const platStatus = metrics.highRiskOpen > 0 ? 'Elevated Risk'
+              : metrics.openCases > 0 ? 'Monitor'
+                : 'Stable';
+            return <p style={{ margin: 0, fontSize: '0.82rem' }}><strong>Platform Status:</strong> {platStatus}</p>;
+          })()}
+
+          {/* Stat Cards */}
+          <div className="dashboard-overview-cards">
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-card-accent accent-blue" />
+              <div className="dashboard-stat-card-body">
+                <div className="dashboard-stat-icon blue"><Building2 size={20} /></div>
+                <div className="dashboard-stat-value">{metrics.orgTotal}</div>
+                <div className="dashboard-stat-label">Organisations</div>
+                <div className="dashboard-stat-period">Active {metrics.orgActive} · Paused {metrics.orgPaused} · Suspended {metrics.orgSuspended}</div>
               </div>
             </div>
 
-            <div className="dashboard-card" style={{ gridColumn: 'span 3', padding: 16, borderRadius: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div className="dashboard-muted-label">Cases (this month)</div>
-                  <div className="dashboard-metric">{metrics.casesThisMonth}</div>
-                  <div className="dashboard-small-muted">
-                    Scam {metrics.scamCountThisMonth} · Legit {metrics.legitCountThisMonth} · Unsure {metrics.unsureCountThisMonth}
-                  </div>
-                </div>
-                <Globe />
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-card-accent accent-gold" />
+              <div className="dashboard-stat-card-body">
+                <div className="dashboard-stat-icon gold"><LayoutDashboard size={20} /></div>
+                <div className="dashboard-stat-value">{metrics.casesThisMonth}</div>
+                <div className="dashboard-stat-label">Cases This Month</div>
+                <div className="dashboard-stat-period">Scam {metrics.scamCountThisMonth} · Legit {metrics.legitCountThisMonth} · Unsure {metrics.unsureCountThisMonth}</div>
               </div>
             </div>
 
-            <div className="dashboard-card" style={{ gridColumn: 'span 3', padding: 16, borderRadius: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div className="dashboard-muted-label">Open queue</div>
-                  <div className="dashboard-metric">{metrics.openCases}</div>
-                  <div className="dashboard-small-muted">
-                    High risk {metrics.highRiskOpen} · Untriaged {metrics.untriagedOpen}
-                  </div>
-                </div>
-                <AlertTriangle />
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-card-accent accent-red" />
+              <div className="dashboard-stat-card-body">
+                <div className="dashboard-stat-icon red"><AlertTriangle size={20} /></div>
+                <div className="dashboard-stat-value">{metrics.openCases}</div>
+                <div className="dashboard-stat-label">Open Queue</div>
+                <div className="dashboard-stat-period">High risk {metrics.highRiskOpen} · Untriaged {metrics.untriagedOpen}</div>
               </div>
             </div>
 
-            <div className="dashboard-card" style={{ gridColumn: 'span 3', padding: 16, borderRadius: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div className="dashboard-muted-label">Loss recorded (this month)</div>
-                  <div className="dashboard-metric">{fmtGBP(metrics.lossTotalThisMonth)}</div>
-                  <div className="dashboard-small-muted">
-                    Prevented {metrics.preventedThisMonth} · Lost {metrics.lostThisMonth} · Escalated {metrics.escalatedThisMonth}
-                  </div>
-                </div>
-                <Shield />
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-card-accent accent-amber" />
+              <div className="dashboard-stat-card-body">
+                <div className="dashboard-stat-icon amber"><Shield size={20} /></div>
+                <div className="dashboard-stat-value">{fmtGBP(metrics.lossTotalThisMonth)}</div>
+                <div className="dashboard-stat-label">Loss Recorded</div>
+                <div className="dashboard-stat-period">Prevented {metrics.preventedThisMonth} · Lost {metrics.lostThisMonth} · Escalated {metrics.escalatedThisMonth}</div>
               </div>
             </div>
+          </div>
+
+          {/* Top Risk Organisations */}
+          <div className="dashboard-panel">
+            <div className="dashboard-panel-header">
+              <h2 className="dashboard-panel-title">
+                <AlertTriangle size={16} className="dashboard-panel-title-icon" />
+                Top Risk Organisations
+              </h2>
+            </div>
+            {topRiskOrgs.length === 0 ? (
+              <div className="dashboard-panel-empty">No high-risk organisations currently flagged.</div>
+            ) : (
+              <div className="dashboard-panel-table-wrap">
+                <table className="dashboard-panel-table">
+                  <thead>
+                    <tr><th>Organisation</th><th>Open High/Critical Cases</th></tr>
+                  </thead>
+                  <tbody>
+                    {topRiskOrgs.map((o, i) => (
+                      <tr key={i}><td>{o.name}</td><td>{o.count}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* System health + Recent cases */}
