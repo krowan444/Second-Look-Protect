@@ -83,7 +83,11 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
             };
 
             if (attachmentUrl.trim()) {
-                row.attachment_url = attachmentUrl.trim();
+                let url = attachmentUrl.trim();
+                if (!/^https?:\/\//i.test(url)) {
+                    url = 'https://' + url;
+                }
+                row.attachment_url = url;
             }
             if (residentRef.trim()) {
                 row.resident_ref = residentRef.trim();
@@ -179,7 +183,7 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                     </p>
                     <input
                         id="dsf-attachment"
-                        type="url"
+                        type="text"
                         className="dsf-input"
                         value={attachmentUrl}
                         onChange={(e) => setAttachmentUrl(e.target.value)}
