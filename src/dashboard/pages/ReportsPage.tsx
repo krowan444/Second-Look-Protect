@@ -1,34 +1,47 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-    BarChart3, Loader2, AlertTriangle, Copy, Download,
-    Calendar, ShieldAlert, PieChart, Users, CheckCircle2,
-    TrendingUp, Info,
+    BarChart3, Loader2, AlertTriangle, Calendar, ShieldAlert, PieChart,
+    CheckCircle2, TrendingUp, Info, Printer, Save, Lock, Eye,
+    ClipboardList, Clock, FileText, Download, Activity,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
-interface Submission {
+interface CaseRow {
     id: string;
     submitted_at: string;
     submission_type: string | null;
+    channel: string | null;
     status: string | null;
     risk_level: string | null;
     decision: string | null;
     category: string | null;
     outcome: string | null;
-    resident_ref: string | null;
-    loss_amount?: number | null;
+    reviewed_at: string | null;
+    closed_at: string | null;
 }
 
-interface OrgSettings {
-    timezone: string | null;
-    report_recipients: string[] | null;
+interface SavedReport {
+    id: string;
+    organisation_id: string;
+    period_start: string;
+    period_end: string;
+    status: string;
+    metrics: any;
+    ai_summary: string | null;
+    recommendations: string | null;
+    generated_by: string | null;
+    created_at: string;
+}
+
+interface OrgOption {
+    id: string;
+    name: string;
 }
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
-/** Build month options for the last 12 months */
 function buildMonthOptions(): { value: string; label: string }[] {
     const opts: { value: string; label: string }[] = [];
     const now = new Date();
@@ -42,31 +55,46 @@ function buildMonthOptions(): { value: string; label: string }[] {
     return opts;
 }
 
-/** Get month start/end ISO strings in a given timezone */
-function monthBoundaries(yearMonth: string, tz: string): { start: string; end: string } {
+function monthBoundaries(yearMonth: string): { start: string; end: string } {
     const [y, m] = yearMonth.split('-').map(Number);
-    // Create dates in the org timezone using Intl
-    // Fallback: just use UTC-based ISO boundaries
-    try {
-        const startDate = new Date(y, m - 1, 1);
-        const endDate = new Date(y, m, 1); // first day of next month
-        return {
-            start: startDate.toISOString(),
-            end: endDate.toISOString(),
-        };
-    } catch {
-        const startDate = new Date(y, m - 1, 1);
-        const endDate = new Date(y, m, 1);
-        return {
-            start: startDate.toISOString(),
-            end: endDate.toISOString(),
-        };
-    }
+    const startDate = new Date(y, m - 1, 1);
+    const endDate = new Date(y, m, 1);
+    return { start: startDate.toISOString(), end: endDate.toISOString() };
 }
 
 function capitalize(s: string): string {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
+
+function fmtDate(iso: string): string {
+    try {
+        return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+    } catch { return '—'; }
+}
+
+function avgHours(pairs: { start: string; end: string | null }[]): string {
+    const valid = pairs.filter(p => p.end);
+    if (valid.length === 0) return '—';
+    const totalMs = valid.reduce((sum, p) => sum + (new Date(p.end!).getTime() - new Date(p.start).getTime()), 0);
+    const avgMs = totalMs / valid.length;
+    const hours = Math.round(avgMs / (1000 * 60 * 60) * 10) / 10;
+    return `${hours}h`;
+}
+
+/* ─── Print CSS (scoped via class) ────────────────────────────────────────── */
+
+const PRINT_STYLE = `
+@media print {
+    .dashboard-shell > *:not(.dashboard-content) { display: none !important; }
+    .dashboard-topbar, .dashboard-sidebar, .dashboard-sidebar-toggle,
+    .reports-no-print { display: none !important; }
+    .dashboard-content { margin: 0 !important; padding: 0 !important; }
+    .dashboard-main { padding: 0 !important; }
+    .reports-page { max-width: 100% !important; }
+    .reports-page * { break-inside: avoid; }
+    body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+`;
 
 /* ─── Reports Page ───────────────────────────────────────────────────────── */
 
@@ -76,171 +104,370 @@ export function ReportsPage() {
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [submissions, setSubmissions] = useState<Submission[]>([]);
-    const [recentSubs, setRecentSubs] = useState<Submission[]>([]); // last 30 days for repeat targeting
-    const [orgSettings, setOrgSettings] = useState<OrgSettings>({ timezone: null, report_recipients: null });
-    const [copied, setCopied] = useState(false);
+    const [cases, setCases] = useState<CaseRow[]>([]);
 
-    /* ── Fetch data ─────────────────────────────────────────────────────────── */
+    // Org context
+    const [orgId, setOrgId] = useState<string>('');
+    const [orgName, setOrgName] = useState<string>('');
+    const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+    const [allOrgs, setAllOrgs] = useState<OrgOption[]>([]);
+    const [uid, setUid] = useState('');
+
+    // Editable sections
+    const [execSummary, setExecSummary] = useState('');
+    const [keyTrends, setKeyTrends] = useState('');
+    const [recommendations, setRecommendations] = useState('');
+
+    // Report persistence
+    const [reportStatus, setReportStatus] = useState<'draft' | 'locked' | null>(null);
+    const [reportId, setReportId] = useState<string | null>(null);
+    const [savingDraft, setSavingDraft] = useState(false);
+    const [locking, setLocking] = useState(false);
+    const [saveMsg, setSaveMsg] = useState<string | null>(null);
+
+    // Report history
+    const [reportHistory, setReportHistory] = useState<SavedReport[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+
+    const isLocked = reportStatus === 'locked';
+
+    /* ── Resolve org context once on mount ───────────────────────────────── */
     useEffect(() => {
-        let cancelled = false;
+        (async () => {
+            const supabase = getSupabase();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user) return;
+            setUid(session.user.id);
 
-        async function load() {
-            setLoading(true);
-            setError(null);
-            try {
-                const supabase = getSupabase();
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('organisation_id, role')
+                .eq('id', session.user.id)
+                .single();
 
-                // 1. current session
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session?.user) { setError('Not authenticated'); setLoading(false); return; }
+            if (profile?.role === 'super_admin') {
+                setIsSuperAdmin(true);
+                // Load all orgs
+                const { data: orgs } = await supabase
+                    .from('organisations')
+                    .select('id, name')
+                    .order('name');
+                setAllOrgs(orgs ?? []);
 
-                // 2. profile → org
-                const { data: profile, error: profErr } = await supabase
-                    .from('profiles')
-                    .select('organisation_id')
-                    .eq('id', session.user.id)
+                const stored = localStorage.getItem('slp_active_org_id');
+                if (stored) {
+                    setOrgId(stored);
+                    const match = (orgs ?? []).find(o => o.id === stored);
+                    setOrgName(match?.name ?? '');
+                }
+            } else if (profile?.organisation_id) {
+                setOrgId(profile.organisation_id);
+                const { data: org } = await supabase
+                    .from('organisations')
+                    .select('name')
+                    .eq('id', profile.organisation_id)
                     .single();
-                if (profErr || !profile?.organisation_id) {
-                    setError('Could not determine your organisation.');
-                    setLoading(false);
-                    return;
-                }
-                const orgId = profile.organisation_id;
-
-                // 3. org settings (timezone + recipients)
-                const { data: settings } = await supabase
-                    .from('organisation_settings')
-                    .select('timezone, report_recipients')
-                    .eq('organisation_id', orgId)
-                    .single();
-
-                const tz = settings?.timezone ?? 'Europe/London';
-                if (!cancelled) {
-                    setOrgSettings({
-                        timezone: tz,
-                        report_recipients: settings?.report_recipients ?? null,
-                    });
-                }
-
-                // 4. Submissions for selected month
-                const { start, end } = monthBoundaries(selectedMonth, tz);
-                const { data: monthRows, error: mErr } = await supabase
-                    .from('submissions')
-                    .select('id, submitted_at, submission_type, status, risk_level, decision, category, outcome, resident_ref, loss_amount')
-                    .eq('organisation_id', orgId)
-                    .gte('submitted_at', start)
-                    .lt('submitted_at', end)
-                    .order('submitted_at', { ascending: false });
-                if (mErr) throw mErr;
-
-                // 5. Last-30-day submissions (for repeat targeting check)
-                const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-                const { data: recentRows, error: rErr } = await supabase
-                    .from('submissions')
-                    .select('id, submitted_at, risk_level, resident_ref')
-                    .eq('organisation_id', orgId)
-                    .gte('submitted_at', thirtyDaysAgo)
-                    .not('resident_ref', 'is', null);
-                if (rErr) throw rErr;
-
-                if (!cancelled) {
-                    setSubmissions(monthRows ?? []);
-                    setRecentSubs((recentRows ?? []) as Submission[]);
-                    setLoading(false);
-                }
-            } catch (err: any) {
-                if (!cancelled) {
-                    setError(err?.message ?? 'Failed to load report data');
-                    setLoading(false);
-                }
+                setOrgName(org?.name ?? '');
             }
+        })();
+    }, []);
+
+    /* ── Fetch cases + report for selected month + org ───────────────────── */
+    const fetchData = useCallback(async () => {
+        if (!orgId) { setLoading(false); return; }
+        setLoading(true);
+        setError(null);
+        setSaveMsg(null);
+        try {
+            const supabase = getSupabase();
+            const { start, end } = monthBoundaries(selectedMonth);
+
+            // Cases for the period
+            const { data: rows, error: cErr } = await supabase
+                .from('cases')
+                .select('id, submitted_at, submission_type, channel, status, risk_level, decision, category, outcome, reviewed_at, closed_at')
+                .eq('organisation_id', orgId)
+                .gte('submitted_at', start)
+                .lt('submitted_at', end)
+                .order('submitted_at', { ascending: false });
+            if (cErr) throw cErr;
+            setCases(rows ?? []);
+
+            // Load saved report for this period
+            const { data: savedReport } = await supabase
+                .from('reports')
+                .select('*')
+                .eq('organisation_id', orgId)
+                .eq('period_start', start.slice(0, 10))
+                .maybeSingle();
+
+            if (savedReport) {
+                setReportId(savedReport.id);
+                setReportStatus(savedReport.status as 'draft' | 'locked');
+                setExecSummary(savedReport.ai_summary ?? '');
+                setRecommendations(savedReport.recommendations ?? '');
+                // Try to load key trends from metrics JSON
+                if (savedReport.metrics?.keyTrends) {
+                    setKeyTrends(savedReport.metrics.keyTrends);
+                }
+            } else {
+                setReportId(null);
+                setReportStatus(null);
+                setExecSummary('');
+                setRecommendations('');
+                setKeyTrends('');
+            }
+        } catch (err: any) {
+            setError(err?.message ?? 'Failed to load report data');
+        } finally {
+            setLoading(false);
         }
+    }, [selectedMonth, orgId]);
 
-        load();
-        return () => { cancelled = true; };
-    }, [selectedMonth]);
+    useEffect(() => { fetchData(); }, [fetchData]);
 
-    /* ── Derived metrics ────────────────────────────────────────────────────── */
+    /* ── Fetch report history ────────────────────────────────────────────── */
+    const fetchHistory = useCallback(async () => {
+        if (!orgId) return;
+        setHistoryLoading(true);
+        try {
+            const supabase = getSupabase();
+            const { data } = await supabase
+                .from('reports')
+                .select('*')
+                .eq('organisation_id', orgId)
+                .order('period_start', { ascending: false })
+                .limit(24);
+            setReportHistory(data ?? []);
+        } catch { /* silent */ }
+        finally { setHistoryLoading(false); }
+    }, [orgId]);
+
+    useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
+    /* ── Derived metrics ─────────────────────────────────────────────────── */
     const metrics = useMemo(() => {
-        const total = submissions.length;
-        const highRisk = submissions.filter(s => s.risk_level?.toLowerCase() === 'high').length;
+        const total = cases.length;
+        const byStatus = { new: 0, in_review: 0, closed: 0 };
+        cases.forEach(c => {
+            const s = c.status?.toLowerCase();
+            if (s === 'new' || s === 'submitted') byStatus.new++;
+            else if (s === 'in_review') byStatus.in_review++;
+            else if (s === 'closed') byStatus.closed++;
+        });
 
-        // Scam vs Legit
-        const withDecision = submissions.filter(s => s.decision && s.decision !== '');
-        const scamCount = withDecision.filter(s => s.decision?.toLowerCase() === 'scam').length;
-        const legitCount = withDecision.filter(s => s.decision?.toLowerCase() === 'legit').length;
-        const decisionTotal = scamCount + legitCount;
-        const scamPct = decisionTotal > 0 ? Math.round((scamCount / decisionTotal) * 100) : null;
-        const legitPct = decisionTotal > 0 ? 100 - scamPct! : null;
+        const highRisk = cases.filter(c => ['high', 'critical'].includes(c.risk_level?.toLowerCase() ?? '')).length;
+        const scamConfirmed = cases.filter(c =>
+            c.decision?.toLowerCase() === 'scam_confirmed' ||
+            c.decision?.toLowerCase() === 'scam' ||
+            c.outcome?.toLowerCase()?.includes('scam')
+        ).length;
+
+        // Outcomes
+        const outcomeMap: Record<string, number> = { prevented: 0, lost: 0, escalated: 0, unknown: 0 };
+        cases.forEach(c => {
+            const o = c.outcome?.toLowerCase();
+            if (o && outcomeMap[o] !== undefined) outcomeMap[o]++;
+            else outcomeMap['unknown']++;
+        });
+
+        // Avg time to first review
+        const reviewPairs = cases.map(c => ({ start: c.submitted_at, end: c.reviewed_at }));
+        const avgReview = avgHours(reviewPairs);
+
+        // Avg time to close
+        const closePairs = cases.map(c => ({ start: c.submitted_at, end: c.closed_at }));
+        const avgClose = avgHours(closePairs);
+
+        // SLA overdue (not closed, submitted > 3 days ago)
+        const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+        const slaOverdue = cases.filter(c =>
+            c.status?.toLowerCase() !== 'closed' &&
+            new Date(c.submitted_at) < threeDaysAgo
+        ).length;
 
         // Category breakdown
         const categoryMap: Record<string, number> = {};
-        for (const s of submissions) {
-            const cat = s.category ?? 'Uncategorised';
+        cases.forEach(c => {
+            const cat = c.category ?? 'Uncategorised';
             categoryMap[cat] = (categoryMap[cat] || 0) + 1;
-        }
+        });
         const categories = Object.entries(categoryMap).sort((a, b) => b[1] - a[1]);
 
-        // Outcomes breakdown
-        const outcomeMap: Record<string, number> = {};
-        for (const s of submissions) {
-            const out = s.outcome ?? 'none';
-            outcomeMap[out] = (outcomeMap[out] || 0) + 1;
-        }
-        const outcomes = Object.entries(outcomeMap).sort((a, b) => b[1] - a[1]);
+        // Channel breakdown
+        const channelMap: Record<string, number> = {};
+        cases.forEach(c => {
+            const ch = c.submission_type ?? c.channel ?? 'Unknown';
+            channelMap[ch] = (channelMap[ch] || 0) + 1;
+        });
+        const channels = Object.entries(channelMap).sort((a, b) => b[1] - a[1]);
 
-        // Loss amount
-        const totalLoss = submissions
-            .filter(s => s.outcome?.toLowerCase() === 'lost' && s.loss_amount != null)
-            .reduce((sum, s) => sum + (Number(s.loss_amount) || 0), 0);
-        const hasLossData = submissions.some(s => s.loss_amount != null);
+        // Risk distribution
+        const riskMap: Record<string, number> = { low: 0, medium: 0, high: 0, critical: 0 };
+        cases.forEach(c => {
+            const r = c.risk_level?.toLowerCase();
+            if (r && riskMap[r] !== undefined) riskMap[r]++;
+        });
 
-        // Top category & outcome counts for narrative
-        const topCategory = categories[0]?.[0] ?? 'N/A';
-        const prevented = outcomeMap['prevented'] ?? 0;
-        const lost = outcomeMap['lost'] ?? 0;
-        const escalated = outcomeMap['escalated'] ?? 0;
+        // Decision distribution
+        const decisionMap: Record<string, number> = {};
+        cases.filter(c => c.decision).forEach(c => {
+            const d = c.decision!;
+            decisionMap[d] = (decisionMap[d] || 0) + 1;
+        });
+        const decisions = Object.entries(decisionMap).sort((a, b) => b[1] - a[1]);
 
         return {
-            total, highRisk,
-            scamCount, legitCount, scamPct, legitPct, decisionTotal,
-            categories, outcomes,
-            totalLoss, hasLossData,
-            topCategory, prevented, lost, escalated,
+            total, byStatus, highRisk, scamConfirmed,
+            outcomeMap, avgReview, avgClose, slaOverdue,
+            categories, channels, riskMap, decisions,
         };
-    }, [submissions]);
+    }, [cases]);
 
-    // Repeated-targeting residents
-    const repeatedTargets = useMemo(() => {
-        const grouped: Record<string, { total: number; highRisk: number }> = {};
-        for (const s of recentSubs) {
-            if (!s.resident_ref) continue;
-            if (!grouped[s.resident_ref]) grouped[s.resident_ref] = { total: 0, highRisk: 0 };
-            grouped[s.resident_ref].total++;
-            if (s.risk_level?.toLowerCase() === 'high') grouped[s.resident_ref].highRisk++;
-        }
-        return Object.entries(grouped)
-            .filter(([, v]) => v.total >= 3 || v.highRisk >= 2)
-            .map(([ref, v]) => ({ ref, ...v }));
-    }, [recentSubs]);
+    // Auto-generate key trends bullet points
+    useEffect(() => {
+        if (keyTrends || isLocked) return; // Don't overwrite user-edited or locked
+        if (metrics.total === 0) return;
+        const lines = [];
+        lines.push(`• ${metrics.total} total case${metrics.total !== 1 ? 's' : ''} submitted this month`);
+        if (metrics.highRisk > 0) lines.push(`• ${metrics.highRisk} high/critical risk case${metrics.highRisk !== 1 ? 's' : ''} identified`);
+        if (metrics.scamConfirmed > 0) lines.push(`• ${metrics.scamConfirmed} confirmed scam case${metrics.scamConfirmed !== 1 ? 's' : ''}`);
+        lines.push(`• Avg time to first review: ${metrics.avgReview}`);
+        lines.push(`• Avg time to close: ${metrics.avgClose}`);
+        if (metrics.slaOverdue > 0) lines.push(`• ⚠️ ${metrics.slaOverdue} case${metrics.slaOverdue !== 1 ? 's' : ''} overdue (>3 days without closure)`);
+        if (metrics.categories.length > 0) lines.push(`• Top category: ${capitalize(metrics.categories[0][0])} (${metrics.categories[0][1]})`);
+        setKeyTrends(lines.join('\n'));
+    }, [metrics, isLocked]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Narrative paragraph
-    const narrative = useMemo(() => {
-        if (metrics.total === 0) return 'No incidents were recorded this month.';
-        return `This month saw ${metrics.total} incident${metrics.total !== 1 ? 's' : ''}. Most common category: ${metrics.topCategory}. High-risk: ${metrics.highRisk}. Outcomes: prevented ${metrics.prevented}, lost ${metrics.lost}, escalated ${metrics.escalated}.`;
-    }, [metrics]);
-
-    /* ── Copy Summary ───────────────────────────────────────────────────────── */
-    async function handleCopy() {
+    /* ── Save Draft ──────────────────────────────────────────────────────── */
+    async function handleSaveDraft() {
+        if (!orgId) return;
+        setSavingDraft(true);
+        setSaveMsg(null);
         try {
-            await navigator.clipboard.writeText(narrative);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch { /* clipboard not available */ }
+            const supabase = getSupabase();
+            const { start, end } = monthBoundaries(selectedMonth);
+            const metricsSnapshot = { ...metrics, keyTrends };
+
+            const row = {
+                organisation_id: orgId,
+                period_start: start.slice(0, 10),
+                period_end: new Date(new Date(end).getTime() - 1).toISOString().slice(0, 10),
+                status: 'draft',
+                metrics: metricsSnapshot,
+                ai_summary: execSummary || null,
+                recommendations: recommendations || null,
+                generated_by: uid,
+            };
+
+            if (reportId) {
+                const { error: updErr } = await supabase.from('reports').update(row).eq('id', reportId);
+                if (updErr) throw updErr;
+            } else {
+                const { data: ins, error: insErr } = await supabase.from('reports').insert(row).select('id').single();
+                if (insErr) throw insErr;
+                setReportId(ins.id);
+            }
+
+            setReportStatus('draft');
+            setSaveMsg('Draft saved successfully.');
+            fetchHistory();
+        } catch (err: any) {
+            setSaveMsg(`Error: ${err?.message ?? 'Failed to save'}`);
+        } finally {
+            setSavingDraft(false);
+        }
+    }
+
+    /* ── Approve & Lock ──────────────────────────────────────────────────── */
+    async function handleLock() {
+        if (!reportId) {
+            setSaveMsg('Please save a draft first before locking.');
+            return;
+        }
+        setLocking(true);
+        setSaveMsg(null);
+        try {
+            const supabase = getSupabase();
+            const metricsSnapshot = { ...metrics, keyTrends };
+            const { error: updErr } = await supabase.from('reports').update({
+                status: 'locked',
+                metrics: metricsSnapshot,
+                ai_summary: execSummary || null,
+                recommendations: recommendations || null,
+            }).eq('id', reportId);
+            if (updErr) throw updErr;
+
+            setReportStatus('locked');
+            setSaveMsg('Report approved and locked.');
+            fetchHistory();
+        } catch (err: any) {
+            setSaveMsg(`Error: ${err?.message ?? 'Failed to lock'}`);
+        } finally {
+            setLocking(false);
+        }
+    }
+
+    /* ── Load a saved report ─────────────────────────────────────────────── */
+    function loadReport(r: SavedReport) {
+        setReportId(r.id);
+        setReportStatus(r.status as 'draft' | 'locked');
+        setExecSummary(r.ai_summary ?? '');
+        setRecommendations(r.recommendations ?? '');
+        if (r.metrics?.keyTrends) setKeyTrends(r.metrics.keyTrends);
+        // Set month selector to match
+        const d = new Date(r.period_start);
+        const monthVal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        setSelectedMonth(monthVal);
+        setSaveMsg(`Loaded report from ${fmtDate(r.period_start)}`);
+    }
+
+    /* ── Handle org switch (super_admin) ─────────────────────────────────── */
+    function handleOrgSwitch(newOrgId: string) {
+        setOrgId(newOrgId);
+        localStorage.setItem('slp_active_org_id', newOrgId);
+        const match = allOrgs.find(o => o.id === newOrgId);
+        setOrgName(match?.name ?? '');
+        // Reset report state
+        setReportId(null);
+        setReportStatus(null);
+        setExecSummary('');
+        setRecommendations('');
+        setKeyTrends('');
     }
 
     /* ── Render ─────────────────────────────────────────────────────────────── */
+
+    // Inject print styles
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = PRINT_STYLE;
+        document.head.appendChild(style);
+        return () => { document.head.removeChild(style); };
+    }, []);
+
+    const selectedMonthLabel = monthOptions.find(o => o.value === selectedMonth)?.label ?? selectedMonth;
+
+    if (!orgId && !loading) {
+        return (
+            <div>
+                <div className="dashboard-page-header">
+                    <h1 className="dashboard-page-title">Safeguarding Monthly Report</h1>
+                </div>
+                {isSuperAdmin ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
+                        <Eye size={24} style={{ marginBottom: '0.5rem' }} />
+                        <p>Select an organisation using the "Viewing as" switcher in the top bar.</p>
+                    </div>
+                ) : (
+                    <div className="dashboard-overview-error">
+                        <AlertTriangle size={20} />
+                        <span>Could not determine your organisation.</span>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     if (loading) {
         return (
@@ -254,226 +481,388 @@ export function ReportsPage() {
     if (error) {
         return (
             <div>
-                <div className="dashboard-page-header">
-                    <h1 className="dashboard-page-title">Reports</h1>
-                </div>
-                <div className="dashboard-overview-error">
-                    <AlertTriangle size={20} />
-                    <span>{error}</span>
-                </div>
+                <div className="dashboard-page-header"><h1 className="dashboard-page-title">Reports</h1></div>
+                <div className="dashboard-overview-error"><AlertTriangle size={20} /><span>{error}</span></div>
             </div>
         );
     }
 
     return (
-        <div>
-            {/* Header + month selector */}
+        <div className="reports-page">
+            {/* ── Header ──────────────────────────────────────────────────── */}
             <div className="dashboard-page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                    <h1 className="dashboard-page-title">Reports</h1>
+                    <h1 className="dashboard-page-title">Safeguarding Monthly Report</h1>
                     <p className="dashboard-page-subtitle">
-                        Safeguarding activity report — derived from submissions data.
+                        {orgName}{orgName ? ' — ' : ''}{selectedMonthLabel}
+                        {reportStatus && (
+                            <span className={`dashboard-status-badge status-${reportStatus === 'locked' ? 'closed' : 'new'}`} style={{ marginLeft: '0.75rem', fontSize: '0.72rem' }}>
+                                {reportStatus === 'locked' ? '🔒 Locked' : '📝 Draft'}
+                            </span>
+                        )}
                     </p>
                 </div>
-                <div className="dashboard-reports-month-select">
-                    <Calendar size={16} />
-                    <select
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="dashboard-reports-select"
-                    >
-                        {monthOptions.map(o => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                    </select>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {/* Super admin org selector */}
+                    {isSuperAdmin && allOrgs.length > 0 && (
+                        <select
+                            value={orgId}
+                            onChange={(e) => handleOrgSwitch(e.target.value)}
+                            className="dashboard-reports-select"
+                            style={{ marginRight: '0.5rem' }}
+                        >
+                            <option value="">Select org…</option>
+                            {allOrgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                        </select>
+                    )}
+                    <div className="dashboard-reports-month-select">
+                        <Calendar size={16} />
+                        <select
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                            className="dashboard-reports-select"
+                        >
+                            {monthOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            {/* ── Stat Cards ────────────────────────────────────────────────── */}
-            <div className="dashboard-overview-cards">
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-card-accent accent-blue" />
-                    <div className="dashboard-stat-card-body">
-                        <div className="dashboard-stat-icon blue"><BarChart3 size={20} /></div>
-                        <div className="dashboard-stat-value">{metrics.total}</div>
-                        <div className="dashboard-stat-label">Total Cases</div>
-                    </div>
+            {/* ── Empty state ─────────────────────────────────────────────── */}
+            {cases.length === 0 && !reportId ? (
+                <div className="dashboard-placeholder-card" style={{ marginTop: '2rem' }}>
+                    <div className="dashboard-placeholder-icon"><FileText /></div>
+                    <p className="dashboard-page-title" style={{ fontSize: '1.1rem' }}>No cases submitted in this period.</p>
+                    <p className="dashboard-page-subtitle" style={{ textAlign: 'center', marginTop: '0.5rem' }}>Select a different month or wait for case data.</p>
                 </div>
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-card-accent accent-red" />
-                    <div className="dashboard-stat-card-body">
-                        <div className="dashboard-stat-icon red"><ShieldAlert size={20} /></div>
-                        <div className="dashboard-stat-value">{metrics.highRisk}</div>
-                        <div className="dashboard-stat-label">High Risk</div>
-                    </div>
-                </div>
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-card-accent accent-gold" />
-                    <div className="dashboard-stat-card-body">
-                        <div className="dashboard-stat-icon gold"><PieChart size={20} /></div>
-                        <div className="dashboard-stat-value">
-                            {metrics.decisionTotal > 0
-                                ? `${metrics.scamPct}% / ${metrics.legitPct}%`
-                                : '—'}
+            ) : (
+                <>
+                    {/* ════════════════════════════════════════════════════════ */}
+                    {/* METRIC CARDS                                           */}
+                    {/* ════════════════════════════════════════════════════════ */}
+                    <div className="dashboard-overview-cards">
+                        <div className="dashboard-stat-card">
+                            <div className="dashboard-stat-card-accent accent-blue" />
+                            <div className="dashboard-stat-card-body">
+                                <div className="dashboard-stat-icon blue"><BarChart3 size={20} /></div>
+                                <div className="dashboard-stat-value">{metrics.total}</div>
+                                <div className="dashboard-stat-label">Total Cases</div>
+                            </div>
                         </div>
-                        <div className="dashboard-stat-label">Scam vs Legit</div>
-                        <div className="dashboard-stat-period">
-                            {metrics.decisionTotal > 0 ? `${metrics.decisionTotal} decided` : 'No decisions yet'}
+                        <div className="dashboard-stat-card">
+                            <div className="dashboard-stat-card-accent accent-amber" />
+                            <div className="dashboard-stat-card-body">
+                                <div className="dashboard-stat-icon amber"><ClipboardList size={20} /></div>
+                                <div className="dashboard-stat-value" style={{ fontSize: '0.95rem' }}>{metrics.byStatus.new} / {metrics.byStatus.in_review} / {metrics.byStatus.closed}</div>
+                                <div className="dashboard-stat-label">New / Review / Closed</div>
+                            </div>
+                        </div>
+                        <div className="dashboard-stat-card">
+                            <div className="dashboard-stat-card-accent accent-red" />
+                            <div className="dashboard-stat-card-body">
+                                <div className="dashboard-stat-icon red"><ShieldAlert size={20} /></div>
+                                <div className="dashboard-stat-value">{metrics.highRisk}</div>
+                                <div className="dashboard-stat-label">High / Critical Risk</div>
+                            </div>
+                        </div>
+                        <div className="dashboard-stat-card">
+                            <div className="dashboard-stat-card-accent accent-gold" />
+                            <div className="dashboard-stat-card-body">
+                                <div className="dashboard-stat-icon gold"><PieChart size={20} /></div>
+                                <div className="dashboard-stat-value">{metrics.scamConfirmed}</div>
+                                <div className="dashboard-stat-label">Scam Confirmed</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-card-accent accent-amber" />
-                    <div className="dashboard-stat-card-body">
-                        <div className="dashboard-stat-icon amber"><TrendingUp size={20} /></div>
-                        <div className="dashboard-stat-value">
-                            {metrics.hasLossData ? `£${metrics.totalLoss.toLocaleString()}` : 'N/A'}
+
+                    {/* Second row of cards */}
+                    <div className="dashboard-overview-cards" style={{ marginTop: '0.75rem' }}>
+                        <div className="dashboard-stat-card">
+                            <div className="dashboard-stat-card-accent accent-blue" />
+                            <div className="dashboard-stat-card-body">
+                                <div className="dashboard-stat-icon blue"><TrendingUp size={20} /></div>
+                                <div className="dashboard-stat-value" style={{ fontSize: '0.95rem' }}>
+                                    {metrics.outcomeMap.prevented} / {metrics.outcomeMap.lost} / {metrics.outcomeMap.escalated}
+                                </div>
+                                <div className="dashboard-stat-label">Prevented / Lost / Escalated</div>
+                            </div>
                         </div>
-                        <div className="dashboard-stat-label">Total Loss</div>
-                        <div className="dashboard-stat-period">Where outcome = lost</div>
+                        <div className="dashboard-stat-card">
+                            <div className="dashboard-stat-card-accent accent-amber" />
+                            <div className="dashboard-stat-card-body">
+                                <div className="dashboard-stat-icon amber"><Clock size={20} /></div>
+                                <div className="dashboard-stat-value">{metrics.avgReview}</div>
+                                <div className="dashboard-stat-label">Avg Time to Review</div>
+                            </div>
+                        </div>
+                        <div className="dashboard-stat-card">
+                            <div className="dashboard-stat-card-accent accent-amber" />
+                            <div className="dashboard-stat-card-body">
+                                <div className="dashboard-stat-icon amber"><Clock size={20} /></div>
+                                <div className="dashboard-stat-value">{metrics.avgClose}</div>
+                                <div className="dashboard-stat-label">Avg Time to Close</div>
+                            </div>
+                        </div>
+                        <div className="dashboard-stat-card">
+                            <div className="dashboard-stat-card-accent accent-red" />
+                            <div className="dashboard-stat-card-body">
+                                <div className="dashboard-stat-icon red"><AlertTriangle size={20} /></div>
+                                <div className="dashboard-stat-value">{metrics.slaOverdue}</div>
+                                <div className="dashboard-stat-label">SLA Overdue (&gt;3 days)</div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            {/* ── Narrative ──────────────────────────────────────────────────── */}
-            <div className="dashboard-reports-narrative">
-                <Info size={16} className="dashboard-insight-icon" />
-                <span>{narrative}</span>
-            </div>
+                    {/* ════════════════════════════════════════════════════════ */}
+                    {/* BREAKDOWNS (two-column)                                */}
+                    {/* ════════════════════════════════════════════════════════ */}
+                    <div className="dashboard-reports-breakdowns" style={{ marginTop: '1.5rem' }}>
+                        {/* Categories */}
+                        <div className="dashboard-panel">
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title"><PieChart size={16} className="dashboard-panel-title-icon" /> Top Categories</h2>
+                            </div>
+                            {metrics.categories.length === 0 ? (
+                                <div className="dashboard-panel-empty">No data</div>
+                            ) : (
+                                <div className="dashboard-panel-table-wrap">
+                                    <table className="dashboard-panel-table">
+                                        <thead><tr><th>Category</th><th>Count</th><th>%</th></tr></thead>
+                                        <tbody>
+                                            {metrics.categories.map(([cat, count]) => (
+                                                <tr key={cat}><td>{capitalize(cat)}</td><td>{count}</td><td>{metrics.total > 0 ? `${Math.round((count / metrics.total) * 100)}%` : '—'}</td></tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
 
-            {/* ── Action bar ─────────────────────────────────────────────────── */}
-            <div className="dashboard-reports-actions">
-                <button className="dashboard-reports-action-btn" onClick={handleCopy}>
-                    {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-                    {copied ? 'Copied!' : 'Copy Summary'}
-                </button>
-                <button className="dashboard-reports-action-btn dashboard-reports-action-btn--disabled" disabled>
-                    <Download size={16} />
-                    Export PDF — coming soon
-                </button>
-            </div>
-
-            {/* ── Breakdowns ─────────────────────────────────────────────────── */}
-            <div className="dashboard-reports-breakdowns">
-
-                {/* Category Breakdown */}
-                <div className="dashboard-panel">
-                    <div className="dashboard-panel-header">
-                        <h2 className="dashboard-panel-title">
-                            <PieChart size={16} className="dashboard-panel-title-icon" />
-                            Category Breakdown
-                        </h2>
+                        {/* Channels */}
+                        <div className="dashboard-panel">
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title"><Activity size={16} className="dashboard-panel-title-icon" /> Submission Channels</h2>
+                            </div>
+                            {metrics.channels.length === 0 ? (
+                                <div className="dashboard-panel-empty">No data</div>
+                            ) : (
+                                <div className="dashboard-panel-table-wrap">
+                                    <table className="dashboard-panel-table">
+                                        <thead><tr><th>Channel</th><th>Count</th><th>%</th></tr></thead>
+                                        <tbody>
+                                            {metrics.channels.map(([ch, count]) => (
+                                                <tr key={ch}><td>{capitalize(ch)}</td><td>{count}</td><td>{metrics.total > 0 ? `${Math.round((count / metrics.total) * 100)}%` : '—'}</td></tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    {metrics.categories.length === 0 ? (
-                        <div className="dashboard-panel-empty">No data for this period.</div>
-                    ) : (
-                        <div className="dashboard-panel-table-wrap">
-                            <table className="dashboard-panel-table">
-                                <thead>
-                                    <tr><th>Category</th><th>Count</th><th>%</th></tr>
-                                </thead>
-                                <tbody>
-                                    {metrics.categories.map(([cat, count]) => (
-                                        <tr key={cat}>
-                                            <td>{capitalize(cat)}</td>
-                                            <td>{count}</td>
-                                            <td>{metrics.total > 0 ? `${Math.round((count / metrics.total) * 100)}%` : '—'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+
+                    <div className="dashboard-reports-breakdowns" style={{ marginTop: '0.75rem' }}>
+                        {/* Risk distribution */}
+                        <div className="dashboard-panel">
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title"><ShieldAlert size={16} className="dashboard-panel-title-icon" /> Risk Distribution</h2>
+                            </div>
+                            <div className="dashboard-panel-table-wrap">
+                                <table className="dashboard-panel-table">
+                                    <thead><tr><th>Level</th><th>Count</th></tr></thead>
+                                    <tbody>
+                                        {Object.entries(metrics.riskMap).map(([level, count]) => (
+                                            <tr key={level}><td>{capitalize(level)}</td><td>{count}</td></tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Decisions */}
+                        <div className="dashboard-panel">
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title"><CheckCircle2 size={16} className="dashboard-panel-title-icon" /> Decisions Distribution</h2>
+                            </div>
+                            {metrics.decisions.length === 0 ? (
+                                <div className="dashboard-panel-empty">No decisions recorded</div>
+                            ) : (
+                                <div className="dashboard-panel-table-wrap">
+                                    <table className="dashboard-panel-table">
+                                        <thead><tr><th>Decision</th><th>Count</th></tr></thead>
+                                        <tbody>
+                                            {metrics.decisions.map(([dec, count]) => (
+                                                <tr key={dec}><td>{capitalize(dec)}</td><td>{count}</td></tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ════════════════════════════════════════════════════════ */}
+                    {/* REPORT CONTENT SECTIONS                                */}
+                    {/* ════════════════════════════════════════════════════════ */}
+                    <div style={{ marginTop: '2rem' }}>
+
+                        {/* A) Executive Summary */}
+                        <div className="dashboard-panel" style={{ marginBottom: '1rem' }}>
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title"><FileText size={16} className="dashboard-panel-title-icon" /> Executive Summary</h2>
+                            </div>
+                            <div style={{ padding: '1rem' }}>
+                                <textarea
+                                    className="dsf-textarea"
+                                    rows={4}
+                                    value={execSummary}
+                                    onChange={(e) => setExecSummary(e.target.value)}
+                                    placeholder="Write an executive summary for this month's safeguarding report…"
+                                    disabled={isLocked}
+                                    style={isLocked ? { background: '#f8fafc', color: '#475569' } : {}}
+                                />
+                            </div>
+                        </div>
+
+                        {/* B) Key Trends */}
+                        <div className="dashboard-panel" style={{ marginBottom: '1rem' }}>
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title"><TrendingUp size={16} className="dashboard-panel-title-icon" /> Key Trends This Month</h2>
+                            </div>
+                            <div style={{ padding: '1rem' }}>
+                                <textarea
+                                    className="dsf-textarea"
+                                    rows={6}
+                                    value={keyTrends}
+                                    onChange={(e) => setKeyTrends(e.target.value)}
+                                    placeholder="Auto-generated bullet points based on this month's data…"
+                                    disabled={isLocked}
+                                    style={isLocked ? { background: '#f8fafc', color: '#475569' } : {}}
+                                />
+                            </div>
+                        </div>
+
+                        {/* C) Recommendations */}
+                        <div className="dashboard-panel" style={{ marginBottom: '1rem' }}>
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title"><Info size={16} className="dashboard-panel-title-icon" /> Recommendations</h2>
+                            </div>
+                            <div style={{ padding: '1rem' }}>
+                                <textarea
+                                    className="dsf-textarea"
+                                    rows={4}
+                                    value={recommendations}
+                                    onChange={(e) => setRecommendations(e.target.value)}
+                                    placeholder="Add recommendations for the safeguarding team…"
+                                    disabled={isLocked}
+                                    style={isLocked ? { background: '#f8fafc', color: '#475569' } : {}}
+                                />
+                            </div>
+                        </div>
+
+                        {/* D) Inspection Ready Notes */}
+                        <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title"><CheckCircle2 size={16} className="dashboard-panel-title-icon" /> Inspection Ready Notes</h2>
+                            </div>
+                            <div style={{ padding: '1rem', fontSize: '0.82rem', color: '#334155' }}>
+                                <ul style={{ margin: 0, paddingLeft: '1.25rem', lineHeight: 1.8 }}>
+                                    <li>✅ All case submissions contain timestamped evidence in <code>case_actions</code></li>
+                                    <li>✅ Audit timeline shows chronological actions + reviews per case</li>
+                                    <li>✅ Row-level security enforced — users cannot access data outside their organisation</li>
+                                    <li>✅ Compliance notes are append-only and immutable</li>
+                                    <li>✅ Reports can be locked to prevent post-hoc editing</li>
+                                    <li>✅ All case statuses and reviews traceable via <code>case_reviews</code></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ════════════════════════════════════════════════════════ */}
+                    {/* ACTION BAR                                             */}
+                    {/* ════════════════════════════════════════════════════════ */}
+                    <div className="dashboard-reports-actions reports-no-print" style={{ marginTop: '1rem' }}>
+                        {!isLocked && (
+                            <button className="dashboard-reports-action-btn" onClick={handleSaveDraft} disabled={savingDraft}>
+                                {savingDraft ? <Loader2 size={16} className="dsf-spinner" /> : <Save size={16} />}
+                                {savingDraft ? 'Saving…' : 'Save Draft'}
+                            </button>
+                        )}
+                        {!isLocked && (
+                            <button
+                                className="dashboard-reports-action-btn"
+                                onClick={handleLock}
+                                disabled={locking}
+                                style={{ background: '#166534', color: '#fff' }}
+                            >
+                                {locking ? <Loader2 size={16} className="dsf-spinner" /> : <Lock size={16} />}
+                                {locking ? 'Locking…' : 'Approve & Lock'}
+                            </button>
+                        )}
+                        <button className="dashboard-reports-action-btn" onClick={() => window.print()}>
+                            <Printer size={16} /> Print / Save as PDF
+                        </button>
+                    </div>
+
+                    {saveMsg && (
+                        <div style={{
+                            marginTop: '0.75rem',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '6px',
+                            fontSize: '0.8rem',
+                            background: saveMsg.startsWith('Error') ? '#fef2f2' : '#f0fdf4',
+                            color: saveMsg.startsWith('Error') ? '#991b1b' : '#166534',
+                            border: `1px solid ${saveMsg.startsWith('Error') ? '#fecaca' : '#bbf7d0'}`,
+                        }} className="reports-no-print">
+                            {saveMsg}
                         </div>
                     )}
-                </div>
+                </>
+            )}
 
-                {/* Outcomes Breakdown */}
-                <div className="dashboard-panel">
-                    <div className="dashboard-panel-header">
-                        <h2 className="dashboard-panel-title">
-                            <TrendingUp size={16} className="dashboard-panel-title-icon" />
-                            Outcomes Breakdown
-                        </h2>
-                    </div>
-                    {metrics.outcomes.length === 0 ? (
-                        <div className="dashboard-panel-empty">No data for this period.</div>
-                    ) : (
-                        <div className="dashboard-panel-table-wrap">
-                            <table className="dashboard-panel-table">
-                                <thead>
-                                    <tr><th>Outcome</th><th>Count</th><th>%</th></tr>
-                                </thead>
-                                <tbody>
-                                    {metrics.outcomes.map(([out, count]) => (
-                                        <tr key={out}>
-                                            <td>{capitalize(out)}</td>
-                                            <td>{count}</td>
-                                            <td>{metrics.total > 0 ? `${Math.round((count / metrics.total) * 100)}%` : '—'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* ── Repeated Targeting ─────────────────────────────────────────── */}
-            <div className="dashboard-panel" style={{ marginTop: '1.25rem' }}>
+            {/* ════════════════════════════════════════════════════════════════ */}
+            {/* REPORT HISTORY                                                */}
+            {/* ════════════════════════════════════════════════════════════════ */}
+            <div className="dashboard-panel reports-no-print" style={{ marginTop: '2rem' }}>
                 <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">
-                        <Users size={16} className="dashboard-panel-title-icon" />
-                        Repeated Targeting Alerts
-                    </h2>
-                    <span className="dashboard-panel-count">{repeatedTargets.length}</span>
+                    <h2 className="dashboard-panel-title"><Clock size={16} className="dashboard-panel-title-icon" /> Report History</h2>
+                    <span className="dashboard-panel-count">{reportHistory.length}</span>
                 </div>
-                {repeatedTargets.length === 0 ? (
-                    <div className="dashboard-panel-empty">
-                        No residents flagged for repeated targeting in the last 30 days.
+                {historyLoading ? (
+                    <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8' }}>
+                        <Loader2 size={18} className="dsf-spinner" /> Loading…
                     </div>
+                ) : reportHistory.length === 0 ? (
+                    <div className="dashboard-panel-empty">No saved reports yet.</div>
                 ) : (
                     <div className="dashboard-panel-table-wrap">
                         <table className="dashboard-panel-table">
                             <thead>
-                                <tr><th>Resident Ref</th><th>Cases (30d)</th><th>High-Risk (30d)</th><th>Flag Reason</th></tr>
+                                <tr><th>Period</th><th>Status</th><th>Created</th><th></th></tr>
                             </thead>
                             <tbody>
-                                {repeatedTargets.map(r => (
-                                    <tr key={r.ref}>
-                                        <td><strong>{r.ref}</strong></td>
-                                        <td>{r.total}</td>
-                                        <td>{r.highRisk}</td>
+                                {reportHistory.map(r => (
+                                    <tr key={r.id}>
+                                        <td>{fmtDate(r.period_start)}</td>
                                         <td>
-                                            <span className="dashboard-risk-badge risk-high" style={{ fontSize: '0.7rem' }}>
-                                                {r.total >= 3 && r.highRisk >= 2
-                                                    ? '≥3 cases + ≥2 high-risk'
-                                                    : r.total >= 3
-                                                        ? '≥3 cases in 30 days'
-                                                        : '≥2 high-risk in 30 days'}
+                                            <span className={`dashboard-status-badge status-${r.status === 'locked' ? 'closed' : 'new'}`} style={{ fontSize: '0.7rem' }}>
+                                                {r.status === 'locked' ? '🔒 Locked' : 'Draft'}
                                             </span>
+                                        </td>
+                                        <td>{fmtDate(r.created_at)}</td>
+                                        <td>
+                                            <button
+                                                className="dashboard-reports-action-btn"
+                                                style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem' }}
+                                                onClick={() => loadReport(r)}
+                                            >
+                                                <Download size={12} /> Load
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                )}
-            </div>
-
-            {/* ── Report Recipients (read-only) ──────────────────────────────── */}
-            <div className="dashboard-reports-recipients">
-                <h3 className="dashboard-reports-recipients-title">
-                    Report Recipients
-                </h3>
-                {orgSettings.report_recipients && orgSettings.report_recipients.length > 0 ? (
-                    <ul className="dashboard-reports-recipients-list">
-                        {orgSettings.report_recipients.map((email, i) => (
-                            <li key={i}>{email}</li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="dashboard-reports-recipients-empty">
-                        No report recipients configured. Add them in Settings.
-                    </p>
                 )}
             </div>
         </div>
