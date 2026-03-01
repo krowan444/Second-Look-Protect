@@ -110,7 +110,22 @@ export function CasesPage({ onNavigate }: CasesPageProps) {
                 .eq('id', session.user.id)
                 .single();
 
-            if (profErr || !profile?.organisation_id) {
+            if (profErr) {
+                setError('Could not determine your organisation.');
+                setLoading(false);
+                return;
+            }
+
+            /* Resolve org id — super_admin uses the switcher */
+            let resolvedOrgId = profile?.organisation_id;
+            if (profile?.role === 'super_admin') {
+                const switcherOrg = localStorage.getItem('slp_active_org_id');
+                if (switcherOrg) {
+                    resolvedOrgId = switcherOrg;
+                }
+            }
+
+            if (!resolvedOrgId) {
                 setError('Could not determine your organisation.');
                 setLoading(false);
                 return;
@@ -120,12 +135,8 @@ export function CasesPage({ onNavigate }: CasesPageProps) {
             let query = supabase
                 .from('submissions')
                 .select('id, submitted_at, submission_type, status, risk_level, decision, category, resident_ref')
-                .order('submitted_at', { ascending: false });
-
-            // Org scope (skip for super_admin)
-            if (profile.role !== 'super_admin') {
-                query = query.eq('organisation_id', profile.organisation_id);
-            }
+                .order('submitted_at', { ascending: false })
+                .eq('organisation_id', resolvedOrgId);
 
             // Apply filters
             if (f.status) {
