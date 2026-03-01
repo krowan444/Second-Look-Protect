@@ -868,7 +868,7 @@ export function ReportsPage() {
                         marginTop: '1rem'
                     }}>
                         {!isLocked && (
-                            <button className="dashboard-reports-action-btn" onClick={handleSaveDraft} disabled={savingDraft}>
+                            <button type="button" className="dashboard-reports-action-btn" onClick={handleSaveDraft} disabled={savingDraft}>
                                 {savingDraft ? <Loader2 size={16} className="dsf-spinner" /> : <Save size={16} />}
                                 {savingDraft ? 'Saving…' : 'Save Draft'}
                             </button>
@@ -876,6 +876,7 @@ export function ReportsPage() {
 
                         {!isLocked && (
                             <button
+                                type="button"
                                 className="dashboard-reports-action-btn"
                                 onClick={handleLock}
                                 disabled={locking}
@@ -888,8 +889,10 @@ export function ReportsPage() {
 
                         {reportId && (
                             <button
+                                type="button"
                                 className="dashboard-reports-action-btn"
-                                onClick={async () => {
+                                onClick={async (e) => {
+                                    e.preventDefault();
                                     if (!reportId || !orgId) return;
                                     setGeneratingPdf(true);
                                     setSaveMsg(null);
@@ -929,7 +932,7 @@ export function ReportsPage() {
                                 {generatingPdf ? 'Generating…' : 'Generate PDF'}
                             </button>
                         )}
-                        <button className="dashboard-reports-action-btn" onClick={() => window.print()}>
+                        <button type="button" className="dashboard-reports-action-btn" onClick={() => window.print()}>
                             <Printer size={16} /> Print / Save as PDF
                         </button>
                     </div>
