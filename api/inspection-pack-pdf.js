@@ -6,21 +6,17 @@ export default async function handler(req, res) {
         return res.status(405).json({ ok: false, error: 'Method not allowed' });
     }
 
-    const cronSecret = req.headers['x-cron-secret'];
-    const expectedSecret = process.env.SLA_CRON_SECRET || process.env.CRON_SECRET;
-    if (!cronSecret || !expectedSecret || cronSecret !== expectedSecret) {
-        return res.status(401).json({ ok: false, error: 'Unauthorized' });
-    }
-
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!SUPABASE_URL || !SERVICE_KEY) {
         return res.status(500).json({ ok: false, error: 'Missing required env vars' });
     }
 
-    const { org_id, month } = req.query;
-    if (!org_id || !month) {
-        return res.status(400).json({ ok: false, error: 'Missing required query params: org_id, month' });
+    // Authenticate via Supabase JWT (browser sends Authorization: Bearer <token>)
+    const authHeader = req.headers['authorization'] ?? '';
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    if (!token) {
+        return res.status(401).json({ ok: false, error: 'Unauthorized' });
     }
 
     const headers = {
@@ -28,6 +24,37 @@ export default async function handler(req, res) {
         Authorization: `Bearer ${SERVICE_KEY}`,
         'Content-Type': 'application/json',
     };
+
+    // Verify user from token
+    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${token}` },
+    });
+    if (!userRes.ok) {
+        return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    }
+    const userData = await userRes.json();
+    const userId = userData?.id;
+    if (!userId) {
+        return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    }
+
+    // Check super_admin role
+    const profileRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role&limit=1`,
+        { headers }
+    );
+    if (!profileRes.ok) {
+        return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    }
+    const profiles = await profileRes.json();
+    if (!profiles?.[0] || profiles[0].role !== 'super_admin') {
+        return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    }
+
+    const { org_id, month } = req.query;
+    if (!org_id || !month) {
+        return res.status(400).json({ ok: false, error: 'Missing required query params: org_id, month' });
+    }
 
     try {
         // 1) Fetch organisation name
