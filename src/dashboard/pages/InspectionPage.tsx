@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClipboardCheck, RefreshCcw, Loader2 } from 'lucide-react';
+import { ClipboardCheck, RefreshCcw, Loader2, FileText } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
 type SnapshotRow = {
@@ -83,7 +83,7 @@ export function InspectionPage() {
 
       if (err) throw new Error(err.message);
 
-      setRows((data ?? []) as SnapshotRow[]);
+      setRows((data ?? []) as unknown as SnapshotRow[]);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
     } finally {
@@ -179,6 +179,19 @@ export function InspectionPage() {
             <RefreshCcw size={18} />
             Refresh
           </button>
+
+          {isSuper && (
+            <a
+              href={`/dashboard/inspection-pack?month=${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="dashboard-primary-button"
+              style={{ height: 44, padding: '0 14px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+            >
+              <FileText size={18} />
+              Open Inspection Pack
+            </a>
+          )}
         </div>
       </div>
 
