@@ -80,6 +80,26 @@ export default async function handler(req, res) {
 
         const snap = snapRows[0];
 
+        // ✅ Fetch official inspector notes from DB (no query param)
+        let officialNotes = "";
+        let notesMeta = null;
+        try {
+            const notesRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/inspection_pack_notes?organisation_id=eq.${org_id}&snapshot_month=eq.${month}&select=notes,updated_at,created_at&limit=1`,
+                { headers }
+            );
+            if (notesRes.ok) {
+                const notesRows = await notesRes.json();
+                const noteRow = notesRows?.[0] ?? null;
+                if (noteRow?.notes && String(noteRow.notes).trim()) {
+                    officialNotes = String(noteRow.notes).trim();
+                }
+                if (noteRow) {
+                    notesMeta = { updated_at: noteRow.updated_at, created_at: noteRow.created_at };
+                }
+            }
+        } catch { /* treat as no notes */ }
+
         // 3) Generate PDF
         const doc = new jsPDF({ unit: 'mm', format: 'a4' });
         const pw = doc.internal.pageSize.getWidth();
