@@ -261,9 +261,8 @@ export default async function handler(req, res) {
         doc.text('This pack is generated from an immutable monthly snapshot for audit integrity.', 25, y);
         y += 10;
 
-        // Inspector notes (optional, from query param)
-        const notes = req.query.notes;
-        if (notes && typeof notes === 'string' && notes.trim()) {
+        // Inspector notes (from DB)
+        if (officialNotes) {
             checkPage(16);
             doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
@@ -274,10 +273,17 @@ export default async function handler(req, res) {
             doc.setFontSize(9.5);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50);
-            const nLines = doc.splitTextToSize(notes.trim(), maxW);
+            const nLines = doc.splitTextToSize(officialNotes, maxW);
             checkPage(nLines.length * 4.5 + 4);
             doc.text(nLines, 25, y);
             y += nLines.length * 4.5 + 6;
+        } else {
+            checkPage(10);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(140);
+            doc.text('No inspector notes saved for this month.', 25, y);
+            y += 8;
         }
 
         // Footer divider
