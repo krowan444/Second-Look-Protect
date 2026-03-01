@@ -64,8 +64,9 @@ interface TimelineEntry {
 const REVIEW_ROLES: UserRole[] = ['org_admin', 'manager', 'safeguarding_lead', 'super_admin'];
 
 const CATEGORY_OPTIONS = ['financial', 'romance', 'phishing', 'impersonation', 'other'];
-const RISK_OPTIONS = ['low', 'medium', 'high'];
-const DECISION_OPTIONS = ['scam', 'legit', 'unsure'];
+const STATUS_OPTIONS = ['new', 'in_review', 'closed'];
+const RISK_OPTIONS = ['low', 'medium', 'high', 'critical'];
+const DECISION_OPTIONS = ['scam', 'not_scam', 'unsure'];
 const OUTCOME_OPTIONS = ['none', 'prevented', 'lost', 'escalated'];
 
 const ACTION_TYPES = [
@@ -179,6 +180,13 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     // Mark In Review state
     const [markingReview, setMarkingReview] = useState(false);
 
+    // Review controls - status
+    const [rStatus, setRStatus] = useState('');
+
+    // Case history (collapsible)
+    const [caseHistory, setCaseHistory] = useState<{ id: string; source: string; action: string; actor_type?: string | null; created_at: string }[]>([]);
+    const [historyOpen, setHistoryOpen] = useState(false);
+
     const canReview = userRole ? REVIEW_ROLES.includes(userRole) : false;
     const isSuperAdmin = userRole === 'super_admin';
 
@@ -279,6 +287,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             setRRisk(c.risk_level ?? '');
             setRDecision(c.decision ?? '');
             setROutcome(c.outcome ?? '');
+            setRStatus(c.status ?? 'new');
             setRNotes('');
 
             // 2. Fetch review history
@@ -350,6 +359,20 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     /* ── Save Review (DUAL WRITE) ─────────────────────────────────────────── */
     async function handleSaveReview() {
         if (!caseData) return;
+
+        // Dirty check - prevent save if nothing changed
+        const statusUnchanged = (rStatus || 'new') === (caseData.status || 'new');
+        const categoryUnchanged = (rCategory || null) === (caseData.category || null);
+        const riskUnchanged = (rRisk || null) === (caseData.risk_level || null);
+        const decisionUnchanged = (rDecision || null) === (caseData.decision || null);
+        const outcomeUnchanged = (rOutcome || null) === (caseData.outcome || null);
+        const noNotes = !rNotes.trim();
+
+        if (statusUnchanged && categoryUnchanged && riskUnchanged && decisionUnchanged && outcomeUnchanged && noNotes) {
+            setReviewError('No changes to save.');
+            return;
+        }
+
         setSaving(true);
         setReviewError(null);
         setReviewSuccess(null);
@@ -372,18 +395,24 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             if (insErr) throw insErr;
 
             // 2) UPDATE cases
-            const { error: updErr } = await supabase.from('cases').update({
+            const updatePayload: Record<string, any> = {
                 category: rCategory || null,
                 risk_level: rRisk || null,
                 decision: rDecision || null,
                 outcome: rOutcome || null,
-                status: 'in_review',
                 reviewed_at: caseData.reviewed_at ?? now,
-            }).eq('id', caseId).eq('organisation_id', orgId);
+            };
+            // Apply status from dropdown
+            if (rStatus) updatePayload.status = rStatus;
+            if (rStatus === 'closed' && !caseData.closed_at) updatePayload.closed_at = now;
+
+            const { error: updErr } = await supabase.from('cases').update(updatePayload)
+                .eq('id', caseId).eq('organisation_id', orgId);
             if (updErr) throw updErr;
 
             setReviewSuccess('Review saved successfully.');
             await fetchData();
+            fetchCaseHistory();
         } catch (err: any) {
             setReviewError(err?.message ?? 'Failed to save review');
         } finally {
@@ -515,6 +544,51 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             setComplianceSaving(false);
         }
     }
+
+    /* ── Fetch case history (status changes + audit logs) ─────────────────── */
+    const fetchCaseHistory = useCallback(async () => {
+        if (!caseId || !orgId) return;
+        try {
+            const supabase = getSupabase();
+            const combined: { id: string; source: string; action: string; actor_type?: string | null; created_at: string }[] = [];
+
+            // A) case_status_history
+            const { data: statusRows } = await supabase
+                .from('case_status_history')
+                .select('id, new_status, changed_by, created_at')
+                .eq('submission_id', caseId)
+                .order('created_at', { ascending: false })
+                .limit(20);
+            (statusRows ?? []).forEach((r: any) => combined.push({
+                id: `sh-${r.id}`,
+                source: 'Status Change',
+                action: `Status → ${r.new_status ?? '—'}`,
+                actor_type: r.changed_by ?? null,
+                created_at: r.created_at,
+            }));
+
+            // B) audit_logs
+            const { data: auditRows } = await supabase
+                .from('audit_logs')
+                .select('id, action, actor_type, created_at')
+                .or('entity_type.eq.submission,entity_type.eq.case')
+                .eq('entity_id', caseId)
+                .order('created_at', { ascending: false })
+                .limit(20);
+            (auditRows ?? []).forEach((r: any) => combined.push({
+                id: `al-${r.id}`,
+                source: 'Audit Log',
+                action: r.action,
+                actor_type: r.actor_type ?? null,
+                created_at: r.created_at,
+            }));
+
+            combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setCaseHistory(combined);
+        } catch { setCaseHistory([]); }
+    }, [caseId, orgId]);
+
+    useEffect(() => { if (orgId) fetchCaseHistory(); }, [orgId, fetchCaseHistory]);
 
     /* ── Render ────────────────────────────────────────────────────────────── */
 
@@ -760,6 +834,12 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
 
                             <div className="casedetail-review-form">
                                 <div className="casedetail-form-field">
+                                    <label className="casedetail-form-label">Status</label>
+                                    <select className="dsf-input" value={rStatus} onChange={(e) => setRStatus(e.target.value)}>
+                                        {STATUS_OPTIONS.map((o) => <option key={o} value={o}>{statusLabel(o)}</option>)}
+                                    </select>
+                                </div>
+                                <div className="casedetail-form-field">
                                     <label className="casedetail-form-label">Category</label>
                                     <select className="dsf-input" value={rCategory} onChange={(e) => setRCategory(e.target.value)}>
                                         <option value="">— Select —</option>
@@ -858,6 +938,45 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         </button>
                     </div>
                 </div>
+            </div>
+
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* CASE HISTORY (COLLAPSIBLE)                                     */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            <div className="casedetail-section" style={{ marginTop: '1.5rem' }}>
+                <h2
+                    className="casedetail-section-title"
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                    onClick={() => setHistoryOpen(prev => !prev)}
+                >
+                    <Clock size={16} /> Case History
+                    <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#94a3b8' }}>
+                        {historyOpen ? '▾ collapse' : '▸ expand'} ({caseHistory.length})
+                    </span>
+                </h2>
+                {historyOpen && (
+                    caseHistory.length === 0 ? (
+                        <p className="casedetail-empty">No history entries found.</p>
+                    ) : (
+                        <div className="dashboard-panel-table-wrap">
+                            <table className="dashboard-panel-table">
+                                <thead>
+                                    <tr><th>Source</th><th>Action</th><th>Actor</th><th>Time</th></tr>
+                                </thead>
+                                <tbody>
+                                    {caseHistory.map(entry => (
+                                        <tr key={entry.id}>
+                                            <td>{entry.source}</td>
+                                            <td>{entry.action}</td>
+                                            <td>{entry.actor_type ?? '—'}</td>
+                                            <td>{fmtDateTime(entry.created_at)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )
+                )}
             </div>
 
             {/* ═══════════════════════════════════════════════════════════════ */}
