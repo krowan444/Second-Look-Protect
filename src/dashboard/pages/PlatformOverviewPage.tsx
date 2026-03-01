@@ -1,5 +1,5 @@
 import React from 'react';
-import { Globe, AlertTriangle, Building2, Shield, Activity, Loader2, LayoutDashboard, Clock } from 'lucide-react';
+import { Globe, AlertTriangle, Building2, Shield, Activity, Loader2, LayoutDashboard, Clock, ShieldAlert } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
 type OrgRow = {
@@ -59,6 +59,25 @@ export function PlatformOverviewPage() {
   const [recentCases, setRecentCases] = React.useState<CaseRow[]>([]);
   const [orgNameById, setOrgNameById] = React.useState<Record<string, string>>({});
   const [topRiskOrgs, setTopRiskOrgs] = React.useState<{ name: string; count: number }[]>([]);
+
+  type IntelTopOrg = {
+    organisation_name: string;
+    open_cases: number;
+    high_critical_7d: number;
+    confirmed_scams_7d: number;
+    overdue: number;
+    risk_score: number;
+  };
+  type IntelOverview = {
+    total_open_cases: number;
+    high_critical_7d: number;
+    confirmed_scams_7d: number;
+    overdue_open_cases: number;
+    sla_compliance_pct: number;
+    top_risk_organisations: IntelTopOrg[];
+  } | null;
+  const [intel, setIntel] = React.useState<IntelOverview>(null);
+  const [intelLoading, setIntelLoading] = React.useState(true);
 
   const [metrics, setMetrics] = React.useState<{
     orgTotal: number;
@@ -247,6 +266,14 @@ export function PlatformOverviewPage() {
       });
 
       setLoading(false);
+
+      // 6) Platform Intelligence RPC (super_admin only — page is route-guarded)
+      setIntelLoading(true);
+      try {
+        const { data: intelData } = await supabase.rpc('get_platform_intelligence_overview');
+        setIntel((intelData ?? null) as IntelOverview);
+      } catch { /* non-blocking */ }
+      setIntelLoading(false);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error';
       setError(msg);
@@ -370,6 +397,127 @@ export function PlatformOverviewPage() {
               </div>
             )}
           </div>
+
+          {/* ── Platform Intelligence ────────────────────────────────── */}
+          {intelLoading ? (
+            <div className="dashboard-panel">
+              <div className="dashboard-panel-header">
+                <h2 className="dashboard-panel-title">
+                  <ShieldAlert size={16} className="dashboard-panel-title-icon" />
+                  Platform Intelligence
+                </h2>
+              </div>
+              <div className="dashboard-panel-empty">
+                <Loader2 size={16} className="dashboard-overview-spinner-icon" style={{ display: 'inline-block', marginRight: 6 }} />
+                Loading intelligence…
+              </div>
+            </div>
+          ) : intel ? (
+            <>
+              {/* Intelligence Stat Cards */}
+              <div className="dashboard-overview-cards">
+                <div className="dashboard-stat-card">
+                  <div className="dashboard-stat-card-accent accent-blue" />
+                  <div className="dashboard-stat-card-body">
+                    <div className="dashboard-stat-icon blue"><LayoutDashboard size={20} /></div>
+                    <div className="dashboard-stat-value">{intel.total_open_cases}</div>
+                    <div className="dashboard-stat-label">Total Open Cases</div>
+                    <div className="dashboard-stat-period">All organisations</div>
+                  </div>
+                </div>
+
+                <div className="dashboard-stat-card">
+                  <div className="dashboard-stat-card-accent accent-red" />
+                  <div className="dashboard-stat-card-body">
+                    <div className="dashboard-stat-icon red"><AlertTriangle size={20} /></div>
+                    <div className="dashboard-stat-value">{intel.high_critical_7d}</div>
+                    <div className="dashboard-stat-label">High/Critical (7d)</div>
+                    <div className="dashboard-stat-period">Last 7 days</div>
+                  </div>
+                </div>
+
+                <div className="dashboard-stat-card">
+                  <div className="dashboard-stat-card-accent accent-amber" />
+                  <div className="dashboard-stat-card-body">
+                    <div className="dashboard-stat-icon amber"><Shield size={20} /></div>
+                    <div className="dashboard-stat-value">{intel.confirmed_scams_7d}</div>
+                    <div className="dashboard-stat-label">Confirmed Scams (7d)</div>
+                    <div className="dashboard-stat-period">Last 7 days</div>
+                  </div>
+                </div>
+
+                <div className="dashboard-stat-card">
+                  <div className="dashboard-stat-card-accent accent-red" />
+                  <div className="dashboard-stat-card-body">
+                    <div className="dashboard-stat-icon red"><Clock size={20} /></div>
+                    <div className="dashboard-stat-value">{intel.overdue_open_cases}</div>
+                    <div className="dashboard-stat-label">Overdue Open</div>
+                    <div className="dashboard-stat-period">Past SLA</div>
+                  </div>
+                </div>
+
+                <div className="dashboard-stat-card">
+                  <div className="dashboard-stat-card-accent accent-gold" />
+                  <div className="dashboard-stat-card-body">
+                    <div className="dashboard-stat-icon gold"><ShieldAlert size={20} /></div>
+                    <div className="dashboard-stat-value">{intel.sla_compliance_pct}%</div>
+                    <div className="dashboard-stat-label">SLA Compliance</div>
+                    <div className="dashboard-stat-period">Platform-wide</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Intelligence — Top Risk Organisations */}
+              <div className="dashboard-panel">
+                <div className="dashboard-panel-header">
+                  <h2 className="dashboard-panel-title">
+                    <ShieldAlert size={16} className="dashboard-panel-title-icon" />
+                    Intelligence — Top Risk Organisations
+                  </h2>
+                </div>
+                {(intel.top_risk_organisations ?? []).length === 0 ? (
+                  <div className="dashboard-panel-empty">No risk data available.</div>
+                ) : (
+                  <div className="dashboard-panel-table-wrap">
+                    <table className="dashboard-panel-table">
+                      <thead>
+                        <tr>
+                          <th>Organisation</th>
+                          <th>Open Cases</th>
+                          <th>High/Critical 7d</th>
+                          <th>Scams 7d</th>
+                          <th>Overdue</th>
+                          <th>Risk Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {intel.top_risk_organisations.map((o, i) => (
+                          <tr key={i}>
+                            <td>{o.organisation_name}</td>
+                            <td>{o.open_cases}</td>
+                            <td>{o.high_critical_7d}</td>
+                            <td>{o.confirmed_scams_7d}</td>
+                            <td>{o.overdue}</td>
+                            <td>{o.risk_score}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="dashboard-panel">
+              <div className="dashboard-panel-header">
+                <h2 className="dashboard-panel-title">
+                  <ShieldAlert size={16} className="dashboard-panel-title-icon" />
+                  Platform Intelligence
+                </h2>
+              </div>
+              <div className="dashboard-panel-empty">Intelligence data unavailable.</div>
+            </div>
+          )}
 
           {/* System health + Recent cases */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 16 }}>
