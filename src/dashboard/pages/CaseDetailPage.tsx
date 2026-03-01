@@ -264,6 +264,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 .from('cases')
                 .select('*')
                 .eq('id', caseId)
+                .eq('organisation_id', resolvedOrgId)
                 .single();
 
             if (cErr || !c) {
@@ -285,6 +286,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 .from('case_reviews')
                 .select('id, created_at, reviewed_by, reviewed_at, decision, outcome, risk_level, category, notes')
                 .eq('case_id', caseId)
+                .eq('organisation_id', resolvedOrgId)
                 .order('created_at', { ascending: false });
             const revsTyped = (revs ?? []) as CaseReview[];
             setReviews(revsTyped);
@@ -294,6 +296,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 .from('case_actions')
                 .select('id, created_at, actor_id, action_type, action_notes')
                 .eq('case_id', caseId)
+                .eq('organisation_id', resolvedOrgId)
                 .order('created_at', { ascending: false });
             const actsTyped = (acts ?? []) as CaseAction[];
             setActions(actsTyped);
@@ -323,7 +326,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             const { error: updErr } = await supabase.from('cases').update({
                 status: 'in_review',
                 reviewed_at: now,
-            }).eq('id', caseId);
+            }).eq('id', caseId).eq('organisation_id', orgId);
             if (updErr) throw updErr;
 
             const { error: actErr } = await supabase.from('case_actions').insert({
@@ -376,7 +379,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 outcome: rOutcome || null,
                 status: 'in_review',
                 reviewed_at: caseData.reviewed_at ?? now,
-            }).eq('id', caseId);
+            }).eq('id', caseId).eq('organisation_id', orgId);
             if (updErr) throw updErr;
 
             setReviewSuccess('Review saved successfully.');
@@ -427,7 +430,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 status: 'closed',
                 closed_at: now,
                 reviewed_at: caseData.reviewed_at ?? now,
-            }).eq('id', caseId);
+            }).eq('id', caseId).eq('organisation_id', orgId);
             if (updErr) throw updErr;
 
             // 3) Action log entry for case closure
@@ -457,7 +460,10 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         try {
             const supabase = getSupabase();
             const label = ACTION_TYPES.find((a) => a.value === actionType)?.label ?? actionType;
-            const combinedNotes = actionNotes ? `${label}: ${actionNotes}` : label;
+            let combinedNotes = actionNotes ? `${label}: ${actionNotes}` : label;
+            if (actionAttachUrl.trim()) {
+                combinedNotes += `\nAttachment: ${actionAttachUrl.trim()}`;
+            }
 
             const row: Record<string, unknown> = {
                 case_id: caseId,
