@@ -90,14 +90,13 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                 return;
             }
 
-            /* 3. Insert into submissions */
+            /* 3. Insert into cases */
             const row: Record<string, unknown> = {
                 organisation_id: resolvedOrgId,
                 submitted_by: session.user.id,
-                submission_type: submissionType,
-                message: content.trim(),
-                status: 'submitted',
-                submitted_at: new Date().toISOString(),
+                channel: submissionType,
+                description: content.trim(),
+                status: 'new',
             };
 
             if (attachmentUrl.trim()) {
@@ -112,7 +111,7 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
             }
 
             const { error: insertErr } = await supabase
-                .from('submissions')
+                .from('cases')
                 .insert(row);
 
             if (insertErr) {
