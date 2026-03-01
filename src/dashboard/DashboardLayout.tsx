@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getSupabase } from '../lib/supabaseClient';
 import { Upload, ChevronDown, LogOut, User, Menu } from 'lucide-react';
 import { DashboardSidebar } from './DashboardSidebar';
@@ -43,7 +43,6 @@ export function DashboardLayout({
         if (data) {
           setAllOrgs(data);
 
-          // If stored id no longer matches any org, clear it
           const stored = localStorage.getItem('slp_active_org_id');
           if (stored && !data.some((o) => o.id === stored)) {
             localStorage.removeItem('slp_active_org_id');
@@ -62,7 +61,21 @@ export function DashboardLayout({
     } else {
       localStorage.removeItem('slp_active_org_id');
     }
+
+    // Optional: reload current page so queries re-run with new org context
+    window.location.reload();
   }
+
+  /* ── Display name in top bar ───────────────────────────────────────── */
+
+  const activeOrgName = useMemo(() => {
+    if (isSuperAdmin && activeOrgId) {
+      const found = allOrgs.find((o) => o.id === activeOrgId);
+      return found?.name ?? 'Dashboard';
+    }
+
+    return organisation?.name ?? 'Dashboard';
+  }, [isSuperAdmin, activeOrgId, allOrgs, organisation]);
 
   const initials = user.full_name
     ? user.full_name
@@ -98,7 +111,7 @@ export function DashboardLayout({
             </button>
 
             <span className="dashboard-topbar-org">
-              {organisation?.name ?? 'Dashboard'}
+              {activeOrgName}
             </span>
           </div>
 
