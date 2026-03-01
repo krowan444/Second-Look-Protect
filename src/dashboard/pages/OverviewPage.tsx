@@ -27,10 +27,15 @@ interface AlertEntry {
 }
 
 interface ExecAlert {
-    title: string;
-    severity: string;
-    description: string;
-    recommendation: string;
+    id: string;
+    event_type: string;
+    severity: string | null;
+    title: string | null;
+    description: string | null;
+    recommendation: string | null;
+    sent_at: string | null;
+    last_triggered_at: string | null;
+    meta: any;
 }
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -49,6 +54,17 @@ function riskClass(level: string | null): string {
         case 'high': return 'high';
         case 'medium': return 'medium';
         case 'low': return 'low';
+        default: return 'unknown';
+    }
+}
+
+/** CSS modifier for alert severity */
+function severityRiskClass(sev: string | null): string {
+    switch (sev?.toLowerCase()) {
+        case 'critical': return 'high';
+        case 'high': return 'high';
+        case 'warning': return 'medium';
+        case 'info': return 'low';
         default: return 'unknown';
     }
 }
@@ -291,16 +307,14 @@ export function OverviewPage() {
                 ) : (
                     <div style={{ padding: '0 1rem 1rem' }}>
                         {execAlerts.map((ea, i) => (
-                            <div key={i} style={{
+                            <div key={ea.id} style={{
                                 padding: '0.75rem',
                                 marginBottom: i < execAlerts.length - 1 ? '0.5rem' : 0,
-                                background: '#fefce8',
-                                border: '1px solid #fef08a',
                                 borderRadius: '8px',
                             }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                                     <strong style={{ fontSize: '0.85rem' }}>{ea.title}</strong>
-                                    <span className={`dashboard-risk-badge risk-${riskClass(ea.severity)}`} style={{ fontSize: '0.7rem' }}>
+                                    <span className={`dashboard-risk-badge risk-${severityRiskClass(ea.severity)}`} style={{ fontSize: '0.7rem' }}>
                                         {ea.severity}
                                     </span>
                                 </div>
