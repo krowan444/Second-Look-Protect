@@ -290,6 +290,14 @@ export function OverviewPage() {
             </div>
 
             {/* ── Executive Safeguarding Alerts ──────────────────────────── */}
+            {(() => {
+                const sevs = execAlerts.map(e => (e.severity ?? '').toLowerCase());
+                const sysStatus = sevs.includes('critical') ? 'Immediate Attention Required'
+                    : sevs.includes('high') ? 'Elevated Risk'
+                        : sevs.includes('warning') ? 'Monitor Closely'
+                            : 'Stable';
+                return <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem' }}><strong>System Status:</strong> {sysStatus}</p>;
+            })()}
             <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
                 <div className="dashboard-panel-header">
                     <h2 className="dashboard-panel-title">
