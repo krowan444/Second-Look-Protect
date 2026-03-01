@@ -28,12 +28,20 @@ interface SavedReport {
     period_start: string;
     period_end: string;
     status: string;
+    locked: boolean | null;
     metrics: any;
     ai_summary: string | null;
     recommendations: string | null;
     generated_by: string | null;
     created_at: string;
     pdf_url: string | null;
+}
+
+interface AuditLogEntry {
+    id: string;
+    action: string;
+    actor_type: string | null;
+    created_at: string;
 }
 
 interface OrgOption {
@@ -135,10 +143,13 @@ export function ReportsPage() {
     const [recommendations, setRecommendations] = useState('');
 
     // Report persistence
-    const [reportStatus, setReportStatus] = useState<'draft' | 'locked' | null>(null);
+    const [reportStatus, setReportStatus] = useState<'draft' | 'locked' | 'approved' | null>(null);
+    const [reportLocked, setReportLocked] = useState(false);
+    const [reportPdfUrl, setReportPdfUrl] = useState<string | null>(null);
     const [reportId, setReportId] = useState<string | null>(null);
     const [savingDraft, setSavingDraft] = useState(false);
     const [locking, setLocking] = useState(false);
+    const [approving, setApproving] = useState(false);
     const [generatingPdf, setGeneratingPdf] = useState(false);
     const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
@@ -146,7 +157,10 @@ export function ReportsPage() {
     const [reportHistory, setReportHistory] = useState<SavedReport[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
 
-    const isLocked = reportStatus === 'locked';
+    // Audit logs
+    const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+
+    const isLocked = reportStatus === 'locked' || reportStatus === 'approved' || reportLocked;
 
     /* ── Resolve org context once on mount ───────────────────────────────── */
     useEffect(() => {
@@ -245,7 +259,9 @@ export function ReportsPage() {
 
             if (savedReport) {
                 setReportId(savedReport.id);
-                setReportStatus(savedReport.status as 'draft' | 'locked');
+                setReportStatus(savedReport.status as 'draft' | 'locked' | 'approved');
+                setReportLocked(!!savedReport.locked);
+                setReportPdfUrl(savedReport.pdf_url ?? null);
                 setExecSummary(savedReport.ai_summary ?? '');
                 setRecommendations(savedReport.recommendations ?? '');
 
@@ -253,6 +269,8 @@ export function ReportsPage() {
             } else {
                 setReportId(null);
                 setReportStatus(null);
+                setReportLocked(false);
+                setReportPdfUrl(null);
                 setExecSummary('');
                 setRecommendations('');
                 setKeyTrends('');
@@ -468,7 +486,9 @@ export function ReportsPage() {
     /* ── Load a saved report ─────────────────────────────────────────────── */
     function loadReport(r: SavedReport) {
         setReportId(r.id);
-        setReportStatus(r.status as 'draft' | 'locked');
+        setReportStatus(r.status as 'draft' | 'locked' | 'approved');
+        setReportLocked(!!r.locked);
+        setReportPdfUrl(r.pdf_url ?? null);
         setExecSummary(r.ai_summary ?? '');
         setRecommendations(r.recommendations ?? '');
         if (r.metrics?.keyTrends) setKeyTrends(r.metrics.keyTrends);
@@ -480,6 +500,54 @@ export function ReportsPage() {
         setSaveMsg(`Loaded report from ${fmtDate(r.period_start)}`);
     }
 
+    /* ── Approve Report (RPC) ────────────────────────────────────────────── */
+    async function handleApproveReport() {
+        if (!reportId) return;
+        setApproving(true);
+        setSaveMsg(null);
+        try {
+            const supabase = getSupabase();
+            const metricsSnapshot = { ...metrics, keyTrends, slaOverdueNow };
+            const { error: rpcErr } = await supabase.rpc('approve_report', {
+                p_report_id: reportId,
+                p_metrics_snapshot: metricsSnapshot,
+            });
+            if (rpcErr) throw rpcErr;
+            setReportStatus('approved');
+            setReportLocked(true);
+            setSaveMsg('Report approved ✅');
+            fetchData();
+            fetchHistory();
+            fetchAuditLogs(reportId);
+        } catch (err: any) {
+            setSaveMsg(`Error: ${err?.message ?? 'Failed to approve report'}`);
+        } finally {
+            setApproving(false);
+        }
+    }
+
+    /* ── Fetch audit logs for current report ──────────────────────────────── */
+    const fetchAuditLogs = useCallback(async (rId: string) => {
+        if (!rId) { setAuditLogs([]); return; }
+        try {
+            const supabase = getSupabase();
+            const { data } = await supabase
+                .from('audit_logs')
+                .select('id, action, actor_type, created_at')
+                .eq('entity_type', 'report')
+                .eq('entity_id', rId)
+                .order('created_at', { ascending: false })
+                .limit(10);
+            setAuditLogs(data ?? []);
+        } catch { setAuditLogs([]); }
+    }, []);
+
+    // Re-fetch audit logs when reportId changes
+    useEffect(() => {
+        if (reportId) fetchAuditLogs(reportId);
+        else setAuditLogs([]);
+    }, [reportId, fetchAuditLogs]);
+
     /* ── Handle org switch (super_admin) ─────────────────────────────────── */
     function handleOrgSwitch(newOrgId: string) {
         setOrgId(newOrgId);
@@ -489,6 +557,8 @@ export function ReportsPage() {
 
         setReportId(null);
         setReportStatus(null);
+        setReportLocked(false);
+        setReportPdfUrl(null);
         setExecSummary('');
         setRecommendations('');
         setKeyTrends('');
@@ -557,13 +627,18 @@ export function ReportsPage() {
                         {orgName}{orgName ? ' — ' : ''}{selectedMonthLabel}
                         {reportStatus && (
                             <span
-                                className={`dashboard-status-badge status-${reportStatus === 'locked' ? 'closed' : 'new'}`}
+                                className={`dashboard-status-badge status-${isLocked ? 'closed' : 'new'}`}
                                 style={{ marginLeft: '0.75rem', fontSize: '0.72rem' }}
                             >
-                                {reportStatus === 'locked' ? '🔒 Locked' : '📝 Draft'}
+                                {reportStatus === 'approved' ? 'Approved ✅' : reportStatus === 'locked' ? '🔒 Locked' : '📝 Draft'}
                             </span>
                         )}
                     </p>
+                    {isLocked && (
+                        <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                            Locked after approval for inspection integrity.
+                        </p>
+                    )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -867,6 +942,7 @@ export function ReportsPage() {
                         zIndex: 50,
                         marginTop: '1rem'
                     }}>
+                        {/* Save Draft — only when not approved/locked */}
                         {!isLocked && (
                             <button type="button" className="dashboard-reports-action-btn" onClick={handleSaveDraft} disabled={savingDraft}>
                                 {savingDraft ? <Loader2 size={16} className="dsf-spinner" /> : <Save size={16} />}
@@ -874,26 +950,14 @@ export function ReportsPage() {
                             </button>
                         )}
 
-                        {!isLocked && (
-                            <button
-                                type="button"
-                                className="dashboard-reports-action-btn"
-                                onClick={handleLock}
-                                disabled={locking}
-                                style={{ background: '#166534', color: '#fff' }}
-                            >
-                                {locking ? <Loader2 size={16} className="dsf-spinner" /> : <Lock size={16} />}
-                                {locking ? 'Locking…' : 'Approve & Lock'}
-                            </button>
-                        )}
-
-                        {reportId && (
+                        {/* A) Draft + no PDF → Generate PDF */}
+                        {reportStatus === 'draft' && !reportPdfUrl && reportId && (
                             <button
                                 type="button"
                                 className="dashboard-reports-action-btn"
                                 onClick={async (e) => {
                                     e.preventDefault();
-                                    if (!reportId || !orgId) return;
+                                    if (!reportId || !orgId || generatingPdf) return;
                                     setGeneratingPdf(true);
                                     setSaveMsg(null);
                                     try {
@@ -917,6 +981,7 @@ export function ReportsPage() {
                                         const result = await resp.json();
                                         if (!resp.ok) throw new Error(result.error ?? 'PDF generation failed');
                                         setSaveMsg('PDF generated successfully.');
+                                        setReportPdfUrl(result.pdf_url);
                                         fetchData();
                                         fetchHistory();
                                     } catch (err: any) {
@@ -932,6 +997,45 @@ export function ReportsPage() {
                                 {generatingPdf ? 'Generating…' : 'Generate PDF'}
                             </button>
                         )}
+
+                        {/* B) Draft + PDF exists → Open PDF + Approve Report */}
+                        {reportStatus === 'draft' && reportPdfUrl && (
+                            <>
+                                <a
+                                    href={reportPdfUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="dashboard-reports-action-btn"
+                                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                    <Eye size={16} /> Open PDF
+                                </a>
+                                <button
+                                    type="button"
+                                    className="dashboard-reports-action-btn"
+                                    onClick={handleApproveReport}
+                                    disabled={approving}
+                                    style={{ background: '#166534', color: '#fff' }}
+                                >
+                                    {approving ? <Loader2 size={16} className="dsf-spinner" /> : <CheckCircle2 size={16} />}
+                                    {approving ? 'Approving…' : 'Approve Report'}
+                                </button>
+                            </>
+                        )}
+
+                        {/* C) Approved or locked → Open PDF + Approved badge */}
+                        {isLocked && reportPdfUrl && (
+                            <a
+                                href={reportPdfUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="dashboard-reports-action-btn"
+                                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            >
+                                <Eye size={16} /> Open PDF
+                            </a>
+                        )}
+
                         <button type="button" className="dashboard-reports-action-btn" onClick={() => window.print()}>
                             <Printer size={16} /> Print / Save as PDF
                         </button>
@@ -954,6 +1058,31 @@ export function ReportsPage() {
                         </div>
                     )}
                 </>
+            )}
+
+            {/* AUDIT ACTIVITY */}
+            {reportId && auditLogs.length > 0 && (
+                <div className="dashboard-panel" style={{ marginTop: '2rem' }}>
+                    <div className="dashboard-panel-header">
+                        <h2 className="dashboard-panel-title"><Activity size={16} className="dashboard-panel-title-icon" /> Recent Activity</h2>
+                    </div>
+                    <div className="dashboard-panel-table-wrap">
+                        <table className="dashboard-panel-table">
+                            <thead>
+                                <tr><th>Action</th><th>Actor</th><th>Time</th></tr>
+                            </thead>
+                            <tbody>
+                                {auditLogs.map(log => (
+                                    <tr key={log.id}>
+                                        <td>{capitalize(log.action)}</td>
+                                        <td>{log.actor_type ?? '—'}</td>
+                                        <td>{new Date(log.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             )}
 
             {/* REPORT HISTORY */}
@@ -981,10 +1110,10 @@ export function ReportsPage() {
                                         <td>{fmtDate(r.period_start)}</td>
                                         <td>
                                             <span
-                                                className={`dashboard-status-badge status-${r.status === 'locked' ? 'closed' : 'new'}`}
+                                                className={`dashboard-status-badge status-${(r.status === 'locked' || r.status === 'approved') ? 'closed' : 'new'}`}
                                                 style={{ fontSize: '0.7rem' }}
                                             >
-                                                {r.status === 'locked' ? '🔒 Locked' : 'Draft'}
+                                                {r.status === 'approved' ? 'Approved ✅' : r.status === 'locked' ? '🔒 Locked' : 'Draft'}
                                             </span>
                                         </td>
                                         <td>{fmtDate(r.created_at)}</td>
