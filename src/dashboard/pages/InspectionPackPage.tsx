@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, FileText } from 'lucide-react';
+import { Loader2, FileText, Download } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
 type SnapshotRow = {
@@ -30,6 +30,7 @@ export function InspectionPackPage() {
     const [orgName, setOrgName] = React.useState<string>('');
     const [isSuper, setIsSuper] = React.useState<boolean | null>(null);
     const [month, setMonth] = React.useState('');
+    const [orgId, setOrgId] = React.useState<string>('');
 
     React.useEffect(() => {
         (async () => {
@@ -70,6 +71,7 @@ export function InspectionPackPage() {
                     setLoading(false);
                     return;
                 }
+                setOrgId(activeOrgId);
 
                 // Fetch org name
                 const { data: orgRow } = await supabase
@@ -142,6 +144,35 @@ export function InspectionPackPage() {
                     {orgName} — {month.slice(0, 7)}
                 </p>
             </div>
+
+            {/* Download PDF */}
+            {isSuper && orgId && month && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <button
+                        type="button"
+                        className="dashboard-primary-button"
+                        style={{ height: 36, padding: '0 12px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem' }}
+                        onClick={async () => {
+                            try {
+                                const supabase = getSupabase();
+                                const { data: { session } } = await supabase.auth.getSession();
+                                const token = session?.access_token;
+                                if (!token) { alert('Not authenticated'); return; }
+                                const r = await fetch(`/api/inspection-pack-pdf?org_id=${orgId}&month=${month}`, {
+                                    headers: { Authorization: `Bearer ${token}` },
+                                });
+                                if (!r.ok) { const j = await r.json().catch(() => null); alert(j?.error ?? 'PDF generation failed'); return; }
+                                const blob = await r.blob();
+                                const url = URL.createObjectURL(blob);
+                                window.open(url, '_blank');
+                            } catch (e) { alert(e instanceof Error ? e.message : 'Failed to download PDF'); }
+                        }}
+                    >
+                        <Download size={16} />
+                        Download PDF
+                    </button>
+                </div>
+            )}
 
             {/* Metrics */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem', marginBottom: '2rem' }}>
