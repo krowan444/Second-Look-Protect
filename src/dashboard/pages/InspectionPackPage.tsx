@@ -32,6 +32,14 @@ export function InspectionPackPage() {
     const [month, setMonth] = React.useState('');
     const [orgId, setOrgId] = React.useState<string>('');
     const [generating, setGenerating] = React.useState(false);
+    const notesKey = orgId && month ? `slp_inspection_notes_${orgId}_${month}` : '';
+    const [inspectorNotes, setInspectorNotes] = React.useState('');
+
+    React.useEffect(() => {
+        if (notesKey) {
+            try { setInspectorNotes(localStorage.getItem(notesKey) ?? ''); } catch { /* ignore */ }
+        }
+    }, [notesKey]);
 
     React.useEffect(() => {
         (async () => {
@@ -237,6 +245,80 @@ export function InspectionPackPage() {
                     <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{snapshot.safeguarding_score ?? '—'}</div>
                 </div>
             </div>
+
+            {/* Evidence & Governance */}
+            {(() => {
+                const open = snapshot.total_open_cases ?? 0;
+                const overdue = snapshot.overdue_open_cases ?? 0;
+                const sla = snapshot.sla_compliance_percent;
+                const sg = snapshot.safeguarding_score;
+                const genDate = fmtDate(snapshot.generated_at);
+
+                // Risks
+                const risks: string[] = [];
+                if (overdue > 0) risks.push(`${overdue} case${overdue > 1 ? 's' : ''} remain overdue, requiring timely escalation to prevent safeguarding gaps.`);
+                if (sla != null && sla < 90) risks.push(`SLA compliance is at ${sla}%, below the recommended 90% threshold. Response times should be reviewed.`);
+                if (sg != null && sg < 70) risks.push(`Safeguarding score of ${sg} indicates areas for improvement in the organisation's safeguarding posture.`);
+                if (risks.length === 0) risks.push('No significant risk spikes detected in this snapshot period.');
+
+                // Actions
+                const actions: string[] = [];
+                if (overdue > 0) actions.push('Prioritise resolution of overdue cases and confirm escalation pathways are active.');
+                if (sla != null && sla < 90) actions.push('Review SLA performance with the safeguarding team to identify bottlenecks.');
+                if (sg != null && sg < 70) actions.push('Schedule a safeguarding review meeting to address score improvement areas.');
+                if (actions.length === 0) actions.push('Continue current monitoring cadence.', 'Ensure monthly snapshots remain generated for audit continuity.');
+                if (actions.length < 2) actions.push('Maintain regular snapshot generation for ongoing compliance evidence.');
+
+                return (
+                    <div style={{ marginBottom: '2rem' }}>
+                        <h2 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.75rem' }}>Evidence &amp; Governance</h2>
+
+                        {/* Narrative */}
+                        <p style={{ fontSize: '0.84rem', lineHeight: 1.65, color: '#334155', marginBottom: '1rem' }}>
+                            As of the snapshot generated on {genDate}, the organisation has {open} open case{open !== 1 ? 's' : ''}
+                            {overdue > 0 ? `, of which ${overdue} ${overdue > 1 ? 'are' : 'is'} overdue` : ''}.
+                            {sla != null ? ` SLA compliance stands at ${sla}%.` : ''}
+                            {sg != null ? ` The current safeguarding score is ${sg}.` : ''}
+                            {' '}This data represents an immutable point-in-time record suitable for inspection and regulatory evidence.
+                        </p>
+
+                        {/* Key risks */}
+                        <h3 style={{ fontSize: '0.88rem', fontWeight: 600, marginBottom: '0.4rem' }}>Key risks observed</h3>
+                        <ul style={{ fontSize: '0.82rem', color: '#334155', lineHeight: 1.6, paddingLeft: '1.25rem', marginBottom: '1rem' }}>
+                            {risks.map((r, i) => <li key={i}>{r}</li>)}
+                        </ul>
+
+                        {/* Recommended actions */}
+                        <h3 style={{ fontSize: '0.88rem', fontWeight: 600, marginBottom: '0.4rem' }}>Recommended actions</h3>
+                        <ul style={{ fontSize: '0.82rem', color: '#334155', lineHeight: 1.6, paddingLeft: '1.25rem', marginBottom: '1rem' }}>
+                            {actions.map((a, i) => <li key={i}>{a}</li>)}
+                        </ul>
+
+                        {/* Audit note */}
+                        <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic', marginBottom: '1.25rem' }}>
+                            This pack is generated from an immutable monthly snapshot for audit integrity.
+                        </p>
+
+                        {/* Inspector notes */}
+                        {isSuper && notesKey && (
+                            <div>
+                                <h3 style={{ fontSize: '0.88rem', fontWeight: 600, marginBottom: '0.4rem' }}>Notes for inspector (optional)</h3>
+                                <textarea
+                                    className="dsf-input"
+                                    rows={4}
+                                    value={inspectorNotes}
+                                    placeholder="Add any notes for the inspector here…"
+                                    style={{ width: '100%', resize: 'vertical', fontSize: '0.82rem' }}
+                                    onChange={(e) => {
+                                        setInspectorNotes(e.target.value);
+                                        try { localStorage.setItem(notesKey, e.target.value); } catch { /* ignore */ }
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
 
             {/* Meta */}
             <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.5rem' }}>
