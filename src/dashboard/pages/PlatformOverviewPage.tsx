@@ -67,13 +67,14 @@ export function PlatformOverviewPage() {
     confirmed_scams_7d: number;
     overdue: number;
     risk_score: number;
+    safeguarding_score: number | null;
   };
   type IntelOverview = {
     total_open_cases: number;
-    high_critical_7d: number;
-    confirmed_scams_7d: number;
+    high_or_critical_last_7_days: number;
+    confirmed_scams_last_7_days: number;
     overdue_open_cases: number;
-    sla_compliance_pct: number;
+    sla_compliance_percent: number;
     top_risk_organisations: IntelTopOrg[];
   } | null;
   const [intel, setIntel] = React.useState<IntelOverview>(null);
@@ -270,8 +271,9 @@ export function PlatformOverviewPage() {
       // 6) Platform Intelligence RPC (super_admin only — page is route-guarded)
       setIntelLoading(true);
       try {
-        const { data: intelData } = await supabase.rpc('get_platform_intelligence_overview');
-        setIntel((intelData ?? null) as IntelOverview);
+        const { data: intelData } = await supabase.rpc('get_platform_intelligence_overview_v2');
+        const platform = (intelData as any)?.platform ?? intelData;
+        setIntel((platform ?? null) as IntelOverview);
       } catch { /* non-blocking */ }
       setIntelLoading(false);
     } catch (e) {
@@ -430,7 +432,7 @@ export function PlatformOverviewPage() {
                   <div className="dashboard-stat-card-accent accent-red" />
                   <div className="dashboard-stat-card-body">
                     <div className="dashboard-stat-icon red"><AlertTriangle size={20} /></div>
-                    <div className="dashboard-stat-value">{intel.high_critical_7d}</div>
+                    <div className="dashboard-stat-value">{intel.high_or_critical_last_7_days}</div>
                     <div className="dashboard-stat-label">High/Critical (7d)</div>
                     <div className="dashboard-stat-period">Last 7 days</div>
                   </div>
@@ -440,7 +442,7 @@ export function PlatformOverviewPage() {
                   <div className="dashboard-stat-card-accent accent-amber" />
                   <div className="dashboard-stat-card-body">
                     <div className="dashboard-stat-icon amber"><Shield size={20} /></div>
-                    <div className="dashboard-stat-value">{intel.confirmed_scams_7d}</div>
+                    <div className="dashboard-stat-value">{intel.confirmed_scams_last_7_days}</div>
                     <div className="dashboard-stat-label">Confirmed Scams (7d)</div>
                     <div className="dashboard-stat-period">Last 7 days</div>
                   </div>
@@ -460,7 +462,7 @@ export function PlatformOverviewPage() {
                   <div className="dashboard-stat-card-accent accent-gold" />
                   <div className="dashboard-stat-card-body">
                     <div className="dashboard-stat-icon gold"><ShieldAlert size={20} /></div>
-                    <div className="dashboard-stat-value">{intel.sla_compliance_pct}%</div>
+                    <div className="dashboard-stat-value">{intel.sla_compliance_percent}%</div>
                     <div className="dashboard-stat-label">SLA Compliance</div>
                     <div className="dashboard-stat-period">Platform-wide</div>
                   </div>
@@ -488,6 +490,7 @@ export function PlatformOverviewPage() {
                           <th>Scams 7d</th>
                           <th>Overdue</th>
                           <th>Risk Score</th>
+                          <th>Safeguarding Score</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -499,6 +502,7 @@ export function PlatformOverviewPage() {
                             <td>{o.confirmed_scams_7d}</td>
                             <td>{o.overdue}</td>
                             <td>{o.risk_score}</td>
+                            <td>{o.safeguarding_score ?? '—'}</td>
                           </tr>
                         ))}
                       </tbody>
