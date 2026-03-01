@@ -16,6 +16,10 @@
     {
       "path": "/api/safeguarding-monitor",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/inspection-snapshots-cron",
+      "schedule": "0 2 1 * *"
     }
   ]
 }
