@@ -188,6 +188,70 @@ export function InspectionPage() {
         </div>
       )}
 
+      {/* ── Inspection Summary (current month) ──────────────────────── */}
+      {!loading && isSuper && (() => {
+        const now = new Date();
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        const monthSnapshots = rows.filter(r => r.snapshot_month === currentMonth);
+        const latest = monthSnapshots.length > 0 ? monthSnapshots[0] : null;
+        const status = latest ? 'Generated' : 'Missing';
+
+        return (
+          <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
+            <div className="dashboard-panel-header">
+              <h2 className="dashboard-panel-title">
+                <ClipboardCheck size={16} className="dashboard-panel-title-icon" />
+                Inspection Summary — {currentMonth.slice(0, 7)}
+              </h2>
+              <span className="dashboard-panel-count" style={{ fontSize: '0.72rem' }}>
+                {status === 'Generated' ? '✓ Generated' : '⚠ Missing'}
+              </span>
+            </div>
+            <div style={{ padding: '0.75rem 1rem' }}>
+              {latest ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Month</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{latest.snapshot_month}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Open Cases</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{latest.total_open_cases ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Overdue</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{latest.overdue_open_cases ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>SLA Compliance</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{latest.sla_compliance_percent != null ? `${latest.sla_compliance_percent}%` : '—'}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Safeguarding Score</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{latest.safeguarding_score ?? '—'}</div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '0.82rem', color: '#64748b' }}>No snapshot for this month yet.</span>
+                  <button
+                    type="button"
+                    onClick={generateSnapshot}
+                    disabled={generating}
+                    className="dashboard-primary-button"
+                    style={{ height: 32, padding: '0 10px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', opacity: generating ? 0.7 : 1 }}
+                  >
+                    {generating ? <Loader2 size={14} className="dashboard-overview-spinner-icon" /> : <ClipboardCheck size={14} />}
+                    Generate this month snapshot
+                  </button>
+                </div>
+              )}
+              <p style={{ margin: '0.5rem 0 0', fontSize: '0.72rem', color: '#94a3b8' }}>Runs automatically on the 1st at 02:00 UTC</p>
+            </div>
+          </div>
+        );
+      })()}
+
       {loading ? (
         <div className="dashboard-overview-loading">
           <Loader2 className="dashboard-overview-spinner-icon" />
