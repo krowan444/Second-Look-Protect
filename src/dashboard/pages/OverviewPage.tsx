@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     LayoutDashboard, AlertTriangle, ShieldCheck, Clock,
-    TrendingUp, ArrowRight, Loader2, Info,
+    TrendingUp, ArrowRight, Loader2, Info, Bell,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
@@ -16,6 +16,14 @@ interface Submission {
     decision: string | null;
     category: string | null;
     organisation_id: string | null;
+}
+
+interface AlertEntry {
+    id: string;
+    event_type: string;
+    entity_type: string | null;
+    severity: string | null;
+    sent_at: string;
 }
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -65,6 +73,7 @@ export function OverviewPage() {
     const [error, setError] = useState<string | null>(null);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [allSubmissions, setAllSubmissions] = useState<Submission[]>([]);
+    const [alerts, setAlerts] = useState<AlertEntry[]>([]);
 
     /* ── Fetch data on mount ───────────────────────────────────────────────── */
     useEffect(() => {
@@ -122,6 +131,19 @@ export function OverviewPage() {
                 if (!cancelled) {
                     setSubmissions(monthRows ?? []);
                     setAllSubmissions(allRows ?? []);
+                }
+
+                // Fetch safeguarding alerts (last 14 days)
+                const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+                const { data: alertRows } = await supabase
+                    .from('alert_log')
+                    .select('id, event_type, entity_type, severity, sent_at')
+                    .eq('organisation_id', orgId)
+                    .gte('sent_at', fourteenDaysAgo)
+                    .order('sent_at', { ascending: false })
+                    .limit(5);
+                if (!cancelled) {
+                    setAlerts((alertRows ?? []) as AlertEntry[]);
                     setLoading(false);
                 }
             } catch (err: any) {
@@ -222,6 +244,52 @@ export function OverviewPage() {
                 <p className="dashboard-page-subtitle">
                     Your organisation's activity this month at a glance.
                 </p>
+            </div>
+
+            {/* ── Safeguarding Alerts ─────────────────────────────────────── */}
+            <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
+                <div className="dashboard-panel-header">
+                    <h2 className="dashboard-panel-title">
+                        <Bell size={16} className="dashboard-panel-title-icon" />
+                        Safeguarding Alerts
+                    </h2>
+                    <span className="dashboard-panel-count">{alerts.length}</span>
+                </div>
+                {alerts.length === 0 ? (
+                    <div className="dashboard-panel-empty">
+                        <ShieldCheck size={16} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} />
+                        No active safeguarding alerts.
+                    </div>
+                ) : (
+                    <div className="dashboard-panel-table-wrap">
+                        <table className="dashboard-panel-table">
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Entity</th>
+                                    <th>Severity</th>
+                                    <th>Sent At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {alerts.map((a) => (
+                                    <tr key={a.id}>
+                                        <td>{a.event_type}</td>
+                                        <td>{a.entity_type ?? '—'}</td>
+                                        <td>
+                                            {a.severity ? (
+                                                <span className={`dashboard-risk-badge risk-${riskClass(a.severity)}`}>
+                                                    {a.severity}
+                                                </span>
+                                            ) : '—'}
+                                        </td>
+                                        <td>{fmtDate(a.sent_at)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
             {/* ── Stat Cards ────────────────────────────────────────────────── */}
