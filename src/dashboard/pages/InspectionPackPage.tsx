@@ -32,14 +32,35 @@ export function InspectionPackPage() {
     const [month, setMonth] = React.useState('');
     const [orgId, setOrgId] = React.useState<string>('');
     const [generating, setGenerating] = React.useState(false);
-    const notesKey = orgId && month ? `slp_inspection_notes_${orgId}_${month}` : '';
     const [inspectorNotes, setInspectorNotes] = React.useState('');
+    const [userId, setUserId] = React.useState<string>('');
+    const [saving, setSaving] = React.useState(false);
+    const [saveStatus, setSaveStatus] = React.useState<string>('');
+    const notesKey = orgId && month ? `slp_inspection_notes_${orgId}_${month}` : '';
 
+    // Fetch notes from DB when org + month resolve
     React.useEffect(() => {
-        if (notesKey) {
-            try { setInspectorNotes(localStorage.getItem(notesKey) ?? ''); } catch { /* ignore */ }
-        }
-    }, [notesKey]);
+        if (!orgId || !month) return;
+        (async () => {
+            try {
+                const supabase = getSupabase();
+                const { data, error: err } = await supabase
+                    .from('inspection_pack_notes')
+                    .select('notes')
+                    .eq('organisation_id', orgId)
+                    .eq('snapshot_month', month)
+                    .maybeSingle();
+                if (!err && data) {
+                    setInspectorNotes(data.notes ?? '');
+                } else {
+                    // Fallback to localStorage
+                    try { setInspectorNotes(localStorage.getItem(notesKey) ?? ''); } catch { /* ignore */ }
+                }
+            } catch {
+                try { setInspectorNotes(localStorage.getItem(notesKey) ?? ''); } catch { /* ignore */ }
+            }
+        })();
+    }, [orgId, month, notesKey]);
 
     React.useEffect(() => {
         (async () => {
@@ -58,6 +79,7 @@ export function InspectionPackPage() {
                 // Auth + role check
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) throw new Error('Not authenticated');
+                setUserId(user.id);
 
                 const { data: profile } = await supabase
                     .from('profiles')
@@ -300,7 +322,7 @@ export function InspectionPackPage() {
                         </p>
 
                         {/* Inspector notes */}
-                        {isSuper && notesKey && (
+                        {isSuper && orgId && month && (
                             <div>
                                 <h3 style={{ fontSize: '0.88rem', fontWeight: 600, marginBottom: '0.4rem' }}>Notes for inspector (optional)</h3>
                                 <textarea
@@ -308,12 +330,53 @@ export function InspectionPackPage() {
                                     rows={4}
                                     value={inspectorNotes}
                                     placeholder="Add any notes for the inspector here…"
-                                    style={{ width: '100%', resize: 'vertical', fontSize: '0.82rem' }}
+                                    style={{ width: '100%', resize: 'vertical', fontSize: '0.82rem', marginBottom: '0.5rem' }}
                                     onChange={(e) => {
                                         setInspectorNotes(e.target.value);
-                                        try { localStorage.setItem(notesKey, e.target.value); } catch { /* ignore */ }
+                                        setSaveStatus('');
                                     }}
                                 />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <button
+                                        type="button"
+                                        disabled={saving}
+                                        className="dashboard-primary-button"
+                                        style={{ height: 32, padding: '0 10px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', opacity: saving ? 0.7 : 1 }}
+                                        onClick={async () => {
+                                            setSaving(true);
+                                            setSaveStatus('');
+                                            try {
+                                                const supabase = getSupabase();
+                                                const { error: upsertErr } = await supabase
+                                                    .from('inspection_pack_notes')
+                                                    .upsert(
+                                                        {
+                                                            organisation_id: orgId,
+                                                            snapshot_month: month,
+                                                            notes: inspectorNotes,
+                                                            updated_by: userId,
+                                                            created_by: userId,
+                                                        },
+                                                        { onConflict: 'organisation_id,snapshot_month' }
+                                                    );
+                                                if (upsertErr) throw new Error(upsertErr.message);
+                                                // Also save to localStorage as backup
+                                                try { localStorage.setItem(notesKey, inspectorNotes); } catch { /* ignore */ }
+                                                setSaveStatus('Saved');
+                                            } catch (e) {
+                                                setSaveStatus(e instanceof Error ? e.message : 'Failed to save');
+                                            } finally {
+                                                setSaving(false);
+                                            }
+                                        }}
+                                    >
+                                        {saving ? <Loader2 size={14} className="dashboard-overview-spinner-icon" /> : null}
+                                        {saving ? 'Saving…' : 'Save notes'}
+                                    </button>
+                                    {saveStatus && (
+                                        <span style={{ fontSize: '0.75rem', color: saveStatus === 'Saved' ? '#16a34a' : '#dc2626' }}>{saveStatus}</span>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
