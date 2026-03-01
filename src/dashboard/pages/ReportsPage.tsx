@@ -33,6 +33,7 @@ interface SavedReport {
     recommendations: string | null;
     generated_by: string | null;
     created_at: string;
+    pdf_url: string | null;
 }
 
 interface OrgOption {
@@ -138,6 +139,7 @@ export function ReportsPage() {
     const [reportId, setReportId] = useState<string | null>(null);
     const [savingDraft, setSavingDraft] = useState(false);
     const [locking, setLocking] = useState(false);
+    const [generatingPdf, setGeneratingPdf] = useState(false);
     const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
     // Report history
@@ -884,6 +886,49 @@ export function ReportsPage() {
                             </button>
                         )}
 
+                        {reportId && (
+                            <button
+                                className="dashboard-reports-action-btn"
+                                onClick={async () => {
+                                    if (!reportId || !orgId) return;
+                                    setGeneratingPdf(true);
+                                    setSaveMsg(null);
+                                    try {
+                                        const supabase = getSupabase();
+                                        const { data: { session } } = await supabase.auth.getSession();
+                                        if (!session?.access_token) throw new Error('Not authenticated');
+                                        const { start, end } = monthBoundaries(selectedMonth);
+                                        const resp = await fetch('/api/reports-generate-pdf', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                Authorization: `Bearer ${session.access_token}`,
+                                            },
+                                            body: JSON.stringify({
+                                                reportId,
+                                                organisationId: orgId,
+                                                periodStart: start.slice(0, 10),
+                                                periodEnd: new Date(new Date(end).getTime() - 1).toISOString().slice(0, 10),
+                                            }),
+                                        });
+                                        const result = await resp.json();
+                                        if (!resp.ok) throw new Error(result.error ?? 'PDF generation failed');
+                                        setSaveMsg('PDF generated successfully.');
+                                        fetchData();
+                                        fetchHistory();
+                                    } catch (err: any) {
+                                        setSaveMsg(`Error: ${err?.message ?? 'PDF generation failed'}`);
+                                    } finally {
+                                        setGeneratingPdf(false);
+                                    }
+                                }}
+                                disabled={generatingPdf}
+                                style={{ background: '#1e40af', color: '#fff' }}
+                            >
+                                {generatingPdf ? <Loader2 size={16} className="dsf-spinner" /> : <FileText size={16} />}
+                                {generatingPdf ? 'Generating…' : 'Generate PDF'}
+                            </button>
+                        )}
                         <button className="dashboard-reports-action-btn" onClick={() => window.print()}>
                             <Printer size={16} /> Print / Save as PDF
                         </button>
@@ -925,7 +970,7 @@ export function ReportsPage() {
                     <div className="dashboard-panel-table-wrap">
                         <table className="dashboard-panel-table">
                             <thead>
-                                <tr><th>Period</th><th>Status</th><th>Created</th><th></th></tr>
+                                <tr><th>Period</th><th>Status</th><th>Created</th><th>PDF</th><th></th></tr>
                             </thead>
                             <tbody>
                                 {reportHistory.map(r => (
@@ -940,6 +985,21 @@ export function ReportsPage() {
                                             </span>
                                         </td>
                                         <td>{fmtDate(r.created_at)}</td>
+                                        <td>
+                                            {r.pdf_url ? (
+                                                <a
+                                                    href={r.pdf_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="dashboard-reports-action-btn"
+                                                    style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                                >
+                                                    <Download size={12} /> PDF
+                                                </a>
+                                            ) : (
+                                                <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>—</span>
+                                            )}
+                                        </td>
                                         <td>
                                             <button
                                                 className="dashboard-reports-action-btn"
