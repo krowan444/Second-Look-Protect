@@ -1,6 +1,7 @@
 // /api/sla-reminders.js
 
 export default async function handler(req, res) {
+  // Only allow GET (Vercel Cron hits with GET)
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -32,7 +33,10 @@ export default async function handler(req, res) {
 
     const text = await r.text();
     let json = null;
-    try { json = text ? JSON.parse(text) : null; } catch {}
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {}
+
     return { ok: r.ok, status: r.status, json, text };
   }
 
@@ -48,7 +52,11 @@ export default async function handler(req, res) {
     const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text: message }),
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        disable_web_page_preview: true,
+      }),
     });
 
     if (!r.ok) {
@@ -65,9 +73,10 @@ export default async function handler(req, res) {
   let totalSkipped = 0;
   let totalErrors = 0;
 
-  // ✅ Use submitted_at (your real column)
+  // ✅ Pull NEW cases ordered oldest first
+  // Uses submitted_at (your real column)
   const query =
-    "submissions?select=id,organisation_id,status,submitted_at" +
+    "cases?select=id,organisation_id,status,submitted_at" +
     "&status=eq.new" +
     "&order=submitted_at.asc" +
     "&limit=200";
@@ -76,7 +85,7 @@ export default async function handler(req, res) {
 
   if (!ok) {
     return res.status(500).json({
-      error: "Failed to query submissions",
+      error: "Failed to query cases",
       status,
       detail: text,
     });
@@ -91,13 +100,17 @@ export default async function handler(req, res) {
       const createdAt = new Date(row.submitted_at);
       const ageMins = Math.floor((now - createdAt) / 60000);
 
+      // Stop immediately if status changes away from new
+      // (extra defensive – although query already filters status=new)
+      if (row.status !== "new") continue;
+
       for (const stage of STAGES) {
         if (ageMins < stage) continue;
 
         // 🔎 Check alert_log first (dedupe)
         const checkPath =
           `alert_log?select=id` +
-          `&entity_type=eq.submission` +
+          `&entity_type=eq.case` +
           `&entity_id=eq.${row.id}` +
           `&event_type=eq.sla_reminder` +
           `&stage_minutes=eq.${stage}` +
@@ -121,7 +134,7 @@ export default async function handler(req, res) {
           headers: { Prefer: "return=minimal" },
           body: JSON.stringify({
             organisation_id: row.organisation_id ?? null,
-            entity_type: "submission",
+            entity_type: "case",
             entity_id: row.id,
             event_type: "sla_reminder",
             stage_minutes: stage,
@@ -142,8 +155,8 @@ export default async function handler(req, res) {
         // 📲 Send Telegram
         await sendTelegram(
           `⏱️ SLA REMINDER (${stage}m)\n` +
-          `Submission ${row.id} is still NEW.\n` +
-          `Org: ${row.organisation_id}`
+            `Case ${row.id} is still NEW.\n` +
+            `Org: ${row.organisation_id ?? "—"}`
         );
 
         totalSent++;
