@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Plus, RefreshCcw } from 'lucide-react';
+import { Building2, Plus, RefreshCcw, Loader2, ExternalLink } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
 type OrganisationRow = {
@@ -125,9 +125,14 @@ export function OrganisationsAdminPage() {
     }
   }
 
+  function handleOpenOrg(orgId: string) {
+    localStorage.setItem('slp_active_org_id', orgId);
+    window.location.href = '/dashboard/overview';
+  }
+
   return (
     <div>
-      <div className="dashboard-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+      <div className="dashboard-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 className="dashboard-page-title">Organisations</h1>
           <p className="dashboard-page-subtitle">Manage all organisations on the platform.</p>
@@ -144,194 +149,193 @@ export function OrganisationsAdminPage() {
       </div>
 
       {error && (
-        <div className="dashboard-placeholder-card" style={{ borderColor: '#fecaca', background: '#fef2f2' }}>
-          <p className="dashboard-page-title" style={{ fontSize: '1.0rem', color: '#991b1b' }}>{error}</p>
+        <div className="dashboard-overview-error" style={{ marginBottom: '1rem' }}>
+          <span>{error}</span>
         </div>
       )}
 
       {/* Create organisation */}
-      <div className="dashboard-card" style={{ padding: 16, borderRadius: 16, marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <Building2 size={18} />
-          <div style={{ fontWeight: 650 }}>Create organisation</div>
+      <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
+        <div className="dashboard-panel-header">
+          <h2 className="dashboard-panel-title">
+            <Building2 size={16} className="dashboard-panel-title-icon" />
+            Create Organisation
+          </h2>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 12 }}>
-          <div style={{ gridColumn: 'span 4' }}>
-            <div className="dashboard-muted-label">Name</div>
-            <input
-              value={newName}
-              onChange={(e) => { setNewName(e.target.value); if (!newSlug) setNewSlug(safeSlug(e.target.value)); }}
-              className="dashboard-input"
-              style={{ height: 42, borderRadius: 12 }}
-              placeholder="e.g. Rosewood Care Home"
-            />
+        <div style={{ padding: '0 1rem 1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Name</div>
+              <input
+                value={newName}
+                onChange={(e) => { setNewName(e.target.value); if (!newSlug) setNewSlug(safeSlug(e.target.value)); }}
+                className="dsf-input"
+                placeholder="e.g. Rosewood Care Home"
+              />
+            </div>
+
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Slug</div>
+              <input
+                value={newSlug}
+                onChange={(e) => setNewSlug(e.target.value)}
+                className="dsf-input"
+                placeholder="e.g. rosewood-care-home"
+              />
+            </div>
+
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Primary contact email (optional)</div>
+              <input
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                className="dsf-input"
+                placeholder="manager@carehome.co.uk"
+              />
+            </div>
           </div>
 
-          <div style={{ gridColumn: 'span 4' }}>
-            <div className="dashboard-muted-label">Slug</div>
-            <input
-              value={newSlug}
-              onChange={(e) => setNewSlug(e.target.value)}
-              className="dashboard-input"
-              style={{ height: 42, borderRadius: 12 }}
-              placeholder="e.g. rosewood-care-home"
-            />
+          <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={createOrg}
+              disabled={saving}
+              className="dashboard-primary-button"
+              style={{ height: 44, padding: '0 14px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8, opacity: saving ? 0.7 : 1 }}
+            >
+              <Plus size={18} />
+              {saving ? 'Creating…' : 'Create'}
+            </button>
           </div>
-
-          <div style={{ gridColumn: 'span 4' }}>
-            <div className="dashboard-muted-label">Primary contact email (optional)</div>
-            <input
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              className="dashboard-input"
-              style={{ height: 42, borderRadius: 12 }}
-              placeholder="manager@carehome.co.uk"
-            />
-          </div>
-        </div>
-
-        <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
-          <button
-            onClick={createOrg}
-            disabled={saving}
-            className="dashboard-primary-button"
-            style={{ height: 44, padding: '0 14px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8, opacity: saving ? 0.7 : 1 }}
-          >
-            <Plus size={18} />
-            {saving ? 'Creating…' : 'Create'}
-          </button>
         </div>
       </div>
 
       {/* Organisations list */}
       {loading ? (
-        <div className="dashboard-placeholder-card">
-          <div className="dashboard-placeholder-icon"><Building2 /></div>
-          <p className="dashboard-page-title" style={{ fontSize: '1.1rem' }}>Loading organisations…</p>
-          <span className="dashboard-placeholder-label">Loading</span>
+        <div className="dashboard-overview-loading">
+          <Loader2 className="dashboard-overview-spinner-icon" />
+          <p>Loading organisations…</p>
         </div>
       ) : (
-        <div className="dashboard-card" style={{ padding: 16, borderRadius: 16 }}>
-          <div className="dashboard-card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>All organisations</span>
-            <span className="dashboard-small-muted">{orgs.length} total</span>
+        <div className="dashboard-panel">
+          <div className="dashboard-panel-header">
+            <h2 className="dashboard-panel-title">
+              <Building2 size={16} className="dashboard-panel-title-icon" />
+              All Organisations
+            </h2>
+            <span className="dashboard-panel-count">{orgs.length}</span>
           </div>
 
-          <div style={{ overflowX: 'auto', marginTop: 10 }}>
-            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 10px' }}>
-              <thead>
-                <tr style={{ textAlign: 'left' }}>
-                  <th className="dashboard-table-th">Name</th>
-                  <th className="dashboard-table-th">Slug</th>
-                  <th className="dashboard-table-th">Status</th>
-                  <th className="dashboard-table-th">Plan</th>
-                  <th className="dashboard-table-th">Subscription</th>
-                  <th className="dashboard-table-th">Contact</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orgs.map(o => (
-                  <tr key={o.id} className="dashboard-table-row">
-                    <td className="dashboard-table-td" style={{ minWidth: 220 }}>
-                      <input
-                        className="dashboard-input"
-                        style={{ height: 40, borderRadius: 12 }}
-                        value={o.name ?? ''}
-                        onChange={(e) => setOrgs(prev => prev.map(x => x.id === o.id ? { ...x, name: e.target.value } : x))}
-                        onBlur={() => updateOrg(o.id, { name: o.name ?? '' })}
-                      />
-                    </td>
-
-                    <td className="dashboard-table-td" style={{ minWidth: 200 }}>
-                      <input
-                        className="dashboard-input"
-                        style={{ height: 40, borderRadius: 12 }}
-                        value={o.slug ?? ''}
-                        onChange={(e) => setOrgs(prev => prev.map(x => x.id === o.id ? { ...x, slug: e.target.value } : x))}
-                        onBlur={() => updateOrg(o.id, { slug: o.slug ?? '' })}
-                      />
-                    </td>
-
-                    <td className="dashboard-table-td" style={{ minWidth: 150 }}>
-                      <select
-                        className="dashboard-input"
-                        style={{ height: 40, borderRadius: 12 }}
-                        value={o.status ?? 'active'}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setOrgs(prev => prev.map(x => x.id === o.id ? { ...x, status: v } : x));
-                          updateOrg(o.id, { status: v });
-                        }}
-                      >
-                        <option value="active">active</option>
-                        <option value="paused">paused</option>
-                        <option value="suspended">suspended</option>
-                      </select>
-                    </td>
-
-                    <td className="dashboard-table-td" style={{ minWidth: 140 }}>
-                      <select
-                        className="dashboard-input"
-                        style={{ height: 40, borderRadius: 12 }}
-                        value={o.plan_type ?? 'basic'}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setOrgs(prev => prev.map(x => x.id === o.id ? { ...x, plan_type: v } : x));
-                          updateOrg(o.id, { plan_type: v });
-                        }}
-                      >
-                        <option value="basic">basic</option>
-                        <option value="pro">pro</option>
-                        <option value="enterprise">enterprise</option>
-                      </select>
-                    </td>
-
-                    <td className="dashboard-table-td" style={{ minWidth: 160 }}>
-                      <select
-                        className="dashboard-input"
-                        style={{ height: 40, borderRadius: 12 }}
-                        value={o.subscription_status ?? 'trial'}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setOrgs(prev => prev.map(x => x.id === o.id ? { ...x, subscription_status: v } : x));
-                          updateOrg(o.id, { subscription_status: v });
-                        }}
-                      >
-                        <option value="trial">trial</option>
-                        <option value="active">active</option>
-                        <option value="past_due">past_due</option>
-                        <option value="canceled">canceled</option>
-                      </select>
-                    </td>
-
-                    <td className="dashboard-table-td" style={{ minWidth: 240 }}>
-                      <input
-                        className="dashboard-input"
-                        style={{ height: 40, borderRadius: 12 }}
-                        value={o.primary_contact_email ?? ''}
-                        onChange={(e) => setOrgs(prev => prev.map(x => x.id === o.id ? { ...x, primary_contact_email: e.target.value } : x))}
-                        onBlur={() => updateOrg(o.id, { primary_contact_email: o.primary_contact_email ?? '' })}
-                        placeholder="optional"
-                      />
-                    </td>
-                  </tr>
-                ))}
-
-                {orgs.length === 0 && (
+          {orgs.length === 0 ? (
+            <div className="dashboard-panel-empty">No organisations yet. Create the first one above.</div>
+          ) : (
+            <div className="dashboard-panel-table-wrap">
+              <table className="dashboard-panel-table">
+                <thead>
                   <tr>
-                    <td className="dashboard-table-td" colSpan={6} style={{ padding: '14px 10px' }}>
-                      No organisations yet. Create the first one above.
-                    </td>
+                    <th>Name</th>
+                    <th>Slug</th>
+                    <th>Status</th>
+                    <th>Plan</th>
+                    <th>Subscription</th>
+                    <th>Contact</th>
+                    <th></th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {orgs.map(o => (
+                    <tr key={o.id}>
+                      <td style={{ minWidth: 200 }}>
+                        <input
+                          className="dsf-input"
+                          style={{ width: '100%' }}
+                          value={o.name ?? ''}
+                          onChange={(e) => setOrgs(prev => prev.map(x => x.id === o.id ? { ...x, name: e.target.value } : x))}
+                          onBlur={() => updateOrg(o.id, { name: o.name ?? '' })}
+                        />
+                      </td>
 
-          <div className="dashboard-small-muted" style={{ marginTop: 8 }}>
-            Next step after this: add an “Open org” button that deep-links you into org-scoped views.
-          </div>
+                      <td>
+                        <span style={{ fontSize: '0.78rem', color: '#64748b' }}>{o.slug ?? '—'}</span>
+                      </td>
+
+                      <td>
+                        <select
+                          className="dsf-input"
+                          value={o.status ?? 'active'}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setOrgs(prev => prev.map(x => x.id === o.id ? { ...x, status: v } : x));
+                            updateOrg(o.id, { status: v });
+                          }}
+                        >
+                          <option value="active">active</option>
+                          <option value="paused">paused</option>
+                          <option value="suspended">suspended</option>
+                        </select>
+                      </td>
+
+                      <td>
+                        <select
+                          className="dsf-input"
+                          value={o.plan_type ?? 'basic'}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setOrgs(prev => prev.map(x => x.id === o.id ? { ...x, plan_type: v } : x));
+                            updateOrg(o.id, { plan_type: v });
+                          }}
+                        >
+                          <option value="basic">basic</option>
+                          <option value="pro">pro</option>
+                          <option value="enterprise">enterprise</option>
+                        </select>
+                      </td>
+
+                      <td>
+                        <select
+                          className="dsf-input"
+                          value={o.subscription_status ?? 'trial'}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setOrgs(prev => prev.map(x => x.id === o.id ? { ...x, subscription_status: v } : x));
+                            updateOrg(o.id, { subscription_status: v });
+                          }}
+                        >
+                          <option value="trial">trial</option>
+                          <option value="active">active</option>
+                          <option value="past_due">past_due</option>
+                          <option value="canceled">canceled</option>
+                        </select>
+                      </td>
+
+                      <td>
+                        <input
+                          className="dsf-input"
+                          style={{ width: '100%' }}
+                          value={o.primary_contact_email ?? ''}
+                          onChange={(e) => setOrgs(prev => prev.map(x => x.id === o.id ? { ...x, primary_contact_email: e.target.value } : x))}
+                          onBlur={() => updateOrg(o.id, { primary_contact_email: o.primary_contact_email ?? '' })}
+                          placeholder="optional"
+                        />
+                      </td>
+
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenOrg(o.id)}
+                          className="dashboard-primary-button"
+                          style={{ height: 32, padding: '0 10px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', whiteSpace: 'nowrap' }}
+                        >
+                          <ExternalLink size={14} />
+                          Open
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>
