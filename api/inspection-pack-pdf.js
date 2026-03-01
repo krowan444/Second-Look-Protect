@@ -134,15 +134,141 @@ export default async function handler(req, res) {
         doc.setTextColor(140);
         const genAt = snap.generated_at ? new Date(snap.generated_at).toLocaleString('en-GB') : '—';
         doc.text(`Snapshot generated: ${genAt}`, 25, y);
-        y += 20;
+        y += 14;
+
+        // ── Evidence & Governance ────────────────────────────────────
+        const ph = doc.internal.pageSize.getHeight();
+        const maxW = pw - 50; // text area width
+        function checkPage(needed) {
+            if (y + needed > ph - 25) {
+                doc.addPage();
+                y = 25;
+            }
+        }
+
+        // Divider
+        doc.setDrawColor(200);
+        doc.line(20, y, pw - 20, y);
+        y += 10;
+
+        // Section title
+        checkPage(12);
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0);
+        doc.text('Evidence & Governance', 25, y);
+        y += 10;
+
+        // Narrative
+        const open = snap.total_open_cases ?? 0;
+        const overdue = snap.overdue_open_cases ?? 0;
+        const sla = snap.sla_compliance_percent;
+        const sg = snap.safeguarding_score;
+
+        let narrative = `As of the snapshot generated on ${genAt}, the organisation has ${open} open case${open !== 1 ? 's' : ''}`;
+        if (overdue > 0) narrative += `, of which ${overdue} ${overdue > 1 ? 'are' : 'is'} overdue`;
+        narrative += '.';
+        if (sla != null) narrative += ` SLA compliance stands at ${sla}%.`;
+        if (sg != null) narrative += ` The current safeguarding score is ${sg}.`;
+        narrative += ' This data represents an immutable point-in-time record suitable for inspection and regulatory evidence.';
+
+        doc.setFontSize(9.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(50);
+        const narLines = doc.splitTextToSize(narrative, maxW);
+        checkPage(narLines.length * 4.5 + 4);
+        doc.text(narLines, 25, y);
+        y += narLines.length * 4.5 + 6;
+
+        // Key risks
+        const risks = [];
+        if (overdue > 0) risks.push(`${overdue} case${overdue > 1 ? 's' : ''} remain overdue, requiring timely escalation to prevent safeguarding gaps.`);
+        if (sla != null && sla < 90) risks.push(`SLA compliance is at ${sla}%, below the recommended 90% threshold. Response times should be reviewed.`);
+        if (sg != null && sg < 70) risks.push(`Safeguarding score of ${sg} indicates areas for improvement in the organisation's safeguarding posture.`);
+        if (risks.length === 0) risks.push('No significant risk spikes detected in this snapshot period.');
+
+        checkPage(10);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0);
+        doc.text('Key risks observed', 25, y);
+        y += 6;
+
+        doc.setFontSize(9.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(50);
+        for (const risk of risks) {
+            const rLines = doc.splitTextToSize(risk, maxW - 6);
+            checkPage(rLines.length * 4.5 + 2);
+            doc.text('•', 27, y);
+            doc.text(rLines, 33, y);
+            y += rLines.length * 4.5 + 2;
+        }
+        y += 4;
+
+        // Recommended actions
+        const actions = [];
+        if (overdue > 0) actions.push('Prioritise resolution of overdue cases and confirm escalation pathways are active.');
+        if (sla != null && sla < 90) actions.push('Review SLA performance with the safeguarding team to identify bottlenecks.');
+        if (sg != null && sg < 70) actions.push('Schedule a safeguarding review meeting to address score improvement areas.');
+        if (actions.length === 0) { actions.push('Continue current monitoring cadence.'); actions.push('Ensure monthly snapshots remain generated for audit continuity.'); }
+        if (actions.length < 2) actions.push('Maintain regular snapshot generation for ongoing compliance evidence.');
+
+        checkPage(10);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0);
+        doc.text('Recommended actions', 25, y);
+        y += 6;
+
+        doc.setFontSize(9.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(50);
+        for (const action of actions) {
+            const aLines = doc.splitTextToSize(action, maxW - 6);
+            checkPage(aLines.length * 4.5 + 2);
+            doc.text('•', 27, y);
+            doc.text(aLines, 33, y);
+            y += aLines.length * 4.5 + 2;
+        }
+        y += 4;
+
+        // Audit note
+        checkPage(8);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(140);
+        doc.text('This pack is generated from an immutable monthly snapshot for audit integrity.', 25, y);
+        y += 10;
+
+        // Inspector notes (optional, from query param)
+        const notes = req.query.notes;
+        if (notes && typeof notes === 'string' && notes.trim()) {
+            checkPage(16);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0);
+            doc.text('Notes for inspector:', 25, y);
+            y += 6;
+
+            doc.setFontSize(9.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50);
+            const nLines = doc.splitTextToSize(notes.trim(), maxW);
+            checkPage(nLines.length * 4.5 + 4);
+            doc.text(nLines, 25, y);
+            y += nLines.length * 4.5 + 6;
+        }
 
         // Footer divider
+        checkPage(16);
         doc.setDrawColor(200);
         doc.line(20, y, pw - 20, y);
         y += 8;
 
         doc.setFontSize(9);
         doc.setTextColor(160);
+        doc.setFont('helvetica', 'normal');
         doc.text('Generated by Second Look Protect', pw / 2, y, { align: 'center' });
 
         // 4) Return PDF
