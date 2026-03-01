@@ -2,20 +2,20 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     ArrowLeft, Loader2, AlertTriangle, CheckCircle2, Lock,
     FileText, Image as ImageIcon, Clock, User, Shield, Activity,
-    Send, XCircle,
+    Send, XCircle, MessageSquare, Eye,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 import type { UserRole } from '../types';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
-interface SubmissionRow {
+interface CaseRow {
     id: string;
     organisation_id: string;
     submitted_by: string | null;
     submitted_at: string;
     submission_type: string | null;
-    message: string | null;         // content_text lives in "message"
+    description: string | null;
     attachment_url: string | null;
     resident_ref: string | null;
     status: string | null;
@@ -25,12 +25,13 @@ interface SubmissionRow {
     risk_level: string | null;
     decision: string | null;
     outcome: string | null;
-    reviewer_notes: string | null;
+    channel: string | null;
 }
 
 interface CaseReview {
     id: string;
     reviewed_at: string;
+    created_at: string;
     reviewed_by: string | null;
     category: string | null;
     risk_level: string | null;
@@ -45,6 +46,17 @@ interface CaseAction {
     action_notes: string | null;
     actor_id: string | null;
     created_at: string;
+}
+
+/** Merged timeline entry */
+interface TimelineEntry {
+    id: string;
+    timestamp: string;
+    type: 'system' | 'action' | 'review';
+    title: string;
+    who: string;
+    notes: string | null;
+    badges?: { category?: string | null; risk_level?: string | null; decision?: string | null; outcome?: string | null };
 }
 
 /* ─── Constants ───────────────────────────────────────────────────────────── */
@@ -78,7 +90,7 @@ function fmtDateTime(iso: string | null): string {
 
 function statusLabel(s: string | null): string {
     if (!s) return 'Unknown';
-    if (s === 'submitted') return 'New';
+    if (s === 'submitted' || s === 'new') return 'New';
     return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
@@ -112,6 +124,10 @@ function isImageUrl(url: string): boolean {
     return /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(url);
 }
 
+function friendlyActionType(t: string): string {
+    return t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 /* ─── Component Props ─────────────────────────────────────────────────────── */
 
 interface CaseDetailPageProps {
@@ -126,10 +142,13 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     /* ── State ────────────────────────────────────────────────────────────── */
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [submission, setSubmission] = useState<SubmissionRow | null>(null);
+    const [caseData, setCaseData] = useState<CaseRow | null>(null);
     const [reviews, setReviews] = useState<CaseReview[]>([]);
     const [actions, setActions] = useState<CaseAction[]>([]);
+    const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
     const [uid, setUid] = useState<string>('');
+    const [orgId, setOrgId] = useState<string>('');
+    const [viewingAsOrgName, setViewingAsOrgName] = useState<string | null>(null);
 
     // Review form state
     const [rCategory, setRCategory] = useState('');
@@ -142,14 +161,70 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     const [reviewError, setReviewError] = useState<string | null>(null);
     const [reviewSuccess, setReviewSuccess] = useState<string | null>(null);
 
-    // Action log state
+    // Action log modal state
+    const [showActionModal, setShowActionModal] = useState(false);
     const [actionType, setActionType] = useState('');
     const [actionNotes, setActionNotes] = useState('');
+    const [actionAttachUrl, setActionAttachUrl] = useState('');
     const [actionSaving, setActionSaving] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
     const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
+    // Compliance notes state
+    const [complianceNote, setComplianceNote] = useState('');
+    const [complianceSaving, setComplianceSaving] = useState(false);
+    const [complianceError, setComplianceError] = useState<string | null>(null);
+    const [complianceSuccess, setComplianceSuccess] = useState<string | null>(null);
+
+    // Mark In Review state
+    const [markingReview, setMarkingReview] = useState(false);
+
     const canReview = userRole ? REVIEW_ROLES.includes(userRole) : false;
+    const isSuperAdmin = userRole === 'super_admin';
+
+    /* ── Build merged timeline ───────────────────────────────────────────── */
+    function buildTimeline(c: CaseRow, acts: CaseAction[], revs: CaseReview[]): TimelineEntry[] {
+        const entries: TimelineEntry[] = [];
+
+        // System event: Case Submitted
+        entries.push({
+            id: 'system-submitted',
+            timestamp: c.submitted_at,
+            type: 'system',
+            title: 'Case Submitted',
+            who: c.submitted_by ? c.submitted_by.slice(0, 8) + '…' : 'System',
+            notes: null,
+        });
+
+        // Actions
+        acts.forEach((a) => {
+            entries.push({
+                id: `action-${a.id}`,
+                timestamp: a.created_at,
+                type: 'action',
+                title: friendlyActionType(a.action_type),
+                who: a.actor_id ? a.actor_id.slice(0, 8) + '…' : '—',
+                notes: a.action_notes,
+            });
+        });
+
+        // Reviews
+        revs.forEach((r) => {
+            entries.push({
+                id: `review-${r.id}`,
+                timestamp: r.created_at || r.reviewed_at,
+                type: 'review',
+                title: 'Review',
+                who: r.reviewed_by ? r.reviewed_by.slice(0, 8) + '…' : '—',
+                notes: r.notes,
+                badges: { category: r.category, risk_level: r.risk_level, decision: r.decision, outcome: r.outcome },
+            });
+        });
+
+        // Sort newest first
+        entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        return entries;
+    }
 
     /* ── Fetch everything ─────────────────────────────────────────────────── */
     const fetchData = useCallback(async () => {
@@ -161,42 +236,70 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             if (!session?.user) { setError('Not authenticated'); setLoading(false); return; }
             setUid(session.user.id);
 
-            // 1. Fetch submission
-            const { data: sub, error: subErr } = await supabase
-                .from('submissions')
+            // Resolve org context
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('organisation_id, role')
+                .eq('id', session.user.id)
+                .single();
+
+            let resolvedOrgId = profile?.organisation_id ?? '';
+            if (profile?.role === 'super_admin') {
+                const switcherOrg = localStorage.getItem('slp_active_org_id');
+                if (switcherOrg) {
+                    resolvedOrgId = switcherOrg;
+                    // Fetch org name for "Viewing as" badge
+                    const { data: orgRow } = await supabase
+                        .from('organisations')
+                        .select('name')
+                        .eq('id', switcherOrg)
+                        .single();
+                    setViewingAsOrgName(orgRow?.name ?? null);
+                }
+            }
+            setOrgId(resolvedOrgId);
+
+            // 1. Fetch case
+            const { data: c, error: cErr } = await supabase
+                .from('cases')
                 .select('*')
                 .eq('id', caseId)
                 .single();
 
-            if (subErr || !sub) {
+            if (cErr || !c) {
                 setError('Case not found.');
                 setLoading(false);
                 return;
             }
-            setSubmission(sub as SubmissionRow);
+            setCaseData(c as CaseRow);
 
             // Pre-fill review form from current values
-            setRCategory(sub.category ?? '');
-            setRRisk(sub.risk_level ?? '');
-            setRDecision(sub.decision ?? '');
-            setROutcome(sub.outcome ?? '');
-            setRNotes(sub.reviewer_notes ?? '');
+            setRCategory(c.category ?? '');
+            setRRisk(c.risk_level ?? '');
+            setRDecision(c.decision ?? '');
+            setROutcome(c.outcome ?? '');
+            setRNotes('');
 
             // 2. Fetch review history
             const { data: revs } = await supabase
                 .from('case_reviews')
-                .select('id, reviewed_at, reviewed_by, category, risk_level, decision, outcome, notes')
+                .select('id, created_at, reviewed_by, reviewed_at, decision, outcome, risk_level, category, notes')
                 .eq('case_id', caseId)
-                .order('reviewed_at', { ascending: false });
-            setReviews((revs ?? []) as CaseReview[]);
+                .order('created_at', { ascending: false });
+            const revsTyped = (revs ?? []) as CaseReview[];
+            setReviews(revsTyped);
 
             // 3. Fetch action log
             const { data: acts } = await supabase
                 .from('case_actions')
-                .select('id, action_type, action_notes, actor_id, created_at')
+                .select('id, created_at, actor_id, action_type, action_notes')
                 .eq('case_id', caseId)
                 .order('created_at', { ascending: false });
-            setActions((acts ?? []) as CaseAction[]);
+            const actsTyped = (acts ?? []) as CaseAction[];
+            setActions(actsTyped);
+
+            // 4. Build merged timeline
+            setTimeline(buildTimeline(c as CaseRow, actsTyped, revsTyped));
 
         } catch (err: any) {
             setError(err?.message ?? 'Failed to load case');
@@ -207,9 +310,43 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
+    /* ── Mark In Review ───────────────────────────────────────────────────── */
+    async function handleMarkInReview() {
+        if (!caseData) return;
+        setMarkingReview(true);
+        setReviewError(null);
+        setReviewSuccess(null);
+        try {
+            const supabase = getSupabase();
+            const now = new Date().toISOString();
+
+            const { error: updErr } = await supabase.from('cases').update({
+                status: 'in_review',
+                reviewed_at: now,
+            }).eq('id', caseId);
+            if (updErr) throw updErr;
+
+            const { error: actErr } = await supabase.from('case_actions').insert({
+                case_id: caseId,
+                organisation_id: orgId,
+                actor_id: uid,
+                action_type: 'marked_in_review',
+                action_notes: 'Marked case as In Review',
+            });
+            if (actErr) throw actErr;
+
+            setReviewSuccess('Case marked as In Review.');
+            await fetchData();
+        } catch (err: any) {
+            setReviewError(err?.message ?? 'Failed to mark in review');
+        } finally {
+            setMarkingReview(false);
+        }
+    }
+
     /* ── Save Review (DUAL WRITE) ─────────────────────────────────────────── */
     async function handleSaveReview() {
-        if (!submission) return;
+        if (!caseData) return;
         setSaving(true);
         setReviewError(null);
         setReviewSuccess(null);
@@ -220,7 +357,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             // 1) INSERT into case_reviews
             const { error: insErr } = await supabase.from('case_reviews').insert({
                 case_id: caseId,
-                organisation_id: submission.organisation_id,
+                organisation_id: orgId,
                 reviewed_by: uid,
                 reviewed_at: now,
                 category: rCategory || null,
@@ -231,15 +368,14 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             });
             if (insErr) throw insErr;
 
-            // 2) UPDATE submissions current fields
-            const { error: updErr } = await supabase.from('submissions').update({
+            // 2) UPDATE cases
+            const { error: updErr } = await supabase.from('cases').update({
                 category: rCategory || null,
                 risk_level: rRisk || null,
                 decision: rDecision || null,
                 outcome: rOutcome || null,
-                reviewer_notes: rNotes || null,
                 status: 'in_review',
-                reviewed_at: submission.reviewed_at ?? now,
+                reviewed_at: caseData.reviewed_at ?? now,
             }).eq('id', caseId);
             if (updErr) throw updErr;
 
@@ -254,9 +390,8 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
 
     /* ── Close Case (DUAL WRITE) ──────────────────────────────────────────── */
     async function handleCloseCase() {
-        if (!submission) return;
+        if (!caseData) return;
 
-        // Client-side validation: decision must not be null
         if (!rDecision) {
             setReviewError('A decision is required before closing the case.');
             return;
@@ -272,7 +407,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             // 1) INSERT snapshot into case_reviews
             const { error: insErr } = await supabase.from('case_reviews').insert({
                 case_id: caseId,
-                organisation_id: submission.organisation_id,
+                organisation_id: orgId,
                 reviewed_by: uid,
                 reviewed_at: now,
                 category: rCategory || null,
@@ -283,18 +418,26 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             });
             if (insErr) throw insErr;
 
-            // 2) UPDATE submissions
-            const { error: updErr } = await supabase.from('submissions').update({
+            // 2) UPDATE cases
+            const { error: updErr } = await supabase.from('cases').update({
                 category: rCategory || null,
                 risk_level: rRisk || null,
                 decision: rDecision || null,
                 outcome: rOutcome || null,
-                reviewer_notes: rNotes || null,
                 status: 'closed',
                 closed_at: now,
-                reviewed_at: submission.reviewed_at ?? now,
+                reviewed_at: caseData.reviewed_at ?? now,
             }).eq('id', caseId);
             if (updErr) throw updErr;
+
+            // 3) Action log entry for case closure
+            await supabase.from('case_actions').insert({
+                case_id: caseId,
+                organisation_id: orgId,
+                actor_id: uid,
+                action_type: 'case_closed',
+                action_notes: 'Case closed',
+            });
 
             setReviewSuccess('Case closed successfully.');
             await fetchData();
@@ -305,32 +448,65 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Log Action (append-only) ─────────────────────────────────────────── */
+    /* ── Log Action (modal, append-only) ──────────────────────────────────── */
     async function handleLogAction() {
-        if (!submission || !actionType) return;
+        if (!caseData || !actionType) return;
         setActionSaving(true);
         setActionError(null);
         setActionSuccess(null);
         try {
             const supabase = getSupabase();
-            const { error: insErr } = await supabase.from('case_actions').insert({
+            const label = ACTION_TYPES.find((a) => a.value === actionType)?.label ?? actionType;
+            const combinedNotes = actionNotes ? `${label}: ${actionNotes}` : label;
+
+            const row: Record<string, unknown> = {
                 case_id: caseId,
-                organisation_id: submission.organisation_id,
+                organisation_id: orgId,
                 actor_id: uid,
-                action_type: actionType,
-                action_notes: actionNotes || null,
-                created_at: new Date().toISOString(),
-            });
+                action_type: 'action_logged',
+                action_notes: combinedNotes,
+            };
+
+            const { error: insErr } = await supabase.from('case_actions').insert(row);
             if (insErr) throw insErr;
 
             setActionSuccess('Action logged.');
             setActionType('');
             setActionNotes('');
+            setActionAttachUrl('');
+            setShowActionModal(false);
             await fetchData();
         } catch (err: any) {
             setActionError(err?.message ?? 'Failed to log action');
         } finally {
             setActionSaving(false);
+        }
+    }
+
+    /* ── Save Compliance / Safeguarding Note ──────────────────────────────── */
+    async function handleSaveComplianceNote() {
+        if (!complianceNote.trim()) return;
+        setComplianceSaving(true);
+        setComplianceError(null);
+        setComplianceSuccess(null);
+        try {
+            const supabase = getSupabase();
+            const { error: insErr } = await supabase.from('case_actions').insert({
+                case_id: caseId,
+                organisation_id: orgId,
+                actor_id: uid,
+                action_type: 'safeguarding_note',
+                action_notes: complianceNote.trim(),
+            });
+            if (insErr) throw insErr;
+
+            setComplianceSuccess('Safeguarding note saved.');
+            setComplianceNote('');
+            await fetchData();
+        } catch (err: any) {
+            setComplianceError(err?.message ?? 'Failed to save note');
+        } finally {
+            setComplianceSaving(false);
         }
     }
 
@@ -345,7 +521,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         );
     }
 
-    if (error || !submission) {
+    if (error || !caseData) {
         return (
             <div>
                 <button className="casedetail-back" onClick={() => onNavigate?.('/dashboard/cases')}>
@@ -359,7 +535,8 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         );
     }
 
-    const isClosed = submission.status === 'closed';
+    const isClosed = caseData.status === 'closed';
+    const isNew = caseData.status === 'new' || caseData.status === 'submitted';
 
     return (
         <div>
@@ -376,140 +553,181 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                             <code className="casedetail-id-code">{caseId.slice(0, 8)}…</code>
                         </p>
                     </div>
-                    <span className={`dashboard-status-badge status-${statusClass(submission.status)}`} style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}>
-                        {statusLabel(submission.status)}
+                    <span className={`dashboard-status-badge status-${statusClass(caseData.status)}`} style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}>
+                        {statusLabel(caseData.status)}
                     </span>
                 </div>
             </div>
 
-            {/* ── Two-column grid ──────────────────────────────────────────── */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* (A) CASE SUMMARY CARD                                         */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            <div className="casedetail-section" style={{ marginBottom: '1.5rem' }}>
+                <h2 className="casedetail-section-title">
+                    <FileText size={16} /> Case Summary
+                </h2>
+                <div className="casedetail-status-grid">
+                    <div className="casedetail-status-item">
+                        <span className="casedetail-field-label">Status</span>
+                        <span className={`dashboard-status-badge status-${statusClass(caseData.status)}`}>
+                            {statusLabel(caseData.status)}
+                        </span>
+                    </div>
+                    <div className="casedetail-status-item">
+                        <span className="casedetail-field-label">Risk Level</span>
+                        <span className={`dashboard-risk-badge risk-${riskClass(caseData.risk_level)}`}>
+                            {caseData.risk_level ?? '—'}
+                        </span>
+                    </div>
+                    <div className="casedetail-status-item">
+                        <span className="casedetail-field-label">Type</span>
+                        <span className="casedetail-field-value">{caseData.submission_type ?? caseData.channel ?? '—'}</span>
+                    </div>
+                    <div className="casedetail-status-item">
+                        <span className="casedetail-field-label">Submitted At</span>
+                        <span className="casedetail-field-value">{fmtDateTime(caseData.submitted_at)}</span>
+                    </div>
+                    <div className="casedetail-status-item">
+                        <span className="casedetail-field-label">Decision</span>
+                        <span className={`dashboard-decision-badge decision-${decisionClass(caseData.decision)}`}>
+                            {caseData.decision ?? '—'}
+                        </span>
+                    </div>
+                    <div className="casedetail-status-item">
+                        <span className="casedetail-field-label">Category</span>
+                        <span className="casedetail-field-value">{caseData.category ?? '—'}</span>
+                    </div>
+                    <div className="casedetail-status-item">
+                        <span className="casedetail-field-label">Outcome</span>
+                        <span className="casedetail-field-value">{caseData.outcome ?? '—'}</span>
+                    </div>
+                    <div className="casedetail-status-item">
+                        <span className="casedetail-field-label">Reviewed At</span>
+                        <span className="casedetail-field-value">{fmtDateTime(caseData.reviewed_at)}</span>
+                    </div>
+                    <div className="casedetail-status-item">
+                        <span className="casedetail-field-label">Closed At</span>
+                        <span className="casedetail-field-value">{fmtDateTime(caseData.closed_at)}</span>
+                    </div>
+                </div>
+                {/* Viewing as banner for super_admin */}
+                {isSuperAdmin && viewingAsOrgName && (
+                    <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '6px', fontSize: '0.8rem', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Eye size={14} />
+                        Viewing as: <strong>{viewingAsOrgName}</strong>
+                    </div>
+                )}
+                {/* Submission content */}
+                {caseData.description && (
+                    <div className="casedetail-field" style={{ marginTop: '1rem' }}>
+                        <span className="casedetail-field-label">Content</span>
+                        <div className="casedetail-field-value casedetail-field-content">{caseData.description}</div>
+                    </div>
+                )}
+                {caseData.attachment_url && (
+                    <div className="casedetail-field" style={{ marginTop: '0.5rem' }}>
+                        <span className="casedetail-field-label">Attachment</span>
+                        <div className="casedetail-field-value">
+                            {isImageUrl(caseData.attachment_url) ? (
+                                <img src={caseData.attachment_url} alt="Attachment" className="casedetail-attachment-img" />
+                            ) : (
+                                <a href={caseData.attachment_url} target="_blank" rel="noopener noreferrer" className="casedetail-attachment-link">View Attachment ↗</a>
+                            )}
+                        </div>
+                    </div>
+                )}
+                {caseData.resident_ref && (
+                    <div className="casedetail-field" style={{ marginTop: '0.5rem' }}>
+                        <span className="casedetail-field-label">Resident Ref</span>
+                        <span className="casedetail-field-value">{caseData.resident_ref}</span>
+                    </div>
+                )}
+            </div>
+
+            {/* ── Operational Buttons ────────────────────────────────────────── */}
+            {canReview && (
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                    {isNew && (
+                        <button
+                            className="casedetail-btn casedetail-btn-save"
+                            onClick={handleMarkInReview}
+                            disabled={markingReview}
+                        >
+                            {markingReview ? <Loader2 size={15} className="dsf-spinner" /> : <Eye size={15} />}
+                            {markingReview ? 'Marking…' : 'Mark In Review'}
+                        </button>
+                    )}
+                    <button
+                        className="casedetail-btn casedetail-btn-action"
+                        onClick={() => setShowActionModal(true)}
+                    >
+                        <Activity size={15} /> Log Action
+                    </button>
+                    {!isClosed && (
+                        <button
+                            className="casedetail-btn casedetail-btn-close"
+                            onClick={handleCloseCase}
+                            disabled={closing}
+                        >
+                            {closing ? <Loader2 size={15} className="dsf-spinner" /> : <XCircle size={15} />}
+                            {closing ? 'Closing…' : 'Close Case'}
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* Feedback for operational actions */}
+            {reviewError && (
+                <div className="dsf-error" style={{ marginBottom: '1rem' }}>
+                    <AlertTriangle size={14} /> <span>{reviewError}</span>
+                </div>
+            )}
+            {reviewSuccess && (
+                <div className="casedetail-success" style={{ marginBottom: '1rem' }}>
+                    <CheckCircle2 size={14} /> <span>{reviewSuccess}</span>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* TWO-COLUMN GRID                                               */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
             <div className="casedetail-grid">
 
                 {/* ════ LEFT COLUMN ════ */}
                 <div className="casedetail-left">
 
-                    {/* A) Submission */}
+                    {/* (B) MERGED AUDIT TIMELINE */}
                     <div className="casedetail-section">
                         <h2 className="casedetail-section-title">
-                            <FileText size={16} /> Submission
+                            <Clock size={16} /> Audit Timeline
                         </h2>
-                        <div className="casedetail-fields">
-                            <div className="casedetail-field">
-                                <span className="casedetail-field-label">Content</span>
-                                <div className="casedetail-field-value casedetail-field-content">
-                                    {submission.message || '—'}
-                                </div>
-                            </div>
-                            {submission.attachment_url && (
-                                <div className="casedetail-field">
-                                    <span className="casedetail-field-label">Attachment</span>
-                                    <div className="casedetail-field-value">
-                                        {isImageUrl(submission.attachment_url) ? (
-                                            <img
-                                                src={submission.attachment_url}
-                                                alt="Attachment"
-                                                className="casedetail-attachment-img"
-                                            />
-                                        ) : (
-                                            <a href={submission.attachment_url} target="_blank" rel="noopener noreferrer" className="casedetail-attachment-link">
-                                                View Attachment ↗
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                            <div className="casedetail-field-row-inline">
-                                <div className="casedetail-field">
-                                    <span className="casedetail-field-label">Type</span>
-                                    <span className="casedetail-field-value">{submission.submission_type ?? '—'}</span>
-                                </div>
-                                <div className="casedetail-field">
-                                    <span className="casedetail-field-label">Resident Ref</span>
-                                    <span className="casedetail-field-value">{submission.resident_ref ?? '—'}</span>
-                                </div>
-                            </div>
-                            <div className="casedetail-field-row-inline">
-                                <div className="casedetail-field">
-                                    <span className="casedetail-field-label">Submitted By</span>
-                                    <span className="casedetail-field-value casedetail-field-mono">{submission.submitted_by ? submission.submitted_by.slice(0, 8) + '…' : '—'}</span>
-                                </div>
-                                <div className="casedetail-field">
-                                    <span className="casedetail-field-label">Submitted At</span>
-                                    <span className="casedetail-field-value">{fmtDateTime(submission.submitted_at)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* B) Current Status */}
-                    <div className="casedetail-section">
-                        <h2 className="casedetail-section-title">
-                            <Shield size={16} /> Current Status
-                        </h2>
-                        <div className="casedetail-status-grid">
-                            <div className="casedetail-status-item">
-                                <span className="casedetail-field-label">Status</span>
-                                <span className={`dashboard-status-badge status-${statusClass(submission.status)}`}>
-                                    {statusLabel(submission.status)}
-                                </span>
-                            </div>
-                            <div className="casedetail-status-item">
-                                <span className="casedetail-field-label">Risk Level</span>
-                                <span className={`dashboard-risk-badge risk-${riskClass(submission.risk_level)}`}>
-                                    {submission.risk_level ?? '—'}
-                                </span>
-                            </div>
-                            <div className="casedetail-status-item">
-                                <span className="casedetail-field-label">Decision</span>
-                                <span className={`dashboard-decision-badge decision-${decisionClass(submission.decision)}`}>
-                                    {submission.decision ?? '—'}
-                                </span>
-                            </div>
-                            <div className="casedetail-status-item">
-                                <span className="casedetail-field-label">Category</span>
-                                <span className="casedetail-field-value">{submission.category ?? '—'}</span>
-                            </div>
-                            <div className="casedetail-status-item">
-                                <span className="casedetail-field-label">Outcome</span>
-                                <span className="casedetail-field-value">{submission.outcome ?? '—'}</span>
-                            </div>
-                            <div className="casedetail-status-item">
-                                <span className="casedetail-field-label">Reviewed At</span>
-                                <span className="casedetail-field-value">{fmtDateTime(submission.reviewed_at)}</span>
-                            </div>
-                            <div className="casedetail-status-item">
-                                <span className="casedetail-field-label">Closed At</span>
-                                <span className="casedetail-field-value">{fmtDateTime(submission.closed_at)}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* E) Review History */}
-                    <div className="casedetail-section">
-                        <h2 className="casedetail-section-title">
-                            <Clock size={16} /> Review History
-                        </h2>
-                        {reviews.length === 0 ? (
-                            <p className="casedetail-empty">No reviews recorded yet.</p>
+                        {timeline.length === 0 ? (
+                            <p className="casedetail-empty">No timeline entries yet.</p>
                         ) : (
                             <div className="casedetail-timeline">
-                                {reviews.map((r) => (
-                                    <div key={r.id} className="casedetail-timeline-item">
-                                        <div className="casedetail-timeline-dot" />
+                                {timeline.map((entry) => (
+                                    <div key={entry.id} className="casedetail-timeline-item">
+                                        <div className={`casedetail-timeline-dot${entry.type === 'action' ? ' casedetail-timeline-dot--action' : ''}`} />
                                         <div className="casedetail-timeline-content">
                                             <div className="casedetail-timeline-header">
-                                                <span className="casedetail-timeline-date">{fmtDateTime(r.reviewed_at)}</span>
+                                                <span className="casedetail-timeline-date">{fmtDateTime(entry.timestamp)}</span>
                                                 <span className="casedetail-timeline-actor">
-                                                    <User size={12} /> {r.reviewed_by ? r.reviewed_by.slice(0, 8) + '…' : '—'}
+                                                    <User size={12} /> {entry.who}
                                                 </span>
                                             </div>
-                                            <div className="casedetail-timeline-badges">
-                                                {r.category && <span className="casedetail-timeline-tag">{r.category}</span>}
-                                                {r.risk_level && <span className={`dashboard-risk-badge risk-${riskClass(r.risk_level)}`}>{r.risk_level}</span>}
-                                                {r.decision && <span className={`dashboard-decision-badge decision-${decisionClass(r.decision)}`}>{r.decision}</span>}
-                                                {r.outcome && <span className="casedetail-timeline-tag">{r.outcome}</span>}
-                                            </div>
-                                            {r.notes && <p className="casedetail-timeline-notes">{r.notes}</p>}
+                                            <span className={`casedetail-timeline-tag${entry.type === 'action' ? ' casedetail-timeline-tag--action' : ''}`}>
+                                                {entry.title}
+                                            </span>
+                                            {/* Review badges */}
+                                            {entry.badges && (
+                                                <div className="casedetail-timeline-badges">
+                                                    {entry.badges.category && <span className="casedetail-timeline-tag">{entry.badges.category}</span>}
+                                                    {entry.badges.risk_level && <span className={`dashboard-risk-badge risk-${riskClass(entry.badges.risk_level)}`}>{entry.badges.risk_level}</span>}
+                                                    {entry.badges.decision && <span className={`dashboard-decision-badge decision-${decisionClass(entry.badges.decision)}`}>{entry.badges.decision}</span>}
+                                                    {entry.badges.outcome && <span className="casedetail-timeline-tag">{entry.badges.outcome}</span>}
+                                                </div>
+                                            )}
+                                            {entry.notes && <p className="casedetail-timeline-notes">{entry.notes}</p>}
                                         </div>
                                     </div>
                                 ))}
@@ -521,7 +739,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 {/* ════ RIGHT COLUMN ════ */}
                 <div className="casedetail-right">
 
-                    {/* C) Review Panel */}
+                    {/* Review Panel */}
                     {canReview ? (
                         <div className="casedetail-section casedetail-review-panel">
                             <h2 className="casedetail-section-title">
@@ -574,18 +792,6 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                     />
                                 </div>
 
-                                {/* Feedback */}
-                                {reviewError && (
-                                    <div className="dsf-error">
-                                        <AlertTriangle size={14} /> <span>{reviewError}</span>
-                                    </div>
-                                )}
-                                {reviewSuccess && (
-                                    <div className="casedetail-success">
-                                        <CheckCircle2 size={14} /> <span>{reviewSuccess}</span>
-                                    </div>
-                                )}
-
                                 {/* Buttons */}
                                 <div className="casedetail-review-actions">
                                     <button
@@ -595,14 +801,6 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                     >
                                         {saving ? <Loader2 size={15} className="dsf-spinner" /> : <CheckCircle2 size={15} />}
                                         {saving ? 'Saving…' : 'Save Review'}
-                                    </button>
-                                    <button
-                                        className="casedetail-btn casedetail-btn-close"
-                                        onClick={handleCloseCase}
-                                        disabled={saving || closing}
-                                    >
-                                        {closing ? <Loader2 size={15} className="dsf-spinner" /> : <XCircle size={15} />}
-                                        {closing ? 'Closing…' : 'Close Case'}
                                     </button>
                                 </div>
                             </div>
@@ -618,85 +816,119 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         </div>
                     )}
 
-                    {/* D) Action Log */}
-                    <div className="casedetail-section">
+                    {/* (C) COMPLIANCE NOTES PANEL */}
+                    <div className="casedetail-section" style={{ marginTop: '1.25rem' }}>
                         <h2 className="casedetail-section-title">
-                            <Activity size={16} /> Action Log
+                            <MessageSquare size={16} /> Compliance Notes
                         </h2>
+                        <p style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: '0.75rem' }}>
+                            Append-only safeguarding notes. Each note is recorded as an immutable action.
+                        </p>
+                        <textarea
+                            className="dsf-textarea"
+                            rows={3}
+                            value={complianceNote}
+                            onChange={(e) => setComplianceNote(e.target.value)}
+                            placeholder="Enter compliance or safeguarding note…"
+                        />
+                        {complianceError && (
+                            <div className="dsf-error" style={{ marginTop: '0.5rem' }}>
+                                <AlertTriangle size={14} /> <span>{complianceError}</span>
+                            </div>
+                        )}
+                        {complianceSuccess && (
+                            <div className="casedetail-success" style={{ marginTop: '0.5rem' }}>
+                                <CheckCircle2 size={14} /> <span>{complianceSuccess}</span>
+                            </div>
+                        )}
+                        <button
+                            className="casedetail-btn casedetail-btn-save"
+                            onClick={handleSaveComplianceNote}
+                            disabled={complianceSaving || !complianceNote.trim()}
+                            style={{ marginTop: '0.75rem' }}
+                        >
+                            {complianceSaving ? <Loader2 size={15} className="dsf-spinner" /> : <Send size={15} />}
+                            {complianceSaving ? 'Saving…' : 'Save Note'}
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-                        {/* Log new action form */}
-                        <div className="casedetail-action-form">
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* LOG ACTION MODAL                                              */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {showActionModal && (
+                <>
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100 }} onClick={() => setShowActionModal(false)} />
+                    <div style={{
+                        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+                        background: '#fff', borderRadius: '12px', padding: '1.5rem', width: '90%', maxWidth: '480px',
+                        zIndex: 101, boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+                    }}>
+                        <h3 style={{ margin: '0 0 1rem', fontSize: '1.05rem', fontWeight: 600 }}>
+                            <Activity size={16} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} />
+                            Log Action
+                        </h3>
+
+                        <div className="casedetail-form-field">
                             <label className="casedetail-form-label">Action Type</label>
-                            <div className="casedetail-action-btn-grid">
-                                {ACTION_TYPES.map((a) => (
-                                    <button
-                                        key={a.value}
-                                        type="button"
-                                        className={`casedetail-action-type-btn${actionType === a.value ? ' casedetail-action-type-btn--active' : ''}`}
-                                        onClick={() => setActionType(a.value)}
-                                    >
-                                        {a.label}
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="casedetail-form-field" style={{ marginTop: '0.75rem' }}>
-                                <label className="casedetail-form-label">Notes</label>
-                                <textarea
-                                    className="dsf-textarea"
-                                    rows={2}
-                                    value={actionNotes}
-                                    onChange={(e) => setActionNotes(e.target.value)}
-                                    placeholder="Optional notes…"
-                                />
-                            </div>
+                            <select className="dsf-input" value={actionType} onChange={(e) => setActionType(e.target.value)}>
+                                <option value="">— Select —</option>
+                                {ACTION_TYPES.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
+                            </select>
+                        </div>
+                        <div className="casedetail-form-field" style={{ marginTop: '0.75rem' }}>
+                            <label className="casedetail-form-label">Notes</label>
+                            <textarea
+                                className="dsf-textarea"
+                                rows={3}
+                                value={actionNotes}
+                                onChange={(e) => setActionNotes(e.target.value)}
+                                placeholder="Describe the action taken…"
+                            />
+                        </div>
+                        <div className="casedetail-form-field" style={{ marginTop: '0.75rem' }}>
+                            <label className="casedetail-form-label">Attachment URL (optional)</label>
+                            <input
+                                type="text"
+                                className="dsf-input"
+                                value={actionAttachUrl}
+                                onChange={(e) => setActionAttachUrl(e.target.value)}
+                                placeholder="https://…"
+                            />
+                        </div>
 
-                            {actionError && (
-                                <div className="dsf-error" style={{ marginTop: '0.5rem' }}>
-                                    <AlertTriangle size={14} /> <span>{actionError}</span>
-                                </div>
-                            )}
-                            {actionSuccess && (
-                                <div className="casedetail-success" style={{ marginTop: '0.5rem' }}>
-                                    <CheckCircle2 size={14} /> <span>{actionSuccess}</span>
-                                </div>
-                            )}
+                        {actionError && (
+                            <div className="dsf-error" style={{ marginTop: '0.5rem' }}>
+                                <AlertTriangle size={14} /> <span>{actionError}</span>
+                            </div>
+                        )}
+                        {actionSuccess && (
+                            <div className="casedetail-success" style={{ marginTop: '0.5rem' }}>
+                                <CheckCircle2 size={14} /> <span>{actionSuccess}</span>
+                            </div>
+                        )}
 
+                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
                             <button
-                                className="casedetail-btn casedetail-btn-action"
+                                className="casedetail-btn casedetail-btn-save"
                                 onClick={handleLogAction}
                                 disabled={!actionType || actionSaving}
-                                style={{ marginTop: '0.75rem' }}
                             >
                                 {actionSaving ? <Loader2 size={15} className="dsf-spinner" /> : <Send size={15} />}
                                 {actionSaving ? 'Logging…' : 'Log Action'}
                             </button>
+                            <button
+                                className="casedetail-btn"
+                                onClick={() => { setShowActionModal(false); setActionError(null); setActionSuccess(null); }}
+                                style={{ background: '#f1f5f9', color: '#334155' }}
+                            >
+                                Cancel
+                            </button>
                         </div>
-
-                        {/* Previous actions timeline */}
-                        {actions.length > 0 && (
-                            <div className="casedetail-timeline" style={{ marginTop: '1.25rem' }}>
-                                {actions.map((a) => (
-                                    <div key={a.id} className="casedetail-timeline-item">
-                                        <div className="casedetail-timeline-dot casedetail-timeline-dot--action" />
-                                        <div className="casedetail-timeline-content">
-                                            <div className="casedetail-timeline-header">
-                                                <span className="casedetail-timeline-date">{fmtDateTime(a.created_at)}</span>
-                                                <span className="casedetail-timeline-actor">
-                                                    <User size={12} /> {a.actor_id ? a.actor_id.slice(0, 8) + '…' : '—'}
-                                                </span>
-                                            </div>
-                                            <span className="casedetail-timeline-tag casedetail-timeline-tag--action">
-                                                {a.action_type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                                            </span>
-                                            {a.action_notes && <p className="casedetail-timeline-notes">{a.action_notes}</p>}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
                     </div>
-                </div>
-            </div>
+                </>
+            )}
         </div>
     );
 }
