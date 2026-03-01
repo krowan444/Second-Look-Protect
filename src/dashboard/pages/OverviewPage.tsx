@@ -319,6 +319,9 @@ export function OverviewPage() {
                                     </span>
                                 </div>
                                 <p style={{ margin: '0 0 0.25rem', fontSize: '0.72rem', color: '#64748b' }}>Last triggered: {fmtDate(ea.last_triggered_at ?? ea.sent_at ?? '')}</p>
+                                {typeof ea.meta?.count === 'number' && (
+                                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.72rem', color: '#64748b' }}>Detected: {ea.meta.count} cases (7-day window)</p>
+                                )}
                                 <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#334155' }}>{ea.description}</p>
                                 <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>{ea.recommendation}</p>
                             </div>
