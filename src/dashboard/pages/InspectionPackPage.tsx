@@ -32,6 +32,7 @@ export function InspectionPackPage() {
     const [month, setMonth] = React.useState('');
     const [orgId, setOrgId] = React.useState<string>('');
     const [generating, setGenerating] = React.useState(false);
+    const [availableMonths, setAvailableMonths] = React.useState<string[]>([]);
     const [inspectorNotes, setInspectorNotes] = React.useState('');
     const [userId, setUserId] = React.useState<string>('');
     const [saving, setSaving] = React.useState(false);
@@ -124,6 +125,17 @@ export function InspectionPackPage() {
 
                 if (err) throw new Error(err.message);
                 setSnapshot(data as SnapshotRow | null);
+
+                // Fetch available months for dropdown
+                const { data: monthRows } = await supabase
+                    .from('inspection_snapshots')
+                    .select('snapshot_month')
+                    .eq('organisation_id', activeOrgId)
+                    .order('snapshot_month', { ascending: false });
+                if (monthRows) {
+                    const unique = [...new Set(monthRows.map((r: { snapshot_month: string }) => r.snapshot_month).filter(Boolean))] as string[];
+                    setAvailableMonths(unique);
+                }
             } catch (e) {
                 setError(e instanceof Error ? e.message : 'Unknown error');
             } finally {
@@ -217,6 +229,51 @@ export function InspectionPackPage() {
                 <p style={{ margin: '0.25rem 0 0', fontSize: '0.88rem', color: '#64748b' }}>
                     {orgName} — {month.slice(0, 7)}
                 </p>
+                {availableMonths.length > 1 && (
+                    <div style={{ marginTop: '0.5rem' }}>
+                        <label style={{ fontSize: '0.72rem', color: '#94a3b8', marginRight: '0.35rem' }}>Month</label>
+                        <select
+                            value={month}
+                            style={{ fontSize: '0.82rem', padding: '4px 8px', borderRadius: 6, border: '1px solid #e2e8f0' }}
+                            onChange={(e) => {
+                                const newMonth = e.target.value;
+                                const url = new URL(window.location.href);
+                                url.searchParams.set('month', newMonth);
+                                window.history.replaceState({}, '', url.toString());
+                                setMonth(newMonth);
+                                setSnapshot(null);
+                                setInspectorNotes('');
+                                setSaveStatus('');
+                                setLoading(true);
+                                setError(null);
+                                // Refetch snapshot for new month
+                                (async () => {
+                                    try {
+                                        const supabase = getSupabase();
+                                        const { data, error: err } = await supabase
+                                            .from('inspection_snapshots')
+                                            .select('id, snapshot_month, organisation_id, total_open_cases, overdue_open_cases, sla_compliance_percent, safeguarding_score, generated_at')
+                                            .eq('organisation_id', orgId)
+                                            .eq('snapshot_month', newMonth)
+                                            .order('generated_at', { ascending: false })
+                                            .limit(1)
+                                            .maybeSingle();
+                                        if (err) throw new Error(err.message);
+                                        setSnapshot(data as SnapshotRow | null);
+                                    } catch (e) {
+                                        setError(e instanceof Error ? e.message : 'Unknown error');
+                                    } finally {
+                                        setLoading(false);
+                                    }
+                                })();
+                            }}
+                        >
+                            {availableMonths.map((m) => (
+                                <option key={m} value={m}>{m.slice(0, 7)}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
             </div>
 
             {/* Download PDF */}
