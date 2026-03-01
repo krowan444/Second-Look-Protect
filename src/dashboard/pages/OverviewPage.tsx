@@ -313,7 +313,7 @@ export function OverviewPage() {
                                 borderRadius: '8px',
                             }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                                    <strong style={{ fontSize: '0.85rem' }}>{ea.title}</strong>
+                                    <strong style={{ fontSize: '0.85rem' }}>{ea.severity ? `${ea.severity.toUpperCase()}: ${ea.title}` : ea.title}</strong>
                                     <span className={`dashboard-risk-badge risk-${severityRiskClass(ea.severity)}`} style={{ fontSize: '0.7rem' }}>
                                         {ea.severity}
                                     </span>
