@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getSupabase } from '../lib/supabaseClient';
 import { Upload, ChevronDown, LogOut, User, Menu } from 'lucide-react';
 import { DashboardSidebar } from './DashboardSidebar';
 import type { DashboardUser, Organisation } from './types';
@@ -22,6 +23,43 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+    /* ── Super-admin org switcher state ─────────────────────────────────── */
+    const isSuperAdmin = user.role === 'super_admin';
+    const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
+    const [activeOrgId, setActiveOrgId] = useState<string>(
+        () => localStorage.getItem('slp_active_org_id') ?? '',
+    );
+
+    useEffect(() => {
+        if (!isSuperAdmin) return;
+        const supabase = getSupabase();
+        supabase
+            .from('organisations')
+            .select('id, name')
+            .order('name')
+            .then(({ data }) => {
+                if (data) {
+                    setAllOrgs(data);
+                    // If stored id no longer matches any org, clear it
+                    const stored = localStorage.getItem('slp_active_org_id');
+                    if (stored && !data.some((o) => o.id === stored)) {
+                        localStorage.removeItem('slp_active_org_id');
+                        setActiveOrgId('');
+                    }
+                }
+            });
+    }, [isSuperAdmin]);
+
+    function handleOrgSwitch(e: React.ChangeEvent<HTMLSelectElement>) {
+        const id = e.target.value;
+        setActiveOrgId(id);
+        if (id) {
+            localStorage.setItem('slp_active_org_id', id);
+        } else {
+            localStorage.removeItem('slp_active_org_id');
+        }
+    }
 
     const initials = user.full_name
         ? user.full_name
@@ -61,6 +99,32 @@ export function DashboardLayout({
                     </div>
 
                     <div className="dashboard-topbar-right">
+                        {/* Super-admin org switcher */}
+                        {isSuperAdmin && allOrgs.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '8px', fontSize: '0.8rem' }}>
+                                <span style={{ color: '#64748b', whiteSpace: 'nowrap' }}>Viewing as</span>
+                                <select
+                                    value={activeOrgId}
+                                    onChange={handleOrgSwitch}
+                                    style={{
+                                        padding: '4px 8px',
+                                        borderRadius: '6px',
+                                        border: '1px solid #cbd5e1',
+                                        background: '#fff',
+                                        fontSize: '0.8rem',
+                                        color: '#0f172a',
+                                        maxWidth: '200px',
+                                    }}
+                                >
+                                    <option value="">Select organisation…</option>
+                                    {allOrgs.map((o) => (
+                                        <option key={o.id} value={o.id}>
+                                            {o.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                         {/* Submit Case button */}
                         <button
                             className="dashboard-submit-btn"

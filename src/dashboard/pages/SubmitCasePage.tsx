@@ -59,14 +59,32 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                 return;
             }
 
-            /* 2. Fetch profile → organisation_id */
+            /* 2. Fetch profile → organisation_id + role */
             const { data: profile, error: profErr } = await supabase
                 .from('profiles')
-                .select('organisation_id')
+                .select('organisation_id, role')
                 .eq('id', session.user.id)
                 .single();
 
-            if (profErr || !profile?.organisation_id) {
+            if (profErr) {
+                setError('Could not determine your organisation. Please contact your administrator.');
+                setSubmitting(false);
+                return;
+            }
+
+            /* 2b. Resolve org id — super_admin uses the switcher */
+            let resolvedOrgId = profile?.organisation_id;
+            if (profile?.role === 'super_admin') {
+                const switcherOrg = localStorage.getItem('slp_active_org_id');
+                if (!switcherOrg) {
+                    setError("Select an organisation in 'Viewing as' before submitting a case.");
+                    setSubmitting(false);
+                    return;
+                }
+                resolvedOrgId = switcherOrg;
+            }
+
+            if (!resolvedOrgId) {
                 setError('Could not determine your organisation. Please contact your administrator.');
                 setSubmitting(false);
                 return;
@@ -74,7 +92,7 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
 
             /* 3. Insert into submissions */
             const row: Record<string, unknown> = {
-                organisation_id: profile.organisation_id,
+                organisation_id: resolvedOrgId,
                 submitted_by: session.user.id,
                 submission_type: submissionType,
                 message: content.trim(),
