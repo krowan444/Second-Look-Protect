@@ -18,6 +18,7 @@ import { PlatformOverviewPage } from './pages/PlatformOverviewPage';
 import { OrganisationsAdminPage } from './pages/OrganisationsAdminPage';
 import { GlobalQueuePage } from './pages/GlobalQueuePage';
 import { GlobalSearchPage } from './pages/GlobalSearchPage';
+import { InspectionPage } from './pages/InspectionPage';
 import { BillingPage } from './pages/BillingPage';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
@@ -96,6 +97,9 @@ function getPage(
 
     case 'global-search':
       return <GlobalSearchPage />;
+
+    case 'inspection':
+      return <InspectionPage />;
 
     case 'billing':
       return <BillingPage />;

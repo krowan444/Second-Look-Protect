@@ -79,5 +79,6 @@ export const ROLE_NAV: Record<UserRole, NavItem[]> = {
     { label: 'Global Queue', path: '/dashboard/global-queue', icon: 'ClipboardList' },
     { label: 'Global Search', path: '/dashboard/global-search', icon: 'Search' },
     { label: 'Billing', path: '/dashboard/billing', icon: 'CreditCard' },
+    { label: 'Inspection Mode', path: '/dashboard/inspection', icon: 'ClipboardCheck' },
   ],
 };
