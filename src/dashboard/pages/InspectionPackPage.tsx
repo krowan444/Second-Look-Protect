@@ -31,6 +31,7 @@ export function InspectionPackPage() {
     const [isSuper, setIsSuper] = React.useState<boolean | null>(null);
     const [month, setMonth] = React.useState('');
     const [orgId, setOrgId] = React.useState<string>('');
+    const [generating, setGenerating] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
@@ -101,6 +102,37 @@ export function InspectionPackPage() {
         })();
     }, []);
 
+    async function refetchSnapshot() {
+        if (!orgId || !month) return;
+        try {
+            const supabase = getSupabase();
+            const { data, error: err } = await supabase
+                .from('inspection_snapshots')
+                .select('id, snapshot_month, organisation_id, total_open_cases, overdue_open_cases, sla_compliance_percent, safeguarding_score, generated_at')
+                .eq('organisation_id', orgId)
+                .eq('snapshot_month', month)
+                .order('generated_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            if (!err) setSnapshot(data as SnapshotRow | null);
+        } catch { /* non-blocking */ }
+    }
+
+    async function handleGenerate() {
+        setGenerating(true);
+        setError(null);
+        try {
+            const supabase = getSupabase();
+            const { error: rpcErr } = await supabase.rpc('generate_all_org_monthly_snapshots', { p_month: month });
+            if (rpcErr) throw new Error(rpcErr.message);
+            await refetchSnapshot();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Failed to generate snapshot');
+        } finally {
+            setGenerating(false);
+        }
+    }
+
     // Access denied
     if (isSuper === false) {
         return (
@@ -126,6 +158,18 @@ export function InspectionPackPage() {
                 <h1>Inspection Pack</h1>
                 {error && <p style={{ color: '#991b1b' }}>{error}</p>}
                 <p>No snapshot found for this month. Generate it from the Inspection page.</p>
+                {isSuper && orgId && month && (
+                    <button
+                        type="button"
+                        onClick={handleGenerate}
+                        disabled={generating}
+                        className="dashboard-primary-button"
+                        style={{ height: 36, padding: '0 12px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', marginTop: '0.75rem', opacity: generating ? 0.7 : 1 }}
+                    >
+                        {generating ? <Loader2 size={16} className="dashboard-overview-spinner-icon" /> : <FileText size={16} />}
+                        {generating ? 'Generating…' : 'Generate snapshot for this month'}
+                    </button>
+                )}
             </div>
         );
     }
