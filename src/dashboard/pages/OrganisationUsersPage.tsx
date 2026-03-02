@@ -9,13 +9,13 @@ import {
     CheckCircle2,
 } from 'lucide-react';
 
-interface ProfileRow {
+interface OrgUser {
     id: string;
+    email: string;
+    full_name: string | null;
     role: string;
     is_active: boolean;
     created_at: string;
-    full_name: string | null;
-    email?: string;
 }
 
 function capitalize(s: string) {
@@ -26,23 +26,30 @@ const ROLE_OPTIONS = ['staff', 'reviewer', 'org_admin', 'read_only', 'manager', 
 
 export function OrganisationUsersPage() {
     const [loading, setLoading] = useState(true);
-    const [users, setUsers] = useState<ProfileRow[]>([]);
+    const [users, setUsers] = useState<OrgUser[]>([]);
     const [orgId, setOrgId] = useState('');
     const [orgName, setOrgName] = useState('');
     const [userRole, setUserRole] = useState('');
-    const [error, setError] = useState<string | null>(null);
 
-    // Add user form
-    const [newEmail, setNewEmail] = useState('');
-    const [newRole, setNewRole] = useState('staff');
-    const [adding, setAdding] = useState(false);
-    const [addMsg, setAddMsg] = useState<string | null>(null);
+    // Invite form
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteName, setInviteName] = useState('');
+    const [inviteRole, setInviteRole] = useState('staff');
+    const [inviting, setInviting] = useState(false);
+    const [inviteMsg, setInviteMsg] = useState<string | null>(null);
 
     // Action states
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [actionMsg, setActionMsg] = useState<string | null>(null);
 
     const canAccess = userRole === 'super_admin' || userRole === 'org_admin';
+
+    // Get access token
+    async function getToken(): Promise<string | null> {
+        const supabase = getSupabase();
+        const { data: { session } } = await supabase.auth.getSession();
+        return session?.access_token ?? null;
+    }
 
     // Resolve context
     useEffect(() => {
@@ -82,102 +89,68 @@ export function OrganisationUsersPage() {
         })();
     }, []);
 
-    // Fetch users
+    // Fetch users via API
     const fetchUsers = useCallback(async () => {
         if (!orgId) { setUsers([]); return; }
         try {
-            const supabase = getSupabase();
-
-            // Fetch profiles for this org
-            const { data: profiles } = await supabase
-                .from('profiles')
-                .select('id, role, is_active, created_at, full_name')
-                .eq('organisation_id', orgId)
-                .order('created_at', { ascending: true });
-
-            if (!profiles || profiles.length === 0) {
-                setUsers([]);
-                return;
+            const token = await getToken();
+            if (!token) return;
+            const resp = await fetch(`/api/org-users-list?organisation_id=${encodeURIComponent(orgId)}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const result = await resp.json();
+            if (result?.ok && Array.isArray(result.users)) {
+                setUsers(result.users);
             }
-
-            // Fetch emails from auth.users via admin lookup
-            // We can't directly query auth.users from the client, so
-            // we'll use the profile data and add email from a joined query if available
-            // For now, set profiles without email — the API can fill them
-            const profileRows: ProfileRow[] = (profiles ?? []).map(p => ({
-                ...p,
-                is_active: p.is_active ?? true,
-            }));
-
-            // Try to get emails via Supabase view if available
-            try {
-                const { data: emailData } = await supabase
-                    .from('user_emails')
-                    .select('id, email')
-                    .in('id', profileRows.map(p => p.id));
-                if (emailData) {
-                    const emailMap = new Map(emailData.map((e: any) => [e.id, e.email]));
-                    profileRows.forEach(p => { p.email = emailMap.get(p.id) ?? '—'; });
-                }
-            } catch {
-                // View may not exist — that's OK, show without emails
-            }
-
-            setUsers(profileRows);
         } catch (err) {
             console.error('Failed to fetch users:', err);
         }
     }, [orgId]);
 
-    useEffect(() => { fetchUsers(); }, [fetchUsers]);
+    useEffect(() => { if (canAccess) fetchUsers(); }, [fetchUsers, canAccess]);
 
-    // Get access token
-    async function getToken(): Promise<string | null> {
-        const supabase = getSupabase();
-        const { data: { session } } = await supabase.auth.getSession();
-        return session?.access_token ?? null;
-    }
-
-    // Add user
-    async function handleAddUser() {
-        if (!newEmail.trim() || !orgId) return;
-        setAdding(true);
-        setAddMsg(null);
+    // Invite user
+    async function handleInvite() {
+        if (!inviteEmail.trim() || !orgId) return;
+        setInviting(true);
+        setInviteMsg(null);
         try {
             const token = await getToken();
             if (!token) throw new Error('Not authenticated');
-            const resp = await fetch('/api/org-users-upsert', {
+            const resp = await fetch('/api/org-users-invite', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    email: newEmail.trim(),
-                    role: newRole,
                     organisation_id: orgId,
+                    email: inviteEmail.trim(),
+                    full_name: inviteName.trim() || null,
+                    role: inviteRole,
                 }),
             });
             const result = await resp.json().catch(() => null);
-            if (!resp.ok) throw new Error(result?.error ?? 'Failed to add user');
-            setAddMsg('User added');
-            setNewEmail('');
+            if (!resp.ok) throw new Error(result?.error ?? 'Failed to invite');
+            setInviteMsg('Invite sent');
+            setInviteEmail('');
+            setInviteName('');
             fetchUsers();
         } catch (err: any) {
-            setAddMsg(`Error: ${err?.message ?? 'Failed'}`);
+            setInviteMsg(`Error: ${err?.message ?? 'Failed'}`);
         } finally {
-            setAdding(false);
+            setInviting(false);
         }
     }
 
-    // Change role
-    async function handleChangeRole(userId: string, newRoleVal: string) {
+    // Update role
+    async function handleChangeRole(userId: string, newRole: string) {
         setActionLoading(userId);
         setActionMsg(null);
         try {
             const token = await getToken();
             if (!token) throw new Error('Not authenticated');
-            const resp = await fetch('/api/org-users-upsert', {
+            const resp = await fetch('/api/org-users-update', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -185,12 +158,12 @@ export function OrganisationUsersPage() {
                 },
                 body: JSON.stringify({
                     user_id: userId,
-                    role: newRoleVal,
                     organisation_id: orgId,
+                    role: newRole,
                 }),
             });
             const result = await resp.json().catch(() => null);
-            if (!resp.ok) throw new Error(result?.error ?? 'Failed to update role');
+            if (!resp.ok) throw new Error(result?.error ?? 'Failed');
             setActionMsg('Role updated');
             fetchUsers();
         } catch (err: any) {
@@ -207,7 +180,7 @@ export function OrganisationUsersPage() {
         try {
             const token = await getToken();
             if (!token) throw new Error('Not authenticated');
-            const resp = await fetch('/api/org-users-disable', {
+            const resp = await fetch('/api/org-users-update', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -291,7 +264,7 @@ export function OrganisationUsersPage() {
                             <tbody>
                                 {users.map(u => (
                                     <tr key={u.id} style={{ opacity: u.is_active ? 1 : 0.5 }}>
-                                        <td style={{ fontSize: '0.8rem' }}>{u.email ?? '—'}</td>
+                                        <td style={{ fontSize: '0.8rem' }}>{u.email}</td>
                                         <td style={{ fontSize: '0.8rem' }}>{u.full_name ?? '—'}</td>
                                         <td>
                                             <select
@@ -357,10 +330,10 @@ export function OrganisationUsersPage() {
                 )}
             </div>
 
-            {/* Add User Form */}
+            {/* Invite User Form */}
             <div className="dashboard-panel" style={{ marginTop: '1rem' }}>
                 <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title"><UserPlus size={16} className="dashboard-panel-title-icon" /> Add User</h2>
+                    <h2 className="dashboard-panel-title"><UserPlus size={16} className="dashboard-panel-title-icon" /> Invite User</h2>
                 </div>
                 <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                     <div>
@@ -368,17 +341,28 @@ export function OrganisationUsersPage() {
                         <input
                             type="email"
                             className="dsf-input"
-                            value={newEmail}
-                            onChange={(e) => setNewEmail(e.target.value)}
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
                             placeholder="user@example.com"
-                            style={{ fontSize: '0.82rem', width: '260px' }}
+                            style={{ fontSize: '0.82rem', width: '220px' }}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Full Name</label>
+                        <input
+                            type="text"
+                            className="dsf-input"
+                            value={inviteName}
+                            onChange={(e) => setInviteName(e.target.value)}
+                            placeholder="Jane Smith"
+                            style={{ fontSize: '0.82rem', width: '180px' }}
                         />
                     </div>
                     <div>
                         <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Role</label>
                         <select
-                            value={newRole}
-                            onChange={(e) => setNewRole(e.target.value)}
+                            value={inviteRole}
+                            onChange={(e) => setInviteRole(e.target.value)}
                             style={{
                                 padding: '6px 10px',
                                 borderRadius: '6px',
@@ -395,15 +379,15 @@ export function OrganisationUsersPage() {
                     <button
                         type="button"
                         className="dashboard-reports-action-btn"
-                        onClick={handleAddUser}
-                        disabled={adding || !newEmail.trim()}
+                        onClick={handleInvite}
+                        disabled={inviting || !inviteEmail.trim()}
                         style={{ background: '#1e40af', color: '#fff' }}
                     >
-                        {adding ? <Loader2 size={14} className="dsf-spinner" /> : <UserPlus size={14} />}
-                        {adding ? 'Adding…' : 'Add User'}
+                        {inviting ? <Loader2 size={14} className="dsf-spinner" /> : <UserPlus size={14} />}
+                        {inviting ? 'Sending…' : 'Send Invite'}
                     </button>
-                    {addMsg && (
-                        <span style={{ fontSize: '0.75rem', color: addMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{addMsg}</span>
+                    {inviteMsg && (
+                        <span style={{ fontSize: '0.75rem', color: inviteMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{inviteMsg}</span>
                     )}
                 </div>
             </div>

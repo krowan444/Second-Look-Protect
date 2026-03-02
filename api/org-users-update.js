@@ -1,4 +1,4 @@
-// /api/org-users-disable.js
+// /api/org-users-update.js
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ ok: false, error: 'Method not allowed' });
@@ -6,7 +6,6 @@ export default async function handler(req, res) {
 
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
     if (!SUPABASE_URL || !SERVICE_KEY) {
         return res.status(500).json({ ok: false, error: 'Missing Supabase env vars' });
     }
@@ -37,32 +36,44 @@ export default async function handler(req, res) {
         return res.status(401).json({ ok: false, error: 'Unauthorized' });
     }
 
-    // Check caller is super_admin or org_admin
-    const callerProfileRes = await fetch(
+    // Get caller profile
+    const callerRes = await fetch(
         `${SUPABASE_URL}/rest/v1/profiles?id=eq.${callerId}&select=role,organisation_id&limit=1`,
         { headers: sbHeaders }
     );
-    const callerProfiles = await callerProfileRes.json();
+    const callerProfiles = await callerRes.json();
     const caller = callerProfiles?.[0];
-    if (!caller || (caller.role !== 'super_admin' && caller.role !== 'org_admin')) {
+    if (!caller) {
+        return res.status(403).json({ ok: false, error: 'Forbidden' });
+    }
+
+    const { user_id, organisation_id, role, is_active } = req.body || {};
+    if (!user_id || !organisation_id) {
+        return res.status(400).json({ ok: false, error: 'Missing required fields: user_id, organisation_id' });
+    }
+
+    // Authorize: super_admin or org_admin of same org
+    if (caller.role !== 'super_admin' && !(caller.role === 'org_admin' && caller.organisation_id === organisation_id)) {
         return res.status(403).json({ ok: false, error: 'Forbidden: admin role required' });
     }
 
-    const { user_id, organisation_id, is_active } = req.body || {};
-
-    if (!user_id || !organisation_id || typeof is_active !== 'boolean') {
-        return res.status(400).json({ ok: false, error: 'Missing required fields: user_id, organisation_id, is_active' });
-    }
-
-    // org_admin can only manage their own org
-    if (caller.role === 'org_admin' && caller.organisation_id !== organisation_id) {
-        return res.status(403).json({ ok: false, error: 'Cannot manage users outside your organisation' });
-    }
-
     // Prevent disabling yourself
-    if (user_id === callerId) {
+    if (user_id === callerId && is_active === false) {
         return res.status(400).json({ ok: false, error: 'Cannot disable your own account' });
     }
+
+    const allowedRoles = ['staff', 'reviewer', 'org_admin', 'read_only', 'manager', 'safeguarding_lead'];
+    const patch = {};
+    if (role !== undefined) {
+        if (!allowedRoles.includes(role)) {
+            return res.status(400).json({ ok: false, error: `Invalid role. Allowed: ${allowedRoles.join(', ')}` });
+        }
+        patch.role = role;
+    }
+    if (is_active !== undefined) {
+        patch.is_active = is_active;
+    }
+    patch.updated_at = new Date().toISOString();
 
     try {
         const updateRes = await fetch(
@@ -70,7 +81,7 @@ export default async function handler(req, res) {
             {
                 method: 'PATCH',
                 headers: { ...sbHeaders, Prefer: 'return=representation' },
-                body: JSON.stringify({ is_active }),
+                body: JSON.stringify(patch),
             }
         );
 
