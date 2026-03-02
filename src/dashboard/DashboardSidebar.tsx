@@ -11,6 +11,7 @@ import {
   Search,
   CreditCard,
   Shield,
+  Users,
 } from 'lucide-react';
 import { ROLE_NAV, type UserRole, type NavItem } from './types';
 
@@ -25,6 +26,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
   Building2,
   Search,
   CreditCard,
+  Users,
 };
 
 interface DashboardSidebarProps {

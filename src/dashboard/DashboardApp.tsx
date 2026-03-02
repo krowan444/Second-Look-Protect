@@ -21,6 +21,7 @@ import { GlobalSearchPage } from './pages/GlobalSearchPage';
 import { InspectionPage } from './pages/InspectionPage';
 import { InspectionPackPage } from './pages/InspectionPackPage';
 import { BillingPage } from './pages/BillingPage';
+import { OrganisationUsersPage } from './pages/OrganisationUsersPage';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -107,6 +108,9 @@ function getPage(
 
     case 'billing':
       return <BillingPage />;
+
+    case 'org-users':
+      return <OrganisationUsersPage />;
 
     default:
       return <OverviewPage />;

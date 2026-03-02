@@ -43,6 +43,7 @@ export const ROLE_NAV: Record<UserRole, NavItem[]> = {
     { label: 'Review Queue', path: '/dashboard/review-queue', icon: 'ClipboardList' },
     { label: 'Cases', path: '/dashboard/cases', icon: 'FolderOpen' },
     { label: 'Reports', path: '/dashboard/reports', icon: 'BarChart3' },
+    { label: 'Org Users', path: '/dashboard/org-users', icon: 'Users' },
     { label: 'Settings', path: '/dashboard/settings', icon: 'Settings' },
   ],
 
@@ -78,6 +79,7 @@ export const ROLE_NAV: Record<UserRole, NavItem[]> = {
     { label: 'Organisations', path: '/dashboard/organisations', icon: 'Building2' },
     { label: 'Global Queue', path: '/dashboard/global-queue', icon: 'ClipboardList' },
     { label: 'Global Search', path: '/dashboard/global-search', icon: 'Search' },
+    { label: 'Org Users', path: '/dashboard/org-users', icon: 'Users' },
     { label: 'Billing', path: '/dashboard/billing', icon: 'CreditCard' },
     { label: 'Inspection Mode', path: '/dashboard/inspection', icon: 'ClipboardCheck' },
   ],
