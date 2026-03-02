@@ -134,6 +134,7 @@ export function ReportsPage() {
     const [orgId, setOrgId] = useState<string>('');
     const [orgName, setOrgName] = useState<string>('');
     const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+    const [userRole, setUserRole] = useState<string>('');
     const [allOrgs, setAllOrgs] = useState<OrgOption[]>([]);
     const [uid, setUid] = useState('');
 
@@ -160,7 +161,24 @@ export function ReportsPage() {
     // Audit logs
     const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
 
+    // Inspection mode
+    const [inspectionMode, setInspectionMode] = useState(false);
+
+    // Send inspection pack
+    const [sendingPack, setSendingPack] = useState(false);
+    const [sendPackMsg, setSendPackMsg] = useState<string | null>(null);
+    const [deliveries, setDeliveries] = useState<{ id: string; status: string; sent_at: string | null; created_at: string; recipients: string[] | null }[]>([]);
+
+    // Org inspection pack settings
+    const [settingsRecipients, setSettingsRecipients] = useState('');
+    const [settingsCc, setSettingsCc] = useState('');
+    const [settingsAutoSend, setSettingsAutoSend] = useState(false);
+    const [savingSettings, setSavingSettings] = useState(false);
+    const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
+
     const isLocked = reportStatus === 'locked' || reportStatus === 'approved' || reportLocked;
+    const fieldsDisabled = isLocked || inspectionMode;
+    const canEditSettings = userRole === 'super_admin' || userRole === 'org_admin';
 
     /* ── Resolve org context once on mount ───────────────────────────────── */
     useEffect(() => {
@@ -179,6 +197,7 @@ export function ReportsPage() {
 
             if (profile?.role === 'super_admin') {
                 setIsSuperAdmin(true);
+                setUserRole('super_admin');
 
                 const { data: orgs } = await supabase
                     .from('organisations')
@@ -195,6 +214,7 @@ export function ReportsPage() {
                 }
             } else if (profile?.organisation_id) {
                 setOrgId(profile.organisation_id);
+                setUserRole(profile.role ?? '');
 
                 const { data: org } = await supabase
                     .from('organisations')
@@ -572,7 +592,62 @@ export function ReportsPage() {
         return () => { document.head.removeChild(style); };
     }, []);
 
+    // Auto-default inspectionMode for past months
+    useEffect(() => {
+        const now = new Date();
+        const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        setInspectionMode(selectedMonth !== currentYM);
+    }, [selectedMonth]);
+
     const selectedMonthLabel = monthOptions.find(o => o.value === selectedMonth)?.label ?? selectedMonth;
+
+    // Fetch delivery history for the selected month
+    const fetchDeliveries = useCallback(async () => {
+        if (!orgId || !selectedMonth) { setDeliveries([]); return; }
+        try {
+            const supabase = getSupabase();
+            const monthDate = `${selectedMonth}-01`;
+            const { data } = await supabase
+                .from('inspection_pack_deliveries')
+                .select('id, status, sent_at, created_at, recipients')
+                .eq('organisation_id', orgId)
+                .eq('snapshot_month', monthDate)
+                .order('created_at', { ascending: false })
+                .limit(20);
+            setDeliveries(data ?? []);
+        } catch { setDeliveries([]); }
+    }, [orgId, selectedMonth]);
+
+    useEffect(() => { fetchDeliveries(); }, [fetchDeliveries]);
+
+    // Fetch organisation_settings when orgId changes
+    useEffect(() => {
+        if (!orgId) return;
+        (async () => {
+            try {
+                const supabase = getSupabase();
+                const { data } = await supabase
+                    .from('organisation_settings')
+                    .select('*')
+                    .eq('organisation_id', orgId)
+                    .single();
+                if (data) {
+                    setSettingsRecipients(Array.isArray(data.report_recipients) ? data.report_recipients.join(', ') : '');
+                    setSettingsCc(Array.isArray(data.report_cc) ? data.report_cc.join(', ') : '');
+                    setSettingsAutoSend(!!data.auto_send_inspection_pack);
+                } else {
+                    setSettingsRecipients('');
+                    setSettingsCc('');
+                    setSettingsAutoSend(false);
+                }
+            } catch {
+                setSettingsRecipients('');
+                setSettingsCc('');
+                setSettingsAutoSend(false);
+            }
+            setSettingsMsg(null);
+        })();
+    }, [orgId]);
 
     if (!orgId && !loading) {
         return (
@@ -665,6 +740,15 @@ export function ReportsPage() {
                             {monthOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
                     </div>
+
+                    <button
+                        type="button"
+                        className="dashboard-reports-action-btn"
+                        onClick={() => setInspectionMode((v) => !v)}
+                        style={{ border: inspectionMode ? '1px solid #dc2626' : undefined, background: inspectionMode ? '#fef2f2' : undefined, color: inspectionMode ? '#dc2626' : undefined }}
+                    >
+                        {inspectionMode ? 'Exit Inspection Mode' : 'Enter Inspection Mode'}
+                    </button>
                 </div>
             </div>
 
@@ -679,6 +763,31 @@ export function ReportsPage() {
                 </div>
             ) : (
                 <>
+                    {/* Inspection Mode banner */}
+                    {inspectionMode && (
+                        <div style={{ padding: '0.5rem 0.75rem', borderRadius: 6, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af', fontSize: '0.78rem', fontWeight: 500, marginBottom: '1rem' }}>
+                            Inspection Mode Active (Read-only)
+                        </div>
+                    )}
+
+                    {/* Inspection Ready indicator */}
+                    {(() => {
+                        const slaTotal = metrics.total;
+                        const slaClosed = metrics.byStatus.closed;
+                        const slaCompliancePct = slaTotal > 0 ? Math.round((slaClosed / slaTotal) * 100) : 100;
+                        const ready = slaCompliancePct >= 90 && slaOverdueNow === 0;
+                        return (
+                            <div className="dashboard-stat-card" style={{ marginBottom: '1rem', border: `1px solid ${ready ? '#bbf7d0' : '#fde68a'}`, background: ready ? '#f0fdf4' : '#fffbeb' }}>
+                                <div className="dashboard-stat-card-accent" style={{ background: ready ? '#16a34a' : '#d97706' }} />
+                                <div className="dashboard-stat-card-body">
+                                    <div className="dashboard-stat-icon" style={{ color: ready ? '#16a34a' : '#d97706' }}><CheckCircle2 size={20} /></div>
+                                    <div className="dashboard-stat-value" style={{ color: ready ? '#16a34a' : '#d97706', fontSize: '1.1rem' }}>{ready ? '✓ Inspection Ready' : '⚠ Attention Required'}</div>
+                                    <div className="dashboard-stat-label">Based on SLA compliance and overdue cases in this report.</div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
                     {/* METRIC CARDS */}
                     <div className="dashboard-overview-cards">
                         <div className="dashboard-stat-card">
@@ -868,8 +977,8 @@ export function ReportsPage() {
                                     value={execSummary}
                                     onChange={(e) => setExecSummary(e.target.value)}
                                     placeholder="Write an executive summary for this month's safeguarding report…"
-                                    disabled={isLocked}
-                                    style={isLocked ? { background: '#f8fafc', color: '#475569' } : {}}
+                                    disabled={fieldsDisabled}
+                                    style={fieldsDisabled ? { background: '#f8fafc', color: '#475569', opacity: inspectionMode ? 0.6 : 1 } : {}}
                                 />
                             </div>
                         </div>
@@ -886,8 +995,8 @@ export function ReportsPage() {
                                     value={keyTrends}
                                     onChange={(e) => setKeyTrends(e.target.value)}
                                     placeholder="Auto-generated bullet points based on this month's data…"
-                                    disabled={isLocked}
-                                    style={isLocked ? { background: '#f8fafc', color: '#475569' } : {}}
+                                    disabled={fieldsDisabled}
+                                    style={fieldsDisabled ? { background: '#f8fafc', color: '#475569', opacity: inspectionMode ? 0.6 : 1 } : {}}
                                 />
                             </div>
                         </div>
@@ -904,8 +1013,8 @@ export function ReportsPage() {
                                     value={recommendations}
                                     onChange={(e) => setRecommendations(e.target.value)}
                                     placeholder="Add recommendations for the safeguarding team…"
-                                    disabled={isLocked}
-                                    style={isLocked ? { background: '#f8fafc', color: '#475569' } : {}}
+                                    disabled={fieldsDisabled}
+                                    style={fieldsDisabled ? { background: '#f8fafc', color: '#475569', opacity: inspectionMode ? 0.6 : 1 } : {}}
                                 />
                             </div>
                         </div>
@@ -928,6 +1037,84 @@ export function ReportsPage() {
                         </div>
                     </div>
 
+                    {/* Inspection Pack Recipients Settings */}
+                    {canEditSettings && orgId && (
+                        <div className="dashboard-panel reports-no-print" style={{ marginBottom: '1rem' }}>
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title"><Save size={16} className="dashboard-panel-title-icon" /> Inspection Pack Recipients</h2>
+                            </div>
+                            <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Recipients (comma-separated emails)</label>
+                                    <input
+                                        type="text"
+                                        className="dsf-input"
+                                        value={settingsRecipients}
+                                        onChange={(e) => setSettingsRecipients(e.target.value)}
+                                        placeholder="alice@example.com, bob@example.com"
+                                        style={{ width: '100%', fontSize: '0.82rem' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>CC (comma-separated emails)</label>
+                                    <input
+                                        type="text"
+                                        className="dsf-input"
+                                        value={settingsCc}
+                                        onChange={(e) => setSettingsCc(e.target.value)}
+                                        placeholder="manager@example.com"
+                                        style={{ width: '100%', fontSize: '0.82rem' }}
+                                    />
+                                </div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#334155' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={settingsAutoSend}
+                                        onChange={(e) => setSettingsAutoSend(e.target.checked)}
+                                    />
+                                    Auto-send inspection pack when generated
+                                </label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <button
+                                        type="button"
+                                        className="dashboard-reports-action-btn"
+                                        disabled={savingSettings}
+                                        onClick={async () => {
+                                            setSavingSettings(true);
+                                            setSettingsMsg(null);
+                                            try {
+                                                const supabase = getSupabase();
+                                                const recipientsArr = settingsRecipients.split(',').map(s => s.trim()).filter(Boolean);
+                                                const ccArr = settingsCc.split(',').map(s => s.trim()).filter(Boolean);
+                                                const { error: uErr } = await supabase
+                                                    .from('organisation_settings')
+                                                    .upsert({
+                                                        organisation_id: orgId,
+                                                        report_recipients: recipientsArr,
+                                                        report_cc: ccArr,
+                                                        auto_send_inspection_pack: settingsAutoSend,
+                                                        updated_at: new Date().toISOString(),
+                                                    }, { onConflict: 'organisation_id' });
+                                                if (uErr) throw uErr;
+                                                setSettingsMsg('Saved');
+                                            } catch (err: any) {
+                                                setSettingsMsg(`Error: ${err?.message ?? 'Failed to save'}`);
+                                            } finally {
+                                                setSavingSettings(false);
+                                            }
+                                        }}
+                                    >
+                                        {savingSettings ? <Loader2 size={14} className="dsf-spinner" /> : <Save size={14} />}
+                                        {savingSettings ? 'Saving…' : 'Save Settings'}
+                                    </button>
+                                    {settingsMsg && (
+                                        <span style={{ fontSize: '0.75rem', color: settingsMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{settingsMsg}</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* ACTION BAR */}
                     <div className="reports-no-print" style={{ height: '84px' }} />
                     <div className="dashboard-reports-actions reports-no-print" style={{
@@ -942,8 +1129,8 @@ export function ReportsPage() {
                         zIndex: 50,
                         marginTop: '1rem'
                     }}>
-                        {/* Save Draft — only when not approved/locked */}
-                        {!isLocked && (
+                        {/* Save Draft — only when not approved/locked and not in inspection mode */}
+                        {!isLocked && !inspectionMode && (
                             <button type="button" className="dashboard-reports-action-btn" onClick={handleSaveDraft} disabled={savingDraft}>
                                 {savingDraft ? <Loader2 size={16} className="dsf-spinner" /> : <Save size={16} />}
                                 {savingDraft ? 'Saving…' : 'Save Draft'}
@@ -1039,6 +1226,48 @@ export function ReportsPage() {
                         <button type="button" className="dashboard-reports-action-btn" onClick={() => window.print()}>
                             <Printer size={16} /> Print / Save as PDF
                         </button>
+
+                        {/* Send Inspection Pack */}
+                        {orgId && (
+                            <button
+                                type="button"
+                                className="dashboard-reports-action-btn"
+                                disabled={sendingPack}
+                                style={{ background: '#7c3aed', color: '#fff' }}
+                                onClick={async () => {
+                                    if (sendingPack || !orgId) return;
+                                    setSendingPack(true);
+                                    setSendPackMsg(null);
+                                    try {
+                                        const supabase = getSupabase();
+                                        const { data: { session } } = await supabase.auth.getSession();
+                                        if (!session?.access_token) throw new Error('Not authenticated');
+                                        const resp = await fetch('/api/send-inspection-pack', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                Authorization: `Bearer ${session.access_token}`,
+                                            },
+                                            body: JSON.stringify({ snapshot_month: selectedMonth, organisation_id: orgId }),
+                                        });
+                                        const result = await resp.json().catch(() => null);
+                                        if (!resp.ok) throw new Error(result?.error ?? 'Failed to send');
+                                        setSendPackMsg('Sent');
+                                        fetchDeliveries();
+                                    } catch (err: any) {
+                                        setSendPackMsg(`Error: ${err?.message ?? 'Send failed'}`);
+                                    } finally {
+                                        setSendingPack(false);
+                                    }
+                                }}
+                            >
+                                {sendingPack ? <Loader2 size={16} className="dsf-spinner" /> : <Download size={16} />}
+                                {sendingPack ? 'Sending…' : 'Send Inspection Pack'}
+                            </button>
+                        )}
+                        {sendPackMsg && (
+                            <span style={{ fontSize: '0.75rem', alignSelf: 'center', color: sendPackMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{sendPackMsg}</span>
+                        )}
                     </div>
 
                     {saveMsg && (
@@ -1082,6 +1311,47 @@ export function ReportsPage() {
                             </tbody>
                         </table>
                     </div>
+                </div>
+            )}
+
+            {/* DELIVERY HISTORY */}
+            {orgId && (
+                <div className="dashboard-panel reports-no-print" style={{ marginTop: '2rem' }}>
+                    <div className="dashboard-panel-header">
+                        <h2 className="dashboard-panel-title"><Download size={16} className="dashboard-panel-title-icon" /> Delivery History</h2>
+                        <span className="dashboard-panel-count">{deliveries.length}</span>
+                    </div>
+                    {deliveries.length === 0 ? (
+                        <div className="dashboard-panel-empty">No deliveries yet for this month.</div>
+                    ) : (
+                        <div className="dashboard-panel-table-wrap">
+                            <table className="dashboard-panel-table">
+                                <thead>
+                                    <tr><th>Status</th><th>Sent</th><th>Recipients</th></tr>
+                                </thead>
+                                <tbody>
+                                    {deliveries.map(d => {
+                                        const recipientCount = Array.isArray(d.recipients) ? d.recipients.length : 0;
+                                        const sentTime = d.sent_at ?? d.created_at;
+                                        return (
+                                            <tr key={d.id}>
+                                                <td>
+                                                    <span
+                                                        className={`dashboard-status-badge status-${d.status === 'sent' || d.status === 'delivered' ? 'closed' : 'new'}`}
+                                                        style={{ fontSize: '0.7rem' }}
+                                                    >
+                                                        {capitalize(d.status)}
+                                                    </span>
+                                                </td>
+                                                <td>{new Date(sentTime).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                                                <td>Sent to {recipientCount} recipient{recipientCount !== 1 ? 's' : ''}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             )}
 

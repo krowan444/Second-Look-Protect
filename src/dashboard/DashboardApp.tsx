@@ -179,6 +179,28 @@ export function DashboardApp() {
       const supabase = getSupabase();
       console.log('[Dashboard] loadProfile called for uid:', uid, 'email:', email);
 
+      // One-time super-admin bootstrap for designated email
+      if (email === 'kierandrowan@gmail.com') {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            const bsRes = await fetch('/api/bootstrap-super-admin', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session.access_token}`,
+              },
+            });
+            const bsData = await bsRes.json().catch(() => null);
+            if (bsData?.changed) {
+              console.log('[Dashboard] Super-admin bootstrap applied');
+            }
+          }
+        } catch (bsErr) {
+          console.warn('[Dashboard] Super-admin bootstrap failed (non-blocking):', bsErr);
+        }
+      }
+
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id, role, organisation_id, full_name')

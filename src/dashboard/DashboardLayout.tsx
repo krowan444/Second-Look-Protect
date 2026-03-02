@@ -54,15 +54,19 @@ export function DashboardLayout({
 
   function handleOrgSwitch(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value;
-    setActiveOrgId(id);
 
-    if (id) {
-      localStorage.setItem('slp_active_org_id', id);
-    } else {
+    if (id === '__global__' || id === '') {
+      setActiveOrgId('');
       localStorage.removeItem('slp_active_org_id');
+      localStorage.removeItem('slp_active_org_name');
+      localStorage.removeItem('slp_viewing_as_org_id');
+      localStorage.removeItem('slp_viewing_as');
+      window.location.href = '/dashboard/platform';
+      return;
     }
 
-    // Optional: reload current page so queries re-run with new org context
+    setActiveOrgId(id);
+    localStorage.setItem('slp_active_org_id', id);
     window.location.reload();
   }
 
@@ -79,11 +83,11 @@ export function DashboardLayout({
 
   const initials = user.full_name
     ? user.full_name
-        .split(' ')
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
+      .split(' ')
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
     : user.email.slice(0, 2).toUpperCase();
 
   return (
@@ -132,7 +136,7 @@ export function DashboardLayout({
                 </span>
 
                 <select
-                  value={activeOrgId}
+                  value={activeOrgId || '__global__'}
                   onChange={handleOrgSwitch}
                   style={{
                     padding: '4px 8px',
@@ -141,10 +145,10 @@ export function DashboardLayout({
                     background: '#fff',
                     fontSize: '0.8rem',
                     color: '#0f172a',
-                    maxWidth: '200px',
+                    maxWidth: '220px',
                   }}
                 >
-                  <option value="">Select organisation…</option>
+                  <option value="__global__">Super Admin (Global)</option>
                   {allOrgs.map((o) => (
                     <option key={o.id} value={o.id}>
                       {o.name}
