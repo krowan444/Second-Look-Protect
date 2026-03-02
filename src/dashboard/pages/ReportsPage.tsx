@@ -1087,6 +1087,14 @@ export function ReportsPage() {
                                                 const supabase = getSupabase();
                                                 const recipientsArr = settingsRecipients.split(',').map(s => s.trim()).filter(Boolean);
                                                 const ccArr = settingsCc.split(',').map(s => s.trim()).filter(Boolean);
+
+                                                // Fetch current settings for audit before state
+                                                const { data: prevSettings } = await supabase
+                                                    .from('organisation_settings')
+                                                    .select('report_recipients, report_cc, auto_send_inspection_pack')
+                                                    .eq('organisation_id', orgId)
+                                                    .single();
+
                                                 const { error: uErr } = await supabase
                                                     .from('organisation_settings')
                                                     .upsert({
@@ -1097,6 +1105,21 @@ export function ReportsPage() {
                                                         updated_at: new Date().toISOString(),
                                                     }, { onConflict: 'organisation_id' });
                                                 if (uErr) throw uErr;
+
+                                                try {
+                                                    const { data: { session: auditSession } } = await supabase.auth.getSession();
+                                                    await supabase.from('audit_logs').insert({
+                                                        organisation_id: orgId,
+                                                        actor_profile_id: auditSession?.user?.id ?? null,
+                                                        actor_type: userRole || null,
+                                                        action: 'org_settings_updated',
+                                                        entity_type: 'organisation_settings',
+                                                        entity_id: orgId,
+                                                        before: prevSettings ?? {},
+                                                        after: { report_recipients: recipientsArr, report_cc: ccArr, auto_send_inspection_pack: settingsAutoSend },
+                                                    });
+                                                } catch { /* audit insert non-blocking */ }
+
                                                 setSettingsMsg('Saved');
                                             } catch (err: any) {
                                                 setSettingsMsg(`Error: ${err?.message ?? 'Failed to save'}`);

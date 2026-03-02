@@ -76,6 +76,14 @@ export default async function handler(req, res) {
     patch.updated_at = new Date().toISOString();
 
     try {
+        // Fetch current state (before) for audit
+        const beforeRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user_id}&organisation_id=eq.${organisation_id}&select=role,is_active&limit=1`,
+            { headers: sbHeaders }
+        );
+        const beforeRows = await beforeRes.json();
+        const before = beforeRows?.[0] ?? {};
+
         const updateRes = await fetch(
             `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user_id}&organisation_id=eq.${organisation_id}`,
             {
@@ -91,7 +99,37 @@ export default async function handler(req, res) {
         }
 
         const updated = await updateRes.json();
-        return res.status(200).json({ ok: true, profile: updated?.[0] ?? null });
+        const after = updated?.[0] ?? {};
+
+        // Determine action type
+        let action = 'user_updated';
+        if (role !== undefined && role !== before.role) {
+            action = 'user_role_changed';
+        } else if (is_active !== undefined && is_active !== before.is_active) {
+            action = is_active ? 'user_enabled' : 'user_disabled';
+        }
+
+        // Insert audit_logs row (non-blocking)
+        try {
+            await fetch(`${SUPABASE_URL}/rest/v1/audit_logs`, {
+                method: 'POST',
+                headers: sbHeaders,
+                body: JSON.stringify({
+                    organisation_id,
+                    actor_profile_id: callerId,
+                    actor_type: caller.role,
+                    action,
+                    entity_type: 'profile',
+                    entity_id: user_id,
+                    before: { role: before.role, is_active: before.is_active },
+                    after: { role: after.role, is_active: after.is_active },
+                }),
+            });
+        } catch {
+            // Audit insert failure should not block the response
+        }
+
+        return res.status(200).json({ ok: true, profile: after });
 
     } catch (err) {
         return res.status(500).json({ ok: false, error: err.message || 'Unknown error' });
