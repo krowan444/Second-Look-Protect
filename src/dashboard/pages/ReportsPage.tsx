@@ -177,8 +177,9 @@ export function ReportsPage() {
     const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
 
     const isLocked = reportStatus === 'locked' || reportStatus === 'approved' || reportLocked;
-    const fieldsDisabled = isLocked || inspectionMode;
+    const fieldsDisabled = isLocked || inspectionMode || userRole === 'read_only';
     const canEditSettings = userRole === 'super_admin' || userRole === 'org_admin';
+    const canSendPack = userRole === 'super_admin' || userRole === 'org_admin' || userRole === 'safeguarding_lead';
 
     /* ── Resolve org context once on mount ───────────────────────────────── */
     useEffect(() => {
@@ -1130,7 +1131,7 @@ export function ReportsPage() {
                         marginTop: '1rem'
                     }}>
                         {/* Save Draft — only when not approved/locked and not in inspection mode */}
-                        {!isLocked && !inspectionMode && (
+                        {!isLocked && !inspectionMode && userRole !== 'read_only' && (
                             <button type="button" className="dashboard-reports-action-btn" onClick={handleSaveDraft} disabled={savingDraft}>
                                 {savingDraft ? <Loader2 size={16} className="dsf-spinner" /> : <Save size={16} />}
                                 {savingDraft ? 'Saving…' : 'Save Draft'}
@@ -1197,16 +1198,18 @@ export function ReportsPage() {
                                 >
                                     <Eye size={16} /> Open PDF
                                 </a>
-                                <button
-                                    type="button"
-                                    className="dashboard-reports-action-btn"
-                                    onClick={handleApproveReport}
-                                    disabled={approving}
-                                    style={{ background: '#166534', color: '#fff' }}
-                                >
-                                    {approving ? <Loader2 size={16} className="dsf-spinner" /> : <CheckCircle2 size={16} />}
-                                    {approving ? 'Approving…' : 'Approve Report'}
-                                </button>
+                                {userRole !== 'read_only' && (
+                                    <button
+                                        type="button"
+                                        className="dashboard-reports-action-btn"
+                                        onClick={handleApproveReport}
+                                        disabled={approving}
+                                        style={{ background: '#166534', color: '#fff' }}
+                                    >
+                                        {approving ? <Loader2 size={16} className="dsf-spinner" /> : <CheckCircle2 size={16} />}
+                                        {approving ? 'Approving…' : 'Approve Report'}
+                                    </button>
+                                )}
                             </>
                         )}
 
@@ -1228,7 +1231,7 @@ export function ReportsPage() {
                         </button>
 
                         {/* Send Inspection Pack */}
-                        {orgId && (
+                        {orgId && canSendPack && (
                             <button
                                 type="button"
                                 className="dashboard-reports-action-btn"

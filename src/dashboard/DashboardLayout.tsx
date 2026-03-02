@@ -155,6 +155,10 @@ export function DashboardLayout({
                     </option>
                   ))}
                 </select>
+
+                <span style={{ color: '#94a3b8', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
+                  {activeOrgId ? `Mode: Viewing as ${allOrgs.find(o => o.id === activeOrgId)?.name ?? '…'}` : 'Mode: Global'}
+                </span>
               </div>
             )}
 
