@@ -882,26 +882,29 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         )}
                     </div>
 
-                    {/* ── Internal Note Section ────────────────────────────────── */}
-                    <div className="casedetail-section" style={{ marginTop: '1rem' }}>
-                        <h2 className="casedetail-section-title">
-                            <MessageSquare size={16} /> Internal Note
-                        </h2>
+                    {/* ── Internal Notes Section ───────────────────────────────── */}
+                    <div className="dashboard-panel" style={{ marginTop: '1.5rem' }}>
+                        <div className="dashboard-panel-header">
+                            <h2 className="dashboard-panel-title">
+                                <MessageSquare size={16} className="dashboard-panel-title-icon" /> Internal Notes
+                            </h2>
+                        </div>
                         {isClosed ? (
-                            <p style={{ padding: '0.75rem', color: '#94a3b8', fontSize: '0.8rem', fontStyle: 'italic' }}>Disabled in Inspection Mode</p>
+                            <p style={{ padding: '1rem', color: '#94a3b8', fontSize: '0.8rem', fontStyle: 'italic' }}>Disabled in Inspection Mode</p>
                         ) : (
-                            <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.8rem', fontWeight: 500, color: '#475569' }}>Add internal note</label>
                                 <textarea
                                     className="dsf-textarea"
                                     rows={3}
-                                    placeholder="Add internal note…"
+                                    placeholder="Type your note here…"
                                     value={noteText}
                                     onChange={(e) => setNoteText(e.target.value)}
                                 />
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
                                     <button
                                         type="button"
-                                        className="casedetail-btn casedetail-btn-action"
+                                        className="casedetail-btn casedetail-btn-save"
                                         onClick={handleAddNote}
                                         disabled={noteSaving || !noteText.trim()}
                                     >
