@@ -52,11 +52,15 @@ interface CaseAction {
 interface TimelineEntry {
     id: string;
     timestamp: string;
-    type: 'system' | 'action' | 'review' | 'note';
+    type: 'system' | 'action' | 'review' | 'note' | 'timeline_event';
     title: string;
     who: string;
     notes: string | null;
     badges?: { category?: string | null; risk_level?: string | null; decision?: string | null; outcome?: string | null };
+    event_type?: string;
+    meta?: Record<string, any> | null;
+    before_data?: Record<string, any> | null;
+    after_data?: Record<string, any> | null;
 }
 
 /* ─── Constants ───────────────────────────────────────────────────────────── */
@@ -203,7 +207,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     const [noteMsg, setNoteMsg] = useState<string | null>(null);
 
     /* ── Build merged timeline ───────────────────────────────────────────── */
-    function buildTimeline(c: CaseRow, acts: CaseAction[], revs: CaseReview[]): TimelineEntry[] {
+    function buildTimeline(c: CaseRow, acts: CaseAction[], revs: CaseReview[], timelineEvents?: any[]): TimelineEntry[] {
         const entries: TimelineEntry[] = [];
 
         // System event: Case Submitted
@@ -238,6 +242,50 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 who: r.reviewed_by ? r.reviewed_by.slice(0, 8) + '…' : '—',
                 notes: r.notes,
                 badges: { category: r.category, risk_level: r.risk_level, decision: r.decision, outcome: r.outcome },
+            });
+        });
+
+        // Timeline events from case_timeline_events
+        (timelineEvents ?? []).forEach((te: any) => {
+            let title = friendlyActionType(te.event_type ?? 'event');
+            let notes: string | null = null;
+            const meta = te.meta ?? {};
+            const before = te.before ?? {};
+            const after = te.after ?? {};
+
+            switch (te.event_type) {
+                case 'status_changed':
+                    title = 'Status Changed';
+                    notes = `${before.status ?? '—'} → ${after.status ?? '—'}`;
+                    break;
+                case 'decision_changed':
+                    title = 'Decision Changed';
+                    notes = `${before.decision ?? '—'} → ${after.decision ?? '—'}`;
+                    break;
+                case 'note_added':
+                    title = 'Internal Note';
+                    notes = meta.note ?? null;
+                    break;
+                case 'escalation_recorded':
+                    title = 'Escalation Recorded';
+                    notes = `${friendlyActionType(meta.type ?? '')}${meta.reference ? ' — Ref: ' + meta.reference : ''}${meta.notes ? '\n' + meta.notes : ''}`;
+                    break;
+                default:
+                    notes = meta.note ?? meta.notes ?? null;
+                    break;
+            }
+
+            entries.push({
+                id: `te-${te.id}`,
+                timestamp: te.created_at,
+                type: 'timeline_event',
+                title,
+                who: te.actor_id ? te.actor_id.slice(0, 8) + '…' : 'System',
+                notes,
+                event_type: te.event_type,
+                meta: te.meta,
+                before_data: te.before,
+                after_data: te.after,
             });
         });
 
@@ -322,8 +370,15 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             const actsTyped = (acts ?? []) as CaseAction[];
             setActions(actsTyped);
 
-            // 4. Build merged timeline
-            setTimeline(buildTimeline(c as CaseRow, actsTyped, revsTyped));
+            // 4. Fetch case_timeline_events
+            const { data: timelineEvts } = await supabase
+                .from('case_timeline_events')
+                .select('id, case_id, event_type, before, after, meta, actor_id, created_at')
+                .eq('case_id', caseId)
+                .order('created_at', { ascending: false });
+
+            // 5. Build merged timeline
+            setTimeline(buildTimeline(c as CaseRow, actsTyped, revsTyped, timelineEvts ?? []));
 
         } catch (err: any) {
             setError(err?.message ?? 'Failed to load case');
@@ -859,7 +914,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                     <User size={12} /> {entry.who}
                                                 </span>
                                             </div>
-                                            <span className={`casedetail-timeline-tag${entry.type === 'action' ? ' casedetail-timeline-tag--action' : ''}`}>
+                                            <span className={`casedetail-timeline-tag${entry.type === 'action' ? ' casedetail-timeline-tag--action' : ''}${entry.event_type === 'note_added' ? ' casedetail-timeline-tag--action' : ''}${entry.event_type === 'escalation_recorded' ? ' casedetail-timeline-tag--action' : ''}`}>
                                                 {entry.title}
                                             </span>
                                             {/* Review badges */}
@@ -871,10 +926,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                     {entry.badges.outcome && <span className="casedetail-timeline-tag">{entry.badges.outcome}</span>}
                                                 </div>
                                             )}
-                                            {entry.notes && <p className="casedetail-timeline-notes">{entry.notes}</p>}
-                                            {entry.type === 'note' && !entry.notes && (
-                                                <p className="casedetail-timeline-notes" style={{ fontStyle: 'italic', color: '#64748b' }}>(internal note)</p>
-                                            )}
+                                            {entry.notes && <p className="casedetail-timeline-notes" style={entry.event_type === 'note_added' ? { fontStyle: 'italic', background: '#fefce8', padding: '0.4rem 0.6rem', borderRadius: '4px', borderLeft: '3px solid #facc15' } : {}}>{entry.notes}</p>}
                                         </div>
                                     </div>
                                 ))}
