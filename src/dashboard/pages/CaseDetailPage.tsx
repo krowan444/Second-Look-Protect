@@ -52,7 +52,7 @@ interface CaseAction {
 interface TimelineEntry {
     id: string;
     timestamp: string;
-    type: 'system' | 'action' | 'review';
+    type: 'system' | 'action' | 'review' | 'note';
     title: string;
     who: string;
     notes: string | null;
@@ -196,6 +196,11 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     const [escNotes, setEscNotes] = useState('');
     const [escSaving, setEscSaving] = useState(false);
     const [escMsg, setEscMsg] = useState<string | null>(null);
+
+    // Internal note state
+    const [noteText, setNoteText] = useState('');
+    const [noteSaving, setNoteSaving] = useState(false);
+    const [noteMsg, setNoteMsg] = useState<string | null>(null);
 
     /* ── Build merged timeline ───────────────────────────────────────────── */
     function buildTimeline(c: CaseRow, acts: CaseAction[], revs: CaseReview[]): TimelineEntry[] {
@@ -624,6 +629,31 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
+    /* ── Add Internal Note ────────────────────────────────────────────────── */
+    async function handleAddNote() {
+        if (!noteText.trim() || !caseData) return;
+        setNoteSaving(true);
+        setNoteMsg(null);
+        try {
+            const supabase = getSupabase();
+            const { error: rpcErr } = await supabase.rpc('add_case_timeline_event', {
+                p_case_id: caseId,
+                p_event_type: 'note_added',
+                p_before: null,
+                p_after: null,
+                p_meta: { note: noteText.trim(), visibility: 'internal' },
+            });
+            if (rpcErr) throw rpcErr;
+            setNoteText('');
+            setNoteMsg('Note added.');
+            await fetchData();
+        } catch (err: any) {
+            setNoteMsg(`Error: ${err?.message ?? 'Failed to add note'}`);
+        } finally {
+            setNoteSaving(false);
+        }
+    }
+
     /* ── Render ────────────────────────────────────────────────────────────── */
 
     if (loading) {
@@ -842,9 +872,46 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                 </div>
                                             )}
                                             {entry.notes && <p className="casedetail-timeline-notes">{entry.notes}</p>}
+                                            {entry.type === 'note' && !entry.notes && (
+                                                <p className="casedetail-timeline-notes" style={{ fontStyle: 'italic', color: '#64748b' }}>(internal note)</p>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ── Internal Note Section ────────────────────────────────── */}
+                    <div className="casedetail-section" style={{ marginTop: '1rem' }}>
+                        <h2 className="casedetail-section-title">
+                            <MessageSquare size={16} /> Internal Note
+                        </h2>
+                        {isClosed ? (
+                            <p style={{ padding: '0.75rem', color: '#94a3b8', fontSize: '0.8rem', fontStyle: 'italic' }}>Disabled in Inspection Mode</p>
+                        ) : (
+                            <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <textarea
+                                    className="dsf-textarea"
+                                    rows={3}
+                                    placeholder="Add internal note…"
+                                    value={noteText}
+                                    onChange={(e) => setNoteText(e.target.value)}
+                                />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <button
+                                        type="button"
+                                        className="casedetail-btn casedetail-btn-action"
+                                        onClick={handleAddNote}
+                                        disabled={noteSaving || !noteText.trim()}
+                                    >
+                                        {noteSaving ? <Loader2 size={15} className="dsf-spinner" /> : <MessageSquare size={15} />}
+                                        {noteSaving ? 'Adding…' : 'Add Note'}
+                                    </button>
+                                    {noteMsg && (
+                                        <span style={{ fontSize: '0.75rem', color: noteMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{noteMsg}</span>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
