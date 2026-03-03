@@ -107,23 +107,35 @@ export function ReviewQueuePage({ onNavigate, userRole }: ReviewQueuePageProps) 
                 .eq('id', session.user.id)
                 .single();
 
-            if (profErr || !profile?.organisation_id) {
+            if (profErr) {
                 setError('Could not determine your organisation.');
                 setLoading(false);
                 return;
             }
 
-            /* ── Query: non-closed submissions ───────────────────────────── */
-            let query = supabase
-                .from('submissions')
+            /* Resolve org id */
+            let resolvedOrgId = profile?.organisation_id;
+            const viewingAs = localStorage.getItem('slp_viewing_as_org_id');
+            const activeOrg = localStorage.getItem('slp_active_org_id');
+            if (viewingAs) {
+                resolvedOrgId = viewingAs;
+            } else if (activeOrg) {
+                resolvedOrgId = activeOrg;
+            }
+
+            if (!resolvedOrgId) {
+                setError('Select an organisation to view the review queue.');
+                setLoading(false);
+                return;
+            }
+
+            /* ── Query: non-closed cases ───────────────────────────── */
+            const query = supabase
+                .from('cases')
                 .select('id, submitted_at, submission_type, status, risk_level, decision, category, resident_ref')
                 .neq('status', 'closed')
+                .eq('organisation_id', resolvedOrgId)
                 .order('submitted_at', { ascending: false });
-
-            // Org scope (skip for super_admin)
-            if (profile.role !== 'super_admin') {
-                query = query.eq('organisation_id', profile.organisation_id);
-            }
 
             const { data: rows, error: qErr } = await query;
             if (qErr) throw qErr;
@@ -144,7 +156,7 @@ export function ReviewQueuePage({ onNavigate, userRole }: ReviewQueuePageProps) 
         try {
             const supabase = getSupabase();
             const { error: uErr } = await supabase
-                .from('submissions')
+                .from('cases')
                 .update({ status: 'in_review' })
                 .eq('id', id);
 

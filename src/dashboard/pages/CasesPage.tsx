@@ -118,11 +118,12 @@ export function CasesPage({ onNavigate }: CasesPageProps) {
 
             /* Resolve org id — super_admin uses the switcher */
             let resolvedOrgId = profile?.organisation_id;
-            if (profile?.role === 'super_admin') {
-                const switcherOrg = localStorage.getItem('slp_active_org_id');
-                if (switcherOrg) {
-                    resolvedOrgId = switcherOrg;
-                }
+            const viewingAs = localStorage.getItem('slp_viewing_as_org_id');
+            const activeOrg = localStorage.getItem('slp_active_org_id');
+            if (viewingAs) {
+                resolvedOrgId = viewingAs;
+            } else if (activeOrg) {
+                resolvedOrgId = activeOrg;
             }
 
             if (!resolvedOrgId) {
@@ -133,15 +134,14 @@ export function CasesPage({ onNavigate }: CasesPageProps) {
 
             /* ── Build query ─────────────────────────────────────────────── */
             let query = supabase
-                .from('submissions')
+                .from('cases')
                 .select('id, submitted_at, submission_type, status, risk_level, decision, category, resident_ref')
                 .order('submitted_at', { ascending: false })
                 .eq('organisation_id', resolvedOrgId);
 
             // Apply filters
             if (f.status) {
-                const dbStatus = f.status === 'new' ? 'submitted' : f.status;
-                query = query.eq('status', dbStatus);
+                query = query.eq('status', f.status);
             }
             if (f.risk_level) {
                 query = query.eq('risk_level', f.risk_level);

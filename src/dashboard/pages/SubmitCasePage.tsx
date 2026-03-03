@@ -1,50 +1,233 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
     Upload, Loader2, AlertTriangle, CheckCircle2,
-    FileText, Image, Phone, Mail,
+    Phone, MessageSquare, Mail, Globe, FileWarning,
+    Users, DollarSign, ShieldAlert, ClipboardList,
+    ChevronDown, ChevronUp, X, Paperclip,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
-/* ─── Submission type options ────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONSTANTS
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-const SUBMISSION_TYPES = [
-    { value: 'text', label: 'Text / Message', icon: FileText },
-    { value: 'image', label: 'Image / Screenshot', icon: Image },
-    { value: 'call_notes', label: 'Call Notes', icon: Phone },
-    { value: 'email', label: 'Email', icon: Mail },
+const INCIDENT_TYPES = [
+    { value: 'suspicious_phone_call', label: 'Suspicious Phone Call', icon: Phone },
+    { value: 'suspicious_message', label: 'Suspicious Message (SMS / WhatsApp / Social)', icon: MessageSquare },
+    { value: 'suspicious_email', label: 'Suspicious Email', icon: Mail },
+    { value: 'suspicious_website', label: 'Suspicious Website / Link (URL)', icon: Globe },
+    { value: 'suspicious_letter', label: 'Suspicious Letter / Post', icon: FileWarning },
+    { value: 'in_person_incident', label: 'In-Person / Doorstep Incident', icon: Users },
+    { value: 'financial_concern', label: 'Financial Concern (Possible Exploitation)', icon: DollarSign },
+    { value: 'general_safeguarding_note', label: 'General Safeguarding Note', icon: ShieldAlert },
 ] as const;
 
-type SubmissionType = (typeof SUBMISSION_TYPES)[number]['value'];
+type IncidentType = (typeof INCIDENT_TYPES)[number]['value'];
 
-/* ─── Props ──────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function resolveOrgId(): string | null {
+    return localStorage.getItem('slp_viewing_as_org_id')
+        || localStorage.getItem('slp_active_org_id')
+        || null;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PROPS
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 interface SubmitCasePageProps {
     onNavigate?: (path: string) => void;
 }
 
-/* ─── Component ──────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
-    /* Form state */
-    const [submissionType, setSubmissionType] = useState<SubmissionType>('text');
-    const [content, setContent] = useState('');
-    const [attachmentUrl, setAttachmentUrl] = useState('');
-    const [residentRef, setResidentRef] = useState('');
 
-    /* UI state */
+    /* ── Incident type ─────────────────────────────────────────────────────── */
+    const [incidentType, setIncidentType] = useState<IncidentType | ''>('');
+
+    /* ── Resident info ─────────────────────────────────────────────────────── */
+    const [residentRef, setResidentRef] = useState('');
+    const [roomLocation, setRoomLocation] = useState('');
+
+    /* ── Type-specific fields (stored as meta JSON) ────────────────────────── */
+    // Phone call
+    const [callDate, setCallDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [callTime, setCallTime] = useState('');
+    const [callPhone, setCallPhone] = useState('');
+    const [callMoneyRequested, setCallMoneyRequested] = useState('');
+    const [callInfoShared, setCallInfoShared] = useState('');
+    const [callPaymentMade, setCallPaymentMade] = useState('');
+
+    // Message
+    const [msgPlatform, setMsgPlatform] = useState('');
+    const [msgSender, setMsgSender] = useState('');
+    const [msgLinkIncluded, setMsgLinkIncluded] = useState('');
+    const [msgContent, setMsgContent] = useState('');
+
+    // Email
+    const [emailSender, setEmailSender] = useState('');
+    const [emailSubject, setEmailSubject] = useState('');
+    const [emailLinkClicked, setEmailLinkClicked] = useState('');
+    const [emailAttachOpened, setEmailAttachOpened] = useState('');
+    const [emailContent, setEmailContent] = useState('');
+
+    // Website
+    const [webUrl, setWebUrl] = useState('');
+    const [webHowAccessed, setWebHowAccessed] = useState('');
+    const [webDetailsEntered, setWebDetailsEntered] = useState('');
+    const [webNotes, setWebNotes] = useState('');
+
+    // Letter
+    const [letterSender, setLetterSender] = useState('');
+    const [letterPaymentRequested, setLetterPaymentRequested] = useState('');
+    const [letterMethod, setLetterMethod] = useState('');
+    const [letterNotes, setLetterNotes] = useState('');
+
+    // In-person
+    const [inPersonOrg, setInPersonOrg] = useState('');
+    const [inPersonAccess, setInPersonAccess] = useState('');
+    const [inPersonMoney, setInPersonMoney] = useState('');
+    const [inPersonDesc, setInPersonDesc] = useState('');
+
+    // Financial concern
+    const [finConcernType, setFinConcernType] = useState('');
+    const [finUrgent, setFinUrgent] = useState('');
+    const [finNotes, setFinNotes] = useState('');
+
+    // General note
+    const [genCategory, setGenCategory] = useState('');
+    const [genNotes, setGenNotes] = useState('');
+
+    /* ── Actions taken ─────────────────────────────────────────────────────── */
+    const [actFamilyInformed, setActFamilyInformed] = useState(false);
+    const [actBankContacted, setActBankContacted] = useState(false);
+    const [actPoliceInformed, setActPoliceInformed] = useState(false);
+    const [actSafeguardingLead, setActSafeguardingLead] = useState(false);
+    const [actPoliceRef, setActPoliceRef] = useState('');
+    const [actBankRef, setActBankRef] = useState('');
+
+    /* ── Summary ───────────────────────────────────────────────────────────── */
+    const [summary, setSummary] = useState('');
+
+    /* ── Evidence upload ───────────────────────────────────────────────────── */
+    const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    /* ── More details expander ─────────────────────────────────────────────── */
+    const [showMore, setShowMore] = useState(false);
+
+    /* ── UI state ──────────────────────────────────────────────────────────── */
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showToast, setShowToast] = useState(false);
+
+    /* ── File handlers ─────────────────────────────────────────────────────── */
+    const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files ?? []);
+        setEvidenceFiles(prev => [...prev, ...files]);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    }, []);
+
+    const removeFile = useCallback((idx: number) => {
+        setEvidenceFiles(prev => prev.filter((_, i) => i !== idx));
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        const files = Array.from(e.dataTransfer.files).filter((f: File) =>
+            f.type.startsWith('image/') || f.type === 'application/pdf'
+        );
+        setEvidenceFiles(prev => [...prev, ...files]);
+    }, []);
+
+    /* ── Build meta JSON from type-specific fields ─────────────────────────── */
+    function buildMeta(): Record<string, any> {
+        const meta: Record<string, any> = {
+            incident_type: incidentType,
+            resident_reference: residentRef.trim(),
+            room_location: roomLocation.trim(),
+            actions_taken: {
+                family_informed: actFamilyInformed,
+                bank_contacted: actBankContacted,
+                police_informed: actPoliceInformed,
+                safeguarding_lead_informed: actSafeguardingLead,
+                police_reference: actPoliceRef.trim() || null,
+                bank_reference: actBankRef.trim() || null,
+            },
+            evidence: [], // will be populated after upload
+        };
+
+        switch (incidentType) {
+            case 'suspicious_phone_call':
+                meta.details = {
+                    date: callDate, time: callTime || null, phone_number: callPhone || null,
+                    money_requested: callMoneyRequested || null, information_shared: callInfoShared || null,
+                    payment_made: callPaymentMade || null,
+                };
+                break;
+            case 'suspicious_message':
+                meta.details = {
+                    platform: msgPlatform || null, sender: msgSender || null,
+                    link_included: msgLinkIncluded || null, message_content: msgContent || null,
+                };
+                break;
+            case 'suspicious_email':
+                meta.details = {
+                    sender_email: emailSender || null, subject: emailSubject || null,
+                    link_clicked: emailLinkClicked || null, attachment_opened: emailAttachOpened || null,
+                    email_content: emailContent || null,
+                };
+                break;
+            case 'suspicious_website':
+                meta.details = {
+                    url: webUrl || null, how_accessed: webHowAccessed || null,
+                    details_entered: webDetailsEntered || null, notes: webNotes || null,
+                };
+                break;
+            case 'suspicious_letter':
+                meta.details = {
+                    claimed_sender: letterSender || null, payment_requested: letterPaymentRequested || null,
+                    method_requested: letterMethod || null, notes: letterNotes || null,
+                };
+                break;
+            case 'in_person_incident':
+                meta.details = {
+                    claimed_organisation: inPersonOrg || null, access_gained: inPersonAccess || null,
+                    money_requested: inPersonMoney || null, description: inPersonDesc || null,
+                };
+                break;
+            case 'financial_concern':
+                meta.details = {
+                    concern_type: finConcernType || null, urgent: finUrgent || null, notes: finNotes || null,
+                };
+                break;
+            case 'general_safeguarding_note':
+                meta.details = {
+                    category: genCategory || null, notes: genNotes || null,
+                };
+                break;
+        }
+
+        return meta;
+    }
 
     /* ── Submit handler ────────────────────────────────────────────────────── */
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
 
-        if (!content.trim()) {
-            setError('Please enter the case content before submitting.');
-            return;
-        }
+        if (!incidentType) { setError('Please select what happened.'); return; }
+        if (!residentRef.trim()) { setError('Resident reference is required.'); return; }
+        if (!summary.trim()) { setError('Please provide a summary of what happened.'); return; }
+
+        const orgId = resolveOrgId();
+        if (!orgId) { setError('Select an organisation to submit a case.'); return; }
 
         setSubmitting(true);
 
@@ -53,79 +236,83 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
 
             /* 1. Get session */
             const { data: { session } } = await supabase.auth.getSession();
-            if (!session?.user) {
-                setError('You are not logged in. Please refresh and try again.');
-                setSubmitting(false);
-                return;
-            }
+            if (!session?.user) { setError('You are not logged in.'); setSubmitting(false); return; }
 
-            /* 2. Fetch profile → organisation_id + role */
-            const { data: profile, error: profErr } = await supabase
+            /* 2. Fetch profile for org fallback */
+            const { data: profile } = await supabase
                 .from('profiles')
                 .select('organisation_id, role')
                 .eq('id', session.user.id)
                 .single();
 
-            if (profErr) {
-                setError('Could not determine your organisation. Please contact your administrator.');
-                setSubmitting(false);
-                return;
+            const finalOrgId = orgId || profile?.organisation_id;
+            if (!finalOrgId) { setError('Could not determine your organisation.'); setSubmitting(false); return; }
+
+            /* 3. Upload evidence files */
+            const meta = buildMeta();
+            const evidenceUrls: string[] = [];
+
+            for (const file of evidenceFiles) {
+                const storageKey = `cases/${crypto.randomUUID()}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+                const { error: uploadErr } = await supabase.storage
+                    .from('SUBMISSIONS')
+                    .upload(storageKey, file, { cacheControl: '3600', upsert: false });
+                if (uploadErr) throw new Error(`File upload failed: ${uploadErr.message}`);
+
+                const { data: urlData } = supabase.storage
+                    .from('SUBMISSIONS')
+                    .getPublicUrl(storageKey);
+                evidenceUrls.push(String(urlData.publicUrl).trim());
             }
 
-            /* 2b. Resolve org id — super_admin uses the switcher */
-            let resolvedOrgId = profile?.organisation_id;
-            if (profile?.role === 'super_admin') {
-                const switcherOrg = localStorage.getItem('slp_active_org_id');
-                if (!switcherOrg) {
-                    setError("Select an organisation in 'Viewing as' before submitting a case.");
-                    setSubmitting(false);
-                    return;
-                }
-                resolvedOrgId = switcherOrg;
-            }
+            meta.evidence = evidenceUrls;
 
-            if (!resolvedOrgId) {
-                setError('Could not determine your organisation. Please contact your administrator.');
-                setSubmitting(false);
-                return;
-            }
-
-            /* 3. Insert into cases */
+            /* 4. Insert into cases */
             const row: Record<string, unknown> = {
-                organisation_id: resolvedOrgId,
+                organisation_id: finalOrgId,
                 submitted_by: session.user.id,
-                channel: submissionType,
-                description: content.trim(),
+                submission_type: incidentType,
+                description: summary.trim(),
                 status: 'new',
+                resident_ref: residentRef.trim() || null,
+                attachment_url: evidenceUrls[0] || null,
+                meta,
             };
 
-            if (attachmentUrl.trim()) {
-                let url = attachmentUrl.trim();
-                if (!/^https?:\/\//i.test(url)) {
-                    url = 'https://' + url;
-                }
-                row.attachment_url = url;
-            }
-            if (residentRef.trim()) {
-                row.resident_ref = residentRef.trim();
-            }
-
-            const { error: insertErr } = await supabase
+            const { data: inserted, error: insertErr } = await supabase
                 .from('cases')
-                .insert(row);
+                .insert(row)
+                .select('id')
+                .single();
 
-            if (insertErr) {
-                throw insertErr;
+            if (insertErr) throw insertErr;
+
+            /* 5. Timeline event for compliance */
+            if (inserted?.id) {
+                try {
+                    await supabase.rpc('add_case_timeline_event', {
+                        p_case_id: inserted.id,
+                        p_event_type: 'case_submitted',
+                        p_before: null,
+                        p_after: null,
+                        p_meta: {
+                            submission_type: incidentType,
+                            resident_reference: residentRef.trim(),
+                            actions_taken: meta.actions_taken,
+                        },
+                    });
+                } catch {
+                    // Timeline is best-effort — don't block the submission
+                }
             }
 
-            /* 4. Success → toast + navigate */
+            /* 6. Success → toast + navigate */
             setShowToast(true);
             setTimeout(() => {
                 setShowToast(false);
-                if (onNavigate) {
-                    onNavigate('/dashboard/cases');
-                }
+                onNavigate?.('/dashboard/cases');
             }, 1800);
+
         } catch (err: any) {
             setError(err?.message ?? 'Failed to submit case. Please try again.');
         } finally {
@@ -133,37 +320,184 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
         }
     }
 
-    /* ── Render ─────────────────────────────────────────────────────────────── */
+    /* ═══════════════════════════════════════════════════════════════════════
+       RENDER HELPERS
+       ═══════════════════════════════════════════════════════════════════════ */
+
+    function renderYesNo(
+        label: string, value: string, onChange: (v: string) => void, hint?: string
+    ) {
+        return (
+            <div className="dsf-field">
+                <label className="dsf-label">{label}</label>
+                {hint && <p className="dsf-hint">{hint}</p>}
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {['Yes', 'No'].map(opt => (
+                        <button key={opt} type="button"
+                            className={`dsf-type-btn${value === opt ? ' dsf-type-btn--active' : ''}`}
+                            style={{ flex: 1, padding: '0.5rem', fontSize: '0.85rem' }}
+                            onClick={() => onChange(opt)}
+                            disabled={submitting}
+                        >{opt}</button>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    function renderInput(
+        label: string, value: string, onChange: (v: string) => void,
+        opts?: { placeholder?: string; required?: boolean; type?: string; hint?: string }
+    ) {
+        return (
+            <div className="dsf-field">
+                <label className="dsf-label">
+                    {label} {opts?.required
+                        ? <span className="dsf-required">*</span>
+                        : <span className="dsf-optional">(optional)</span>}
+                </label>
+                {opts?.hint && <p className="dsf-hint">{opts.hint}</p>}
+                <input type={opts?.type ?? 'text'} className="dsf-input" value={value}
+                    onChange={e => onChange(e.target.value)}
+                    placeholder={opts?.placeholder} disabled={submitting} />
+            </div>
+        );
+    }
+
+    function renderTextarea(
+        label: string, value: string, onChange: (v: string) => void,
+        opts?: { placeholder?: string; required?: boolean; hint?: string; rows?: number }
+    ) {
+        return (
+            <div className="dsf-field">
+                <label className="dsf-label">
+                    {label} {opts?.required
+                        ? <span className="dsf-required">*</span>
+                        : <span className="dsf-optional">(optional)</span>}
+                </label>
+                {opts?.hint && <p className="dsf-hint">{opts.hint}</p>}
+                <textarea className="dsf-textarea" rows={opts?.rows ?? 3} value={value}
+                    onChange={e => onChange(e.target.value)}
+                    placeholder={opts?.placeholder} disabled={submitting} />
+            </div>
+        );
+    }
+
+    function renderSelect(
+        label: string, value: string, onChange: (v: string) => void,
+        options: string[], opts?: { hint?: string }
+    ) {
+        return (
+            <div className="dsf-field">
+                <label className="dsf-label">{label} <span className="dsf-optional">(optional)</span></label>
+                {opts?.hint && <p className="dsf-hint">{opts.hint}</p>}
+                <select className="dsf-input" value={value}
+                    onChange={e => onChange(e.target.value)} disabled={submitting}
+                    style={{ cursor: 'pointer' }}>
+                    <option value="">— Select —</option>
+                    {options.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+            </div>
+        );
+    }
+
+    /* ── Type-specific fields ──────────────────────────────────────────────── */
+    function renderTypeFields() {
+        switch (incidentType) {
+            case 'suspicious_phone_call':
+                return (<>
+                    {renderInput('Date', callDate, setCallDate, { type: 'date', hint: 'Date the call was received.' })}
+                    {renderInput('Time', callTime, setCallTime, { type: 'time', hint: 'Approximate time of the call.' })}
+                    {renderInput('Phone number displayed', callPhone, setCallPhone, { placeholder: 'e.g. +44 7700 000000' })}
+                    {renderYesNo('Money requested?', callMoneyRequested, setCallMoneyRequested)}
+                    {renderYesNo('Information shared?', callInfoShared, setCallInfoShared, 'Did the resident share personal or financial information?')}
+                    {renderYesNo('Payment made?', callPaymentMade, setCallPaymentMade)}
+                </>);
+            case 'suspicious_message':
+                return (<>
+                    {renderSelect('Platform', msgPlatform, setMsgPlatform, ['SMS', 'WhatsApp', 'Messenger', 'Other'])}
+                    {renderInput('Sender number or username', msgSender, setMsgSender)}
+                    {renderYesNo('Link included?', msgLinkIncluded, setMsgLinkIncluded)}
+                    {renderTextarea('Message content', msgContent, setMsgContent, { placeholder: 'Paste the message here if available…' })}
+                </>);
+            case 'suspicious_email':
+                return (<>
+                    {renderInput('Sender email', emailSender, setEmailSender, { placeholder: 'sender@example.com' })}
+                    {renderInput('Subject', emailSubject, setEmailSubject)}
+                    {renderYesNo('Link clicked?', emailLinkClicked, setEmailLinkClicked)}
+                    {renderYesNo('Attachment opened?', emailAttachOpened, setEmailAttachOpened)}
+                    {renderTextarea('Email content', emailContent, setEmailContent, { placeholder: 'Paste the email content here if available…' })}
+                </>);
+            case 'suspicious_website':
+                return (<>
+                    {renderInput('URL', webUrl, setWebUrl, { required: true, placeholder: 'https://…', hint: 'The suspicious website address.' })}
+                    {renderInput('How accessed', webHowAccessed, setWebHowAccessed, { placeholder: 'e.g. link in email, typed in browser' })}
+                    {renderYesNo('Details entered?', webDetailsEntered, setWebDetailsEntered, 'Were any personal or payment details entered?')}
+                    {renderTextarea('Notes', webNotes, setWebNotes)}
+                </>);
+            case 'suspicious_letter':
+                return (<>
+                    {renderInput('Claimed sender', letterSender, setLetterSender, { placeholder: 'e.g. HMRC, bank name' })}
+                    {renderYesNo('Payment requested?', letterPaymentRequested, setLetterPaymentRequested)}
+                    {renderSelect('Method requested', letterMethod, setLetterMethod, ['Cash', 'Bank transfer', 'Gift cards', 'Other'])}
+                    {renderTextarea('Notes', letterNotes, setLetterNotes)}
+                </>);
+            case 'in_person_incident':
+                return (<>
+                    {renderInput('Claimed organisation', inPersonOrg, setInPersonOrg, { placeholder: 'e.g. utility company, council' })}
+                    {renderYesNo('Access gained?', inPersonAccess, setInPersonAccess, 'Did they gain entry to the building or room?')}
+                    {renderYesNo('Money requested?', inPersonMoney, setInPersonMoney)}
+                    {renderTextarea('Description', inPersonDesc, setInPersonDesc, { required: true, placeholder: 'Describe what happened…', rows: 4 })}
+                </>);
+            case 'financial_concern':
+                return (<>
+                    {renderSelect('Concern type', finConcernType, setFinConcernType, ['Pressure', 'Unusual withdrawals', 'POA concern', 'Other'])}
+                    {renderYesNo('Urgent?', finUrgent, setFinUrgent, 'Does this need immediate attention?')}
+                    {renderTextarea('Notes', finNotes, setFinNotes, { placeholder: 'Describe the concern…', rows: 4 })}
+                </>);
+            case 'general_safeguarding_note':
+                return (<>
+                    {renderInput('Category', genCategory, setGenCategory, { placeholder: 'e.g. welfare, behaviour change' })}
+                    {renderTextarea('Notes', genNotes, setGenNotes, { placeholder: 'Describe the observation or concern…', rows: 4 })}
+                </>);
+            default:
+                return null;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       RENDER
+       ═══════════════════════════════════════════════════════════════════════ */
     return (
         <div>
             {/* Header */}
             <div className="dashboard-page-header">
                 <h1 className="dashboard-page-title">Submit Case</h1>
                 <p className="dashboard-page-subtitle">
-                    Upload a suspicious message, link, or screenshot for expert safeguarding review.
+                    Record a safeguarding concern or suspicious incident. All fields are confidential.
                 </p>
             </div>
 
-            {/* Form card */}
             <form className="dsf-card" onSubmit={handleSubmit} autoComplete="off">
 
-                {/* Submission type */}
+                {/* ── Step 1: What happened? ───────────────────────────────── */}
                 <div className="dsf-field">
-                    <label className="dsf-label" htmlFor="dsf-type">
-                        Submission Type <span className="dsf-required">*</span>
+                    <label className="dsf-label">
+                        What happened? <span className="dsf-required">*</span>
                     </label>
-                    <div className="dsf-type-grid">
-                        {SUBMISSION_TYPES.map((t) => {
+                    <p className="dsf-hint">Select the type of incident you are reporting.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        {INCIDENT_TYPES.map(t => {
                             const Icon = t.icon;
-                            const active = submissionType === t.value;
+                            const active = incidentType === t.value;
                             return (
-                                <button
-                                    key={t.value}
-                                    type="button"
+                                <button key={t.value} type="button"
                                     className={`dsf-type-btn${active ? ' dsf-type-btn--active' : ''}`}
-                                    onClick={() => setSubmissionType(t.value)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.65rem 0.85rem', textAlign: 'left', justifyContent: 'flex-start' }}
+                                    onClick={() => { setIncidentType(t.value); setError(null); }}
+                                    disabled={submitting}
                                 >
-                                    <Icon size={20} />
+                                    <Icon size={18} />
                                     <span>{t.label}</span>
                                 </button>
                             );
@@ -171,91 +505,187 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                     </div>
                 </div>
 
-                {/* Content */}
-                <div className="dsf-field">
-                    <label className="dsf-label" htmlFor="dsf-content">
-                        Content <span className="dsf-required">*</span>
-                    </label>
-                    <p className="dsf-hint">
-                        Paste the suspicious message, describe the incident, or add any relevant notes.
-                    </p>
-                    <textarea
-                        id="dsf-content"
-                        className="dsf-textarea"
-                        rows={6}
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        placeholder="Enter case details here…"
-                        disabled={submitting}
-                    />
-                </div>
+                {/* ── Step 2: Sections (only when type selected) ───────────── */}
+                {incidentType && (
+                    <>
+                        {/* Resident Information */}
+                        <div className="dashboard-panel" style={{ marginTop: '1.25rem' }}>
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title">
+                                    <ClipboardList size={16} className="dashboard-panel-title-icon" />
+                                    Resident Information
+                                </h2>
+                            </div>
+                            <div style={{ padding: '1rem 1.25rem' }}>
+                                {renderInput('Resident Reference', residentRef, setResidentRef, {
+                                    required: true,
+                                    placeholder: 'e.g. Initials or internal reference',
+                                    hint: 'Use initials or internal reference if required by your policy.',
+                                })}
+                                {renderInput('Room / Location', roomLocation, setRoomLocation, {
+                                    placeholder: 'e.g. Room 12',
+                                })}
+                            </div>
+                        </div>
 
-                {/* Attachment URL */}
-                <div className="dsf-field">
-                    <label className="dsf-label" htmlFor="dsf-attachment">
-                        Attachment URL <span className="dsf-optional">(optional)</span>
-                    </label>
-                    <p className="dsf-hint">
-                        Link to an image, document, or external resource related to this case.
-                    </p>
-                    <input
-                        id="dsf-attachment"
-                        type="text"
-                        className="dsf-input"
-                        value={attachmentUrl}
-                        onChange={(e) => setAttachmentUrl(e.target.value)}
-                        placeholder="https://example.com/screenshot.png"
-                        disabled={submitting}
-                    />
-                </div>
+                        {/* Type-Specific Fields */}
+                        <div className="dashboard-panel" style={{ marginTop: '1rem' }}>
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title">
+                                    <ShieldAlert size={16} className="dashboard-panel-title-icon" />
+                                    Incident Details
+                                </h2>
+                            </div>
+                            <div style={{ padding: '1rem 1.25rem' }}>
+                                {renderTypeFields()}
+                            </div>
+                        </div>
 
-                {/* Resident ref */}
-                <div className="dsf-field">
-                    <label className="dsf-label" htmlFor="dsf-resident">
-                        Resident Reference <span className="dsf-optional">(optional)</span>
-                    </label>
-                    <p className="dsf-hint">
-                        An internal reference for the resident involved, e.g. "Resident A12".
-                    </p>
-                    <input
-                        id="dsf-resident"
-                        type="text"
-                        className="dsf-input"
-                        value={residentRef}
-                        onChange={(e) => setResidentRef(e.target.value)}
-                        placeholder="e.g. Resident A12"
-                        disabled={submitting}
-                    />
-                </div>
+                        {/* Actions Taken */}
+                        <div className="dashboard-panel" style={{ marginTop: '1rem' }}>
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title">
+                                    <CheckCircle2 size={16} className="dashboard-panel-title-icon" />
+                                    Actions Taken
+                                </h2>
+                            </div>
+                            <div style={{ padding: '1rem 1.25rem' }}>
+                                <p className="dsf-hint" style={{ marginBottom: '0.75rem' }}>Tick any actions already taken.</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {[
+                                        { label: 'Family informed', checked: actFamilyInformed, set: setActFamilyInformed },
+                                        { label: 'Bank contacted', checked: actBankContacted, set: setActBankContacted },
+                                        { label: 'Police informed', checked: actPoliceInformed, set: setActPoliceInformed },
+                                        { label: 'Safeguarding lead informed', checked: actSafeguardingLead, set: setActSafeguardingLead },
+                                    ].map(item => (
+                                        <label key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.88rem', color: '#334155' }}>
+                                            <input type="checkbox" checked={item.checked}
+                                                onChange={e => item.set(e.target.checked)} disabled={submitting}
+                                                style={{ width: '18px', height: '18px', accentColor: '#C9A84C' }} />
+                                            {item.label}
+                                        </label>
+                                    ))}
+                                </div>
 
-                {/* Error */}
-                {error && (
-                    <div className="dsf-error">
+                                {/* Optional ref numbers — collapsible */}
+                                <button type="button" onClick={() => setShowMore(!showMore)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.75rem', padding: '0.4rem 0', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.82rem', color: '#64748b', fontFamily: 'inherit' }}>
+                                    {showMore ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                    {showMore ? 'Hide additional details' : 'Add more details'}
+                                </button>
+
+                                {showMore && (
+                                    <div style={{ marginTop: '0.5rem' }}>
+                                        {renderInput('Police reference number', actPoliceRef, setActPoliceRef, { placeholder: 'e.g. CR/12345/24' })}
+                                        {renderInput('Bank reference / case number', actBankRef, setActBankRef)}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Summary */}
+                        <div className="dashboard-panel" style={{ marginTop: '1rem' }}>
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title">
+                                    <ClipboardList size={16} className="dashboard-panel-title-icon" />
+                                    Summary
+                                </h2>
+                            </div>
+                            <div style={{ padding: '1rem 1.25rem' }}>
+                                {renderTextarea('Summary of what happened', summary, setSummary, {
+                                    required: true,
+                                    rows: 5,
+                                    placeholder: 'Write what happened in plain English. This will help generate the safeguarding report.',
+                                    hint: 'Write what happened in plain English. This will help generate the safeguarding report.',
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Evidence Upload */}
+                        <div className="dashboard-panel" style={{ marginTop: '1rem' }}>
+                            <div className="dashboard-panel-header">
+                                <h2 className="dashboard-panel-title">
+                                    <Paperclip size={16} className="dashboard-panel-title-icon" />
+                                    Upload Evidence
+                                    <span className="dsf-optional" style={{ marginLeft: '0.5rem' }}>(optional)</span>
+                                </h2>
+                            </div>
+                            <div style={{ padding: '1rem 1.25rem' }}>
+                                {/* Drop zone */}
+                                <div
+                                    onDragOver={e => e.preventDefault()}
+                                    onDrop={handleDrop}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    style={{
+                                        border: '2px dashed #cbd5e1', borderRadius: '10px', padding: '1.5rem',
+                                        textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.2s',
+                                        background: '#f8fafc',
+                                    }}
+                                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#C9A84C')}
+                                    onMouseLeave={e => (e.currentTarget.style.borderColor = '#cbd5e1')}
+                                >
+                                    <Upload size={28} style={{ color: '#94a3b8', margin: '0 auto 0.5rem' }} />
+                                    <p style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 500 }}>
+                                        Drag &amp; drop files here, or click to browse
+                                    </p>
+                                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                                        Images (JPG, PNG, WEBP) and PDFs accepted
+                                    </p>
+                                </div>
+                                <input ref={fileInputRef} type="file" multiple
+                                    accept="image/*,.pdf" onChange={handleFileSelect}
+                                    style={{ display: 'none' }} />
+
+                                {/* File list */}
+                                {evidenceFiles.length > 0 && (
+                                    <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                        {evidenceFiles.map((f, i) => (
+                                            <div key={i} style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                padding: '0.5rem 0.65rem', background: '#f1f5f9', borderRadius: '6px', fontSize: '0.82rem',
+                                            }}>
+                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#334155' }}>
+                                                    {f.name} <span style={{ color: '#94a3b8' }}>({(f.size / 1024).toFixed(0)} KB)</span>
+                                                </span>
+                                                <button type="button" onClick={() => removeFile(i)}
+                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#94a3b8' }}>
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Error */}
+                        {error && (
+                            <div className="dsf-error" style={{ marginTop: '1rem' }}>
+                                <AlertTriangle size={16} />
+                                <span>{error}</span>
+                            </div>
+                        )}
+
+                        {/* Submit */}
+                        <div className="dsf-actions" style={{ marginTop: '1.25rem' }}>
+                            <button type="submit" className="dsf-submit-btn" disabled={submitting}>
+                                {submitting ? (
+                                    <><Loader2 size={18} className="dsf-spinner" /> Submitting…</>
+                                ) : (
+                                    <><Upload size={18} /> Submit Case</>
+                                )}
+                            </button>
+                        </div>
+                    </>
+                )}
+
+                {/* Error (shown when no type selected but error set) */}
+                {!incidentType && error && (
+                    <div className="dsf-error" style={{ marginTop: '1rem' }}>
                         <AlertTriangle size={16} />
                         <span>{error}</span>
                     </div>
                 )}
-
-                {/* Actions */}
-                <div className="dsf-actions">
-                    <button
-                        type="submit"
-                        className="dsf-submit-btn"
-                        disabled={submitting}
-                    >
-                        {submitting ? (
-                            <>
-                                <Loader2 size={18} className="dsf-spinner" />
-                                Submitting…
-                            </>
-                        ) : (
-                            <>
-                                <Upload size={18} />
-                                Submit Case
-                            </>
-                        )}
-                    </button>
-                </div>
             </form>
 
             {/* Success toast */}
