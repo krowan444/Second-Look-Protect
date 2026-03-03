@@ -250,19 +250,37 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
 
             /* 3. Upload evidence files */
             const meta = buildMeta();
-            const evidenceUrls: string[] = [];
+            const evidenceUrls: { path: string; url: string }[] = [];
 
-            for (const file of evidenceFiles) {
-                const storageKey = `cases/${crypto.randomUUID()}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-                const { error: uploadErr } = await supabase.storage
-                    .from('SUBMISSIONS')
-                    .upload(storageKey, file, { cacheControl: '3600', upsert: false });
-                if (uploadErr) throw new Error(`File upload failed: ${uploadErr.message}`);
+            if (evidenceFiles.length > 0) {
+                const uploadOrgId = resolveOrgId();
+                if (!uploadOrgId) {
+                    setError('Select an organisation to upload evidence.');
+                    setSubmitting(false);
+                    return;
+                }
 
-                const { data: urlData } = supabase.storage
-                    .from('SUBMISSIONS')
-                    .getPublicUrl(storageKey);
-                evidenceUrls.push(String(urlData.publicUrl).trim());
+                for (const file of evidenceFiles) {
+                    const sanitized = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                    const storageKey = `evidence/${uploadOrgId}/submissions/draft/${Date.now()}-${sanitized}`;
+
+                    const { error: uploadErr } = await supabase.storage
+                        .from('SUBMISSIONS')
+                        .upload(storageKey, file, { cacheControl: '3600', upsert: false });
+
+                    if (uploadErr) {
+                        throw new Error(`Evidence upload failed for "${file.name}": ${uploadErr.message}`);
+                    }
+
+                    const { data: urlData } = supabase.storage
+                        .from('SUBMISSIONS')
+                        .getPublicUrl(storageKey);
+
+                    evidenceUrls.push({
+                        path: storageKey,
+                        url: String(urlData.publicUrl).trim(),
+                    });
+                }
             }
 
             meta.evidence = evidenceUrls;
@@ -275,7 +293,7 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                 description: summary.trim(),
                 status: 'new',
                 resident_ref: residentRef.trim() || null,
-                attachment_url: evidenceUrls[0] || null,
+                attachment_url: evidenceUrls[0]?.url || null,
                 meta,
             };
 
