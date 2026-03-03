@@ -131,45 +131,103 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    overflow-x: hidden;
+    max-width: calc(100vw - 260px);
 }
 
 /* ─── Top Bar ────────────────────────────────────────────────────────────── */
 .dashboard-topbar {
-    height: 64px;
+    min-height: 64px;
     background: #ffffff;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 1.5rem;
+    padding: 0.5rem 1.5rem;
     position: sticky;
     top: 0;
     z-index: 30;
+    gap: 0.75rem;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .dashboard-topbar-left {
     display: flex;
     align-items: center;
     gap: 1rem;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .dashboard-topbar-org {
     font-size: 0.95rem;
     font-weight: 600;
     color: #0B1E36;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
 }
 
 .dashboard-topbar-right {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+/* ─── Mobile-stackable row (displays inline on desktop) ──────────────────── */
+.dashboard-topbar-mobile-row {
+    display: contents;
+}
+
+/* ─── Org Switcher ───────────────────────────────────────────────────────── */
+.dashboard-topbar-switcher {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 8px;
+    font-size: 0.8rem;
+    min-width: 0;
+    flex-shrink: 1;
+}
+
+.dashboard-topbar-switcher-label {
+    color: #64748b;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.dashboard-topbar-switcher-select {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    font-size: 0.8rem;
+    color: #0f172a;
+    max-width: 200px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ─── User button name (hideable on mobile) ──────────────────────────────── */
+.dashboard-user-btn-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .dashboard-submit-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1.1rem;
+    height: 40px;
+    padding: 0 1rem;
     background: linear-gradient(135deg, #C6A544 0%, #D2B356 50%, #B8962E 100%);
     color: #ffffff;
     font-size: 0.82rem;
@@ -179,6 +237,8 @@
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(201, 168, 76, 0.25);
     transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .dashboard-submit-btn:hover {
@@ -189,6 +249,7 @@
 .dashboard-submit-btn svg {
     width: 16px;
     height: 16px;
+    flex-shrink: 0;
 }
 
 .dashboard-user-menu {
@@ -208,6 +269,11 @@
     font-weight: 500;
     color: #334155;
     transition: all 0.15s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .dashboard-user-btn:hover {
@@ -507,7 +573,24 @@
     display: none;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE — Portrait (max-width: 768px)
+   Only responsive overrides. Desktop is untouched.
+   ═══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
+
+    /* ── Overflow prevention ──────────────────────────────────────────── */
+    .dashboard-shell {
+        overflow-x: hidden;
+    }
+
+    .dashboard-content {
+        margin-left: 0;
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+
+    /* ── Sidebar → off-canvas drawer ─────────────────────────────────── */
     .dashboard-sidebar {
         transform: translateX(-100%);
     }
@@ -532,16 +615,301 @@
         pointer-events: auto;
     }
 
-    .dashboard-content {
-        margin-left: 0;
-    }
-
     .dashboard-sidebar-toggle {
         display: flex;
+        width: 40px;
+        height: 40px;
+    }
+
+    /* ── Top bar — stacked layout ─────────────────────────────────────── */
+    .dashboard-topbar {
+        flex-wrap: wrap;
+        height: auto;
+        min-height: unset;
+        padding: 0.5rem 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .dashboard-topbar-left {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .dashboard-topbar-org {
+        font-size: 0.85rem;
+        max-width: 160px;
+    }
+
+    .dashboard-topbar-right {
+        flex-shrink: 0;
+    }
+
+    /* Mobile row: stack switcher + CTA full width */
+    .dashboard-topbar-mobile-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        width: 100%;
+        order: 10;
+        /* push below row 1 */
+    }
+
+    /* Org switcher — full width */
+    .dashboard-topbar-switcher {
+        width: 100%;
+        margin-right: 0;
+    }
+
+    .dashboard-topbar-switcher-select {
+        flex: 1;
+        max-width: none;
+        min-height: 44px;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.65rem;
+    }
+
+    .dashboard-topbar-switcher-label {
+        font-size: 0.75rem;
+    }
+
+    /* Submit CTA — full width, tall touch target */
+    .dashboard-submit-btn {
+        width: 100%;
+        justify-content: center;
+        height: 44px;
+        font-size: 0.88rem;
+    }
+
+    /* User pill — compact */
+    .dashboard-user-btn {
+        max-width: none;
+        padding: 0.3rem 0.5rem;
+    }
+
+    .dashboard-user-btn-name {
+        display: none;
+    }
+
+    .dashboard-user-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.72rem;
+    }
+
+    .dashboard-user-dropdown {
+        right: -0.5rem;
+        min-width: 200px;
+    }
+
+    /* ── Main content ─────────────────────────────────────────────────── */
+    .dashboard-main {
+        padding: 1rem;
+    }
+
+    .dashboard-page-title {
+        font-size: 1.2rem;
+    }
+
+    .dashboard-page-subtitle {
+        font-size: 0.82rem;
+    }
+
+    /* ── Stat cards — single column ───────────────────────────────────── */
+    .dashboard-overview-cards {
+        grid-template-columns: 1fr;
+    }
+
+    /* ── Panels — full width ──────────────────────────────────────────── */
+    .dashboard-panel {
+        border-radius: 8px;
+    }
+
+    .dashboard-panel-header {
+        padding: 0.75rem 0.85rem;
+    }
+
+    .dashboard-panel-title {
+        font-size: 0.85rem;
+    }
+
+    /* ── Tables — horizontal scroll with touch momentum ───────────────── */
+    .dashboard-panel-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dashboard-panel-table thead th,
+    .dashboard-panel-table tbody td {
+        padding: 0.5rem 0.65rem;
+        font-size: 0.75rem;
+    }
+
+    .dashboard-panel-table tbody td {
+        white-space: nowrap;
+    }
+
+    /* ── Filter bar ───────────────────────────────────────────────────── */
+    .dashboard-filter-bar {
+        padding: 0.75rem;
+    }
+
+    .dashboard-filter-row {
+        flex-direction: column;
+    }
+
+    .dashboard-filter-field {
+        min-width: 100%;
+    }
+
+    .dashboard-filter-select,
+    .dashboard-filter-input {
+        min-height: 44px;
+        font-size: 0.88rem;
+    }
+
+    .dashboard-filter-apply,
+    .dashboard-filter-clear {
+        min-height: 44px;
+        font-size: 0.85rem;
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* ── Case detail ──────────────────────────────────────────────────── */
+    .casedetail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .casedetail-header-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .casedetail-field-row-inline {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .casedetail-review-actions {
+        flex-direction: column;
+    }
+
+    .casedetail-btn {
+        min-height: 44px;
+        font-size: 0.85rem;
+        justify-content: center;
+    }
+
+    .casedetail-action-type-btn {
+        min-height: 40px;
+        font-size: 0.8rem;
+    }
+
+    /* ── Submit form ──────────────────────────────────────────────────── */
+    .dsf-card {
+        padding: 1rem;
+    }
+
+    .dsf-type-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dsf-submit-btn {
+        width: 100%;
+        min-height: 44px;
+        justify-content: center;
+    }
+
+    .dsf-input,
+    .dsf-textarea {
+        min-height: 44px;
+        font-size: 0.88rem;
+    }
+
+    /* ── Reports ─────────────────────────────────────────────────────── */
+    .dashboard-reports-breakdowns {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-reports-actions {
+        flex-wrap: wrap;
+    }
+
+    .dashboard-reports-action-btn {
+        min-height: 44px;
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* ── Settings ────────────────────────────────────────────────────── */
+    .dashboard-settings-card {
+        max-width: 100%;
+        padding: 1.25rem;
+    }
+
+    .dashboard-settings-save-btn {
+        width: 100%;
+        min-height: 44px;
+        justify-content: center;
+    }
+
+    /* ── Placeholder cards ────────────────────────────────────────────── */
+    .dashboard-placeholder-card {
+        max-width: 100%;
+        padding: 2rem 1.25rem;
+    }
+
+    /* ── Action buttons ───────────────────────────────────────────────── */
+    .dashboard-action-btn {
+        min-height: 40px;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.78rem;
+    }
+
+    /* ── Toast positioning ────────────────────────────────────────────── */
+    .dsf-toast {
+        left: 1rem;
+        right: 1rem;
+        transform: none;
+        bottom: 1rem;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE — Landscape (max-width: 900px, landscape)
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) and (orientation: landscape) {
+    .dashboard-topbar {
+        padding: 0.35rem 0.75rem;
+        gap: 0.35rem;
+    }
+
+    /* Keep switcher + CTA on same row in landscape */
+    .dashboard-topbar-mobile-row {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        width: 100%;
+        order: 10;
+    }
+
+    .dashboard-topbar-switcher {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .dashboard-submit-btn {
+        width: auto;
+        flex-shrink: 0;
+    }
+
+    .dashboard-overview-cards {
+        grid-template-columns: repeat(2, 1fr);
     }
 
     .dashboard-main {
-        padding: 1.25rem;
+        padding: 0.75rem 1rem;
     }
 }
 

@@ -95,6 +95,7 @@ function fmtDate(iso: string): string {
 export function OverviewPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [noOrg, setNoOrg] = useState(false);
 
     // Canonical source of truth: CASES
     const [casesMonth, setCasesMonth] = useState<CaseRow[]>([]);
@@ -118,20 +119,34 @@ export function OverviewPage() {
                     return;
                 }
 
-                // Fetch profile to get organisation_id
+                // Fetch profile to get organisation_id and role
                 const { data: profile, error: profErr } = await supabase
                     .from('profiles')
-                    .select('organisation_id')
+                    .select('organisation_id, role')
                     .eq('id', session.user.id)
                     .single();
 
-                if (profErr || !profile?.organisation_id) {
-                    setError('Could not determine your organisation.');
+                if (profErr) {
+                    setError('Could not load profile.');
                     setLoading(false);
                     return;
                 }
 
-                const orgId = profile.organisation_id;
+                // Resolve org: super_admin uses the org switcher
+                let orgId = profile?.organisation_id ?? null;
+                if (profile?.role === 'super_admin') {
+                    const switcherOrg =
+                        localStorage.getItem('slp_viewing_as_org_id') ||
+                        localStorage.getItem('slp_active_org_id');
+                    if (switcherOrg) orgId = switcherOrg;
+                }
+
+                if (!orgId) {
+                    // No org selected — show friendly empty state
+                    setNoOrg(true);
+                    setLoading(false);
+                    return;
+                }
 
                 // This-month cases
                 const now = new Date();
@@ -274,6 +289,30 @@ export function OverviewPage() {
                 <div className="dashboard-overview-error">
                     <AlertTriangle size={20} />
                     <span>{error}</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (noOrg) {
+        return (
+            <div>
+                <div className="dashboard-page-header">
+                    <h1 className="dashboard-page-title">Overview</h1>
+                    <p className="dashboard-page-subtitle">
+                        Select an organisation from the &ldquo;Viewing as&rdquo; dropdown above to view its overview.
+                    </p>
+                </div>
+                <div className="dashboard-placeholder-card">
+                    <div className="dashboard-placeholder-icon">
+                        <LayoutDashboard />
+                    </div>
+                    <p className="dashboard-page-title" style={{ fontSize: '1.1rem' }}>
+                        No organisation selected
+                    </p>
+                    <p className="dashboard-page-subtitle" style={{ textAlign: 'center', margin: '0.5rem auto 0' }}>
+                        Please choose an organisation to see its dashboard overview.
+                    </p>
                 </div>
             </div>
         );

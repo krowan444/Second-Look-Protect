@@ -120,57 +120,6 @@ export function DashboardLayout({
           </div>
 
           <div className="dashboard-topbar-right">
-            {/* Super-admin org switcher */}
-            {isSuperAdmin && allOrgs.length > 0 && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  marginRight: '8px',
-                  fontSize: '0.8rem',
-                }}
-              >
-                <span style={{ color: '#64748b', whiteSpace: 'nowrap' }}>
-                  Viewing as
-                </span>
-
-                <select
-                  value={activeOrgId || '__global__'}
-                  onChange={handleOrgSwitch}
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    border: '1px solid #cbd5e1',
-                    background: '#fff',
-                    fontSize: '0.8rem',
-                    color: '#0f172a',
-                    maxWidth: '220px',
-                  }}
-                >
-                  <option value="__global__">Super Admin (Global)</option>
-                  {allOrgs.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name}
-                    </option>
-                  ))}
-                </select>
-
-                <span style={{ color: '#94a3b8', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
-                  {activeOrgId ? `Mode: Viewing as ${allOrgs.find(o => o.id === activeOrgId)?.name ?? '…'}` : 'Mode: Global'}
-                </span>
-              </div>
-            )}
-
-            {/* Submit Case button */}
-            <button
-              className="dashboard-submit-btn"
-              onClick={() => onNavigate('/dashboard/submit')}
-            >
-              <Upload size={16} />
-              Submit Case
-            </button>
-
             {/* User menu */}
             <div className="dashboard-user-menu">
               <button
@@ -180,7 +129,7 @@ export function DashboardLayout({
                 aria-haspopup="true"
               >
                 <div className="dashboard-user-avatar">{initials}</div>
-                <span>{user.full_name ?? user.email}</span>
+                <span className="dashboard-user-btn-name">{user.full_name ?? user.email}</span>
                 <ChevronDown size={14} />
               </button>
 
@@ -207,7 +156,7 @@ export function DashboardLayout({
                     }}
                   >
                     <User size={14} />
-                    Profile & Settings
+                    Profile &amp; Settings
                   </button>
 
                   <div className="dashboard-user-dropdown-divider" />
@@ -226,6 +175,40 @@ export function DashboardLayout({
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Mobile-stackable row: org switcher + submit CTA */}
+          <div className="dashboard-topbar-mobile-row">
+            {/* Super-admin org switcher */}
+            {isSuperAdmin && allOrgs.length > 0 && (
+              <div className="dashboard-topbar-switcher">
+                <span className="dashboard-topbar-switcher-label">
+                  Viewing as
+                </span>
+
+                <select
+                  className="dashboard-topbar-switcher-select"
+                  value={activeOrgId || '__global__'}
+                  onChange={handleOrgSwitch}
+                >
+                  <option value="__global__">Super Admin (Global)</option>
+                  {allOrgs.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Submit Case button */}
+            <button
+              className="dashboard-submit-btn"
+              onClick={() => onNavigate('/dashboard/submit')}
+            >
+              <Upload size={16} />
+              Submit Case
+            </button>
           </div>
         </header>
 
