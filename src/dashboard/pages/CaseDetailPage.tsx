@@ -190,6 +190,13 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     const canReview = userRole ? REVIEW_ROLES.includes(userRole) : false;
     const isSuperAdmin = userRole === 'super_admin';
 
+    // Escalation form state
+    const [escType, setEscType] = useState('');
+    const [escRef, setEscRef] = useState('');
+    const [escNotes, setEscNotes] = useState('');
+    const [escSaving, setEscSaving] = useState(false);
+    const [escMsg, setEscMsg] = useState<string | null>(null);
+
     /* ── Build merged timeline ───────────────────────────────────────────── */
     function buildTimeline(c: CaseRow, acts: CaseAction[], revs: CaseReview[]): TimelineEntry[] {
         const entries: TimelineEntry[] = [];
@@ -590,6 +597,33 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
 
     useEffect(() => { if (orgId) fetchCaseHistory(); }, [orgId, fetchCaseHistory]);
 
+    /* ── Record Escalation ─────────────────────────────────────────────────── */
+    async function handleRecordEscalation() {
+        if (!escType || !caseData) return;
+        setEscSaving(true);
+        setEscMsg(null);
+        try {
+            const supabase = getSupabase();
+            const { error: rpcErr } = await supabase.rpc('add_case_timeline_event', {
+                p_case_id: caseId,
+                p_event_type: 'escalation_recorded',
+                p_before: null,
+                p_after: null,
+                p_meta: { type: escType, reference: escRef || null, notes: escNotes || null },
+            });
+            if (rpcErr) throw rpcErr;
+            setEscType('');
+            setEscRef('');
+            setEscNotes('');
+            setEscMsg('Escalation recorded.');
+            await fetchData();
+        } catch (err: any) {
+            setEscMsg(`Error: ${err?.message ?? 'Failed to record escalation'}`);
+        } finally {
+            setEscSaving(false);
+        }
+    }
+
     /* ── Render ────────────────────────────────────────────────────────────── */
 
     if (loading) {
@@ -814,6 +848,53 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                             </div>
                         )}
                     </div>
+
+                    {/* ── Escalation Section ──────────────────────────────────── */}
+                    <div className="casedetail-section" style={{ marginTop: '1.5rem' }}>
+                        <h2 className="casedetail-section-title">
+                            <AlertTriangle size={16} /> Escalation
+                        </h2>
+                        {isClosed ? (
+                            <p style={{ padding: '0.75rem', color: '#94a3b8', fontSize: '0.8rem', fontStyle: 'italic' }}>Disabled in Inspection Mode</p>
+                        ) : (
+                            <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                                <div className="casedetail-form-field">
+                                    <label className="casedetail-form-label">Escalation Type</label>
+                                    <select className="dsf-input" value={escType} onChange={(e) => setEscType(e.target.value)}>
+                                        <option value="">— Select —</option>
+                                        <option value="family_notified">Family Notified</option>
+                                        <option value="bank_contacted">Bank Contacted</option>
+                                        <option value="police_reference">Police Reference</option>
+                                        <option value="telco_contacted">Telco Contacted</option>
+                                        <option value="resident_advised">Resident Advised</option>
+                                    </select>
+                                </div>
+                                <div className="casedetail-form-field">
+                                    <label className="casedetail-form-label">Reference</label>
+                                    <input className="dsf-input" type="text" placeholder="Optional reference" value={escRef} onChange={(e) => setEscRef(e.target.value)} />
+                                </div>
+                                <div className="casedetail-form-field">
+                                    <label className="casedetail-form-label">Notes</label>
+                                    <textarea className="dsf-textarea" rows={3} placeholder="Escalation notes…" value={escNotes} onChange={(e) => setEscNotes(e.target.value)} />
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <button
+                                        type="button"
+                                        className="casedetail-btn casedetail-btn-action"
+                                        onClick={handleRecordEscalation}
+                                        disabled={escSaving || !escType}
+                                    >
+                                        {escSaving ? <Loader2 size={15} className="dsf-spinner" /> : <Send size={15} />}
+                                        {escSaving ? 'Saving…' : 'Record Escalation'}
+                                    </button>
+                                    {escMsg && (
+                                        <span style={{ fontSize: '0.75rem', color: escMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{escMsg}</span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                 </div>
 
                 {/* ════ RIGHT COLUMN ════ */}
