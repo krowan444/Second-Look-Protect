@@ -109,6 +109,10 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
     const [actBankContacted, setActBankContacted] = useState(false);
     const [actPoliceInformed, setActPoliceInformed] = useState(false);
     const [actSafeguardingLead, setActSafeguardingLead] = useState(false);
+    const [actResidentAdvised, setActResidentAdvised] = useState(false);
+    const [actDeviceSecured, setActDeviceSecured] = useState(false);
+    const [actEscalated, setActEscalated] = useState(false);
+    const [actEscalationNotes, setActEscalationNotes] = useState('');
     const [actPoliceRef, setActPoliceRef] = useState('');
     const [actBankRef, setActBankRef] = useState('');
 
@@ -157,6 +161,10 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                 bank_contacted: actBankContacted,
                 police_informed: actPoliceInformed,
                 safeguarding_lead_informed: actSafeguardingLead,
+                resident_advised: actResidentAdvised,
+                device_secured: actDeviceSecured,
+                escalated_internally: actEscalated,
+                escalation_notes: actEscalationNotes.trim() || null,
                 police_reference: actPoliceRef.trim() || null,
                 bank_reference: actBankRef.trim() || null,
             },
@@ -575,6 +583,9 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                                         { label: 'Bank contacted', checked: actBankContacted, set: setActBankContacted },
                                         { label: 'Police informed', checked: actPoliceInformed, set: setActPoliceInformed },
                                         { label: 'Safeguarding lead informed', checked: actSafeguardingLead, set: setActSafeguardingLead },
+                                        { label: 'Resident advised / reassured', checked: actResidentAdvised, set: setActResidentAdvised },
+                                        { label: 'Device / account secured', checked: actDeviceSecured, set: setActDeviceSecured },
+                                        { label: 'Escalated internally', checked: actEscalated, set: setActEscalated },
                                     ].map(item => (
                                         <label key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.88rem', color: '#334155' }}>
                                             <input type="checkbox" checked={item.checked}
@@ -583,6 +594,20 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                                             {item.label}
                                         </label>
                                     ))}
+
+                                    {/* Escalation notes — visible when escalated */}
+                                    {actEscalated && (
+                                        <div style={{ marginTop: '0.5rem', marginLeft: '1.5rem' }}>
+                                            <label className="dsf-label" style={{ fontSize: '0.82rem' }}>
+                                                Escalation notes <span className="dsf-optional">(optional)</span>
+                                            </label>
+                                            <textarea className="dsf-textarea" rows={3}
+                                                value={actEscalationNotes}
+                                                onChange={e => setActEscalationNotes(e.target.value)}
+                                                placeholder="Who was this escalated to and any notes…"
+                                                disabled={submitting} />
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Optional ref numbers — collapsible */}

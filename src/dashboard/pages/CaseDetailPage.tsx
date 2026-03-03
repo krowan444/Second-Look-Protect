@@ -841,6 +841,44 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         <span className="casedetail-field-value">{caseData.resident_ref}</span>
                     </div>
                 )}
+                {/* Actions Taken from meta */}
+                {(() => {
+                    const act = caseData.meta?.actions_taken;
+                    if (!act || typeof act !== 'object') return null;
+                    const items: { key: string; label: string }[] = [
+                        { key: 'family_informed', label: 'Family informed' },
+                        { key: 'bank_contacted', label: 'Bank contacted' },
+                        { key: 'police_informed', label: 'Police informed' },
+                        { key: 'safeguarding_lead_informed', label: 'Safeguarding lead informed' },
+                        { key: 'resident_advised', label: 'Resident advised / reassured' },
+                        { key: 'device_secured', label: 'Device / account secured' },
+                        { key: 'escalated_internally', label: 'Escalated internally' },
+                    ];
+                    const hasAny = items.some(i => act[i.key] === true);
+                    if (!hasAny) return null;
+                    return (
+                        <div className="casedetail-field" style={{ marginTop: '0.75rem' }}>
+                            <span className="casedetail-field-label">Actions Taken</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.25rem' }}>
+                                {items.map(i => act[i.key] === true && (
+                                    <span key={i.key} style={{ fontSize: '0.85rem', color: '#334155' }}>✓ {i.label}</span>
+                                ))}
+                                {act.police_reference && (
+                                    <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '1rem' }}>Police ref: {act.police_reference}</span>
+                                )}
+                                {act.bank_reference && (
+                                    <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '1rem' }}>Bank ref: {act.bank_reference}</span>
+                                )}
+                                {act.escalation_notes && (
+                                    <div style={{ fontSize: '0.82rem', color: '#475569', marginTop: '0.25rem', marginLeft: '1rem', padding: '0.4rem 0.6rem', background: '#f8fafc', borderRadius: '6px', borderLeft: '3px solid #C9A84C' }}>
+                                        <strong style={{ fontSize: '0.78rem', color: '#64748b' }}>Escalation notes:</strong><br />
+                                        {act.escalation_notes}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })()}
             </div>
 
             {/* ── Operational Buttons ────────────────────────────────────────── */}
