@@ -24,6 +24,16 @@ export function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  /* ── Close user-menu on Escape ─────────────────────────────────────── */
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setUserMenuOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [userMenuOpen]);
+
   /* ── Super-admin org switcher state ─────────────────────────────────── */
   const isSuperAdmin = user.role === 'super_admin';
   const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);

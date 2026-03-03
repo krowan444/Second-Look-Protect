@@ -148,7 +148,7 @@
     top: 0;
     z-index: 30;
     gap: 0.75rem;
-    overflow: hidden;
+    overflow: visible;
     width: 100%;
     box-sizing: border-box;
 }
@@ -220,6 +220,98 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* ─── User Menu ──────────────────────────────────────────────────────────── */
+.dashboard-user-menu {
+    position: relative;
+}
+
+.dashboard-user-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    cursor: pointer;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.85rem;
+    color: #334155;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+.dashboard-user-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.dashboard-user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #0B1E36;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.dashboard-user-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 220px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+    z-index: 100;
+    padding: 0.35rem 0;
+    animation: userDropIn 0.12s ease-out;
+}
+
+@keyframes userDropIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dashboard-user-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background: none;
+    border: none;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.82rem;
+    color: #334155;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+}
+
+.dashboard-user-dropdown-item:hover {
+    background: #f1f5f9;
+}
+
+.dashboard-user-dropdown-divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 0.25rem 0;
 }
 
 .dashboard-submit-btn {

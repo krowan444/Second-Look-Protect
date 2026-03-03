@@ -319,6 +319,26 @@ export function DashboardApp() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
+  /* ── Sign out ─────────────────────────────────────────────────────────── */
+
+  async function handleSignOut() {
+    try {
+      const supabase = getSupabase();
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('[SLP] Sign-out error:', err);
+    }
+    setUser(null);
+    setOrganisation(null);
+    setAuthState('unauthenticated');
+    localStorage.removeItem('slp_active_org_id');
+    localStorage.removeItem('slp_active_org_name');
+    localStorage.removeItem('slp_viewing_as_org_id');
+    localStorage.removeItem('slp_viewing_as');
+    window.history.replaceState(null, '', '/dashboard');
+    setCurrentPath('/dashboard');
+  }
+
   /* ── Handle browser back/forward ───────────────────────────────────────── */
 
   useEffect(() => {
@@ -329,17 +349,7 @@ export function DashboardApp() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  /* ── Sign out ──────────────────────────────────────────────────────────── */
 
-  async function handleSignOut() {
-    const supabase = getSupabase();
-    await supabase.auth.signOut();
-    setAuthState('unauthenticated');
-    setUser(null);
-    setOrganisation(null);
-    window.history.replaceState(null, '', '/dashboard');
-    setCurrentPath('/dashboard');
-  }
 
   /* ── Render ────────────────────────────────────────────────────────────── */
 
