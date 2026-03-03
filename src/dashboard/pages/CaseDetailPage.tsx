@@ -280,7 +280,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 timestamp: te.created_at,
                 type: 'timeline_event',
                 title,
-                who: te.actor_id ? te.actor_id.slice(0, 8) + '…' : 'System',
+                who: te.created_by ? te.created_by.slice(0, 8) + '…' : 'System',
                 notes,
                 event_type: te.event_type,
                 meta: te.meta,
@@ -373,7 +373,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             // 4. Fetch case_timeline_events
             const { data: timelineEvts } = await supabase
                 .from('case_timeline_events')
-                .select('id, case_id, event_type, before, after, meta, actor_id, created_at')
+                .select('id, case_id, event_type, before, after, meta, created_by, actor_type, created_at')
                 .eq('case_id', caseId)
                 .order('created_at', { ascending: false });
 
