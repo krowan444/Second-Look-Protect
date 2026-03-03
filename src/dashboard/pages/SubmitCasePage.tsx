@@ -256,44 +256,9 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
             const finalOrgId = orgId || profile?.organisation_id;
             if (!finalOrgId) { setError('Could not determine your organisation.'); setSubmitting(false); return; }
 
-            /* 3. Upload evidence files */
+            /* 3. Insert case row first (to get case ID for storage path) */
             const meta = buildMeta();
-            const evidenceUrls: { path: string; url: string }[] = [];
 
-            if (evidenceFiles.length > 0) {
-                const uploadOrgId = resolveOrgId();
-                if (!uploadOrgId) {
-                    setError('Select an organisation to upload evidence.');
-                    setSubmitting(false);
-                    return;
-                }
-
-                for (const file of evidenceFiles) {
-                    const sanitized = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-                    const storageKey = `evidence/${uploadOrgId}/submissions/draft/${Date.now()}-${sanitized}`;
-
-                    const { error: uploadErr } = await supabase.storage
-                        .from('SUBMISSIONS')
-                        .upload(storageKey, file, { cacheControl: '3600', upsert: false });
-
-                    if (uploadErr) {
-                        throw new Error(`Evidence upload failed for "${file.name}": ${uploadErr.message}`);
-                    }
-
-                    const { data: urlData } = supabase.storage
-                        .from('SUBMISSIONS')
-                        .getPublicUrl(storageKey);
-
-                    evidenceUrls.push({
-                        path: storageKey,
-                        url: String(urlData.publicUrl).trim(),
-                    });
-                }
-            }
-
-            meta.evidence = evidenceUrls;
-
-            /* 4. Insert into cases */
             const row: Record<string, unknown> = {
                 organisation_id: finalOrgId,
                 submitted_by: session.user.id,
@@ -301,7 +266,7 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                 description: summary.trim(),
                 status: 'new',
                 resident_ref: residentRef.trim() || null,
-                attachment_url: evidenceUrls[0]?.url || null,
+                attachment_url: null,
                 meta,
             };
 
@@ -311,9 +276,53 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                 .select('id')
                 .single();
 
-            if (insertErr) throw insertErr;
+            if (insertErr) throw new Error(`Case insert failed: ${insertErr.message}`);
+            const caseId = inserted.id;
 
-            /* 5. Timeline event for compliance */
+            /* 4. Upload evidence files to `evidence` bucket */
+            const evidenceUrls: { path: string; url: string }[] = [];
+
+            if (evidenceFiles.length > 0) {
+                for (const file of evidenceFiles) {
+                    const sanitized = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                    const path = `${finalOrgId}/${caseId}/${Date.now()}-${sanitized}`;
+
+                    const { error: uploadErr } = await supabase.storage
+                        .from('evidence')
+                        .upload(path, file, { cacheControl: '3600', upsert: false });
+
+                    if (uploadErr) {
+                        console.error('[SLP] Evidence upload error:', uploadErr);
+                        throw new Error(`Evidence upload failed for "${file.name}": ${uploadErr.message}`);
+                    }
+
+                    const { data: urlData } = supabase.storage
+                        .from('evidence')
+                        .getPublicUrl(path);
+
+                    evidenceUrls.push({
+                        path,
+                        url: String(urlData.publicUrl).trim(),
+                    });
+                }
+
+                /* 5. Update the case row with evidence URLs */
+                meta.evidence = evidenceUrls;
+                const { error: updateErr } = await supabase
+                    .from('cases')
+                    .update({
+                        attachment_url: evidenceUrls[0]?.url || null,
+                        meta,
+                    })
+                    .eq('id', caseId);
+
+                if (updateErr) {
+                    console.error('[SLP] Case update with evidence failed:', updateErr);
+                    // Non-fatal — case was created, evidence was uploaded
+                }
+            }
+
+            /* 6. Timeline event for compliance */
             if (inserted?.id) {
                 try {
                     await supabase.rpc('add_case_timeline_event', {
