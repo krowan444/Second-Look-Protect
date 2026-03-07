@@ -28,6 +28,7 @@ import { GroupActivityPage } from './pages/GroupActivityPage';
 import { GroupIntelPage } from './pages/GroupIntelPage';
 import { GroupMonthlyPage } from './pages/GroupMonthlyPage';
 import { GroupBenchmarkPage } from './pages/GroupBenchmarkPage';
+import { GroupTrendsPage } from './pages/GroupTrendsPage';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -135,6 +136,9 @@ function getPage(
 
     case 'group-benchmark':
       return <GroupBenchmarkPage />;
+
+    case 'group-trends':
+      return <GroupTrendsPage />;
 
     default:
       return <OverviewPage />;
