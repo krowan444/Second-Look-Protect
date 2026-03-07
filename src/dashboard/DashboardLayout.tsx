@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { getSupabase } from '../lib/supabaseClient';
 import { Upload, ChevronDown, LogOut, User, Menu } from 'lucide-react';
 import { DashboardSidebar } from './DashboardSidebar';
+import { NotificationBell } from './components/NotificationBell';
 import type { DashboardUser, Organisation } from './types';
 
 interface DashboardLayoutProps {
@@ -130,6 +131,11 @@ export function DashboardLayout({
           </div>
 
           <div className="dashboard-topbar-right">
+            {/* Notification bell */}
+            {user.id && (
+              <NotificationBell userId={user.id} onNavigate={onNavigate} />
+            )}
+
             {/* User menu */}
             <div className="dashboard-user-menu">
               <button

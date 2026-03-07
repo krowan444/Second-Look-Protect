@@ -234,9 +234,6 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
         if (!residentRef.trim()) { setError('Resident reference is required.'); return; }
         if (!summary.trim()) { setError('Please provide a summary of what happened.'); return; }
 
-        const orgId = resolveOrgId();
-        if (!orgId) { setError('Select an organisation to submit a case.'); return; }
-
         setSubmitting(true);
 
         try {
@@ -246,15 +243,24 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session?.user) { setError('You are not logged in.'); setSubmitting(false); return; }
 
-            /* 2. Fetch profile for org fallback */
+            /* 2. Fetch profile to determine role + organisation */
             const { data: profile } = await supabase
                 .from('profiles')
                 .select('organisation_id, role')
                 .eq('id', session.user.id)
                 .single();
 
-            const finalOrgId = orgId || profile?.organisation_id;
-            if (!finalOrgId) { setError('Could not determine your organisation.'); setSubmitting(false); return; }
+            /* 3. Resolve organisation_id based on role */
+            let finalOrgId: string | null = null;
+            if (profile?.role === 'super_admin') {
+                // Super admins use the "Viewing as" context from localStorage
+                finalOrgId = resolveOrgId();
+                if (!finalOrgId) { setError('Please select an organisation before submitting a case.'); setSubmitting(false); return; }
+            } else {
+                // Staff / org_admin — use their own profile org
+                finalOrgId = profile?.organisation_id ?? null;
+                if (!finalOrgId) { setError('Your account is not assigned to an organisation. Please contact an admin.'); setSubmitting(false); return; }
+            }
 
             /* 3. Insert case row first (to get case ID for storage path) */
             const meta = buildMeta();

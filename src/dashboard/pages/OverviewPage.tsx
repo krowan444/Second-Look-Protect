@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     LayoutDashboard, AlertTriangle, ShieldCheck, Clock,
-    TrendingUp, Loader2, Info, Bell,
+    TrendingUp, Loader2, Info, Bell, Users, Globe,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
@@ -16,6 +16,7 @@ interface CaseRow {
     decision: string | null;
     category: string | null;
     organisation_id: string | null;
+    resident_ref: string | null;
 }
 
 interface AlertEntry {
@@ -96,12 +97,18 @@ export function OverviewPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [noOrg, setNoOrg] = useState(false);
+    const [orgName, setOrgName] = useState<string>('');
+    const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
     // Canonical source of truth: CASES
     const [casesMonth, setCasesMonth] = useState<CaseRow[]>([]);
     const [casesAll, setCasesAll] = useState<CaseRow[]>([]);
     const [alerts, setAlerts] = useState<AlertEntry[]>([]);
     const [execAlerts, setExecAlerts] = useState<ExecAlert[]>([]);
+
+    // Platform-wide data (super admin global)
+    const [platformOrgCount, setPlatformOrgCount] = useState(0);
+    const [platformCases, setPlatformCases] = useState<(CaseRow & { org_name?: string })[]>([]);
 
     /* ── Fetch data on mount ───────────────────────────────────────────────── */
     useEffect(() => {
@@ -134,7 +141,10 @@ export function OverviewPage() {
 
                 // Resolve org: super_admin uses the org switcher
                 let orgId = profile?.organisation_id ?? null;
-                if (profile?.role === 'super_admin') {
+                const isAdmin = profile?.role === 'super_admin';
+                if (!cancelled) setIsSuperAdmin(isAdmin);
+
+                if (isAdmin) {
                     const switcherOrg =
                         localStorage.getItem('slp_viewing_as_org_id') ||
                         localStorage.getItem('slp_active_org_id');
@@ -142,11 +152,50 @@ export function OverviewPage() {
                 }
 
                 if (!orgId) {
-                    // No org selected — show friendly empty state
+                    if (isAdmin) {
+                        // Super Admin (Global) — fetch platform-wide data
+                        const { count: orgCount } = await supabase
+                            .from('organisations')
+                            .select('id', { count: 'exact', head: true });
+
+                        const { data: allCases } = await supabase
+                            .from('cases')
+                            .select('id, submitted_at, submission_type, status, risk_level, decision, category, organisation_id, resident_ref')
+                            .order('submitted_at', { ascending: false })
+                            .limit(500);
+
+                        // Fetch org names for recent cases
+                        const orgIds = [...new Set((allCases ?? []).map(c => c.organisation_id).filter(Boolean))];
+                        let orgMap: Record<string, string> = {};
+                        if (orgIds.length > 0) {
+                            const { data: orgs } = await supabase
+                                .from('organisations')
+                                .select('id, name')
+                                .in('id', orgIds);
+                            for (const o of (orgs ?? [])) orgMap[o.id] = o.name;
+                        }
+
+                        if (!cancelled) {
+                            setPlatformOrgCount(orgCount ?? 0);
+                            setPlatformCases((allCases ?? []).map(c => ({ ...c, org_name: orgMap[c.organisation_id ?? ''] ?? 'Unknown' })));
+                            setNoOrg(true);
+                            setLoading(false);
+                        }
+                        return;
+                    }
+                    // Non-admin with no org
                     setNoOrg(true);
                     setLoading(false);
                     return;
                 }
+
+                // Fetch org name for header
+                const { data: orgRow } = await supabase
+                    .from('organisations')
+                    .select('name')
+                    .eq('id', orgId)
+                    .single();
+                if (!cancelled) setOrgName(orgRow?.name ?? '');
 
                 // This-month cases
                 const now = new Date();
@@ -154,7 +203,7 @@ export function OverviewPage() {
 
                 const { data: monthRows, error: mErr } = await supabase
                     .from('cases')
-                    .select('id, submitted_at, submission_type, status, risk_level, decision, category, organisation_id')
+                    .select('id, submitted_at, submission_type, status, risk_level, decision, category, organisation_id, resident_ref')
                     .eq('organisation_id', orgId)
                     .gte('submitted_at', monthStart)
                     .order('submitted_at', { ascending: false });
@@ -164,7 +213,7 @@ export function OverviewPage() {
                 // All cases (for panels that aren't month-limited)
                 const { data: allRows, error: aErr } = await supabase
                     .from('cases')
-                    .select('id, submitted_at, submission_type, status, risk_level, decision, category, organisation_id')
+                    .select('id, submitted_at, submission_type, status, risk_level, decision, category, organisation_id, resident_ref')
                     .eq('organisation_id', orgId)
                     .order('submitted_at', { ascending: false });
 
@@ -270,6 +319,19 @@ export function OverviewPage() {
         return `This month saw ${casesMonth.length} incident${casesMonth.length !== 1 ? 's' : ''}. Most common category: ${topCategory}. High-risk: ${metrics.highRisk}.`;
     }, [casesMonth, metrics.highRisk]);
 
+    /* ── Residents needing attention (all-time, 2+ incidents) ────────────── */
+    const residentsAttention = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const c of casesAll) {
+            const ref = (c.resident_ref ?? '').trim();
+            if (ref) counts[ref] = (counts[ref] || 0) + 1;
+        }
+        return Object.entries(counts)
+            .filter(([, n]) => n >= 2)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+    }, [casesAll]);
+
     /* ── Render ─────────────────────────────────────────────────────────────── */
     if (loading) {
         return (
@@ -295,6 +357,120 @@ export function OverviewPage() {
     }
 
     if (noOrg) {
+        // Super Admin (Global) — show platform-wide overview
+        if (isSuperAdmin) {
+            const totalCases = platformCases.length;
+            const highRisk = platformCases.filter(c => ['high', 'critical'].includes((c.risk_level ?? '').toLowerCase())).length;
+            const needsReview = platformCases.filter(c => c.status === 'new' || c.status === 'submitted').length;
+            const recentCases = platformCases.slice(0, 10);
+
+            return (
+                <div>
+                    <div className="dashboard-page-header">
+                        <p style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 500, letterSpacing: '0.02em', marginBottom: '0.15rem' }}>
+                            Super Admin (Global)
+                        </p>
+                        <h1 className="dashboard-page-title">Platform Overview</h1>
+                        <p className="dashboard-page-subtitle">
+                            Cross-organisation summary across the entire platform.
+                        </p>
+                    </div>
+
+                    {totalCases === 0 ? (
+                        <div className="dashboard-placeholder-card">
+                            <div className="dashboard-placeholder-icon"><Globe /></div>
+                            <p className="dashboard-page-title" style={{ fontSize: '1.1rem' }}>No platform data yet</p>
+                            <p className="dashboard-page-subtitle" style={{ textAlign: 'center', margin: '0.5rem auto 0' }}>
+                                Cases will appear here once organisations begin submitting.
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Stat cards */}
+                            <div className="dashboard-overview-cards">
+                                <div className="dashboard-stat-card">
+                                    <div className="dashboard-stat-card-accent accent-blue" />
+                                    <div className="dashboard-stat-card-body">
+                                        <div className="dashboard-stat-icon blue"><Globe size={20} /></div>
+                                        <div className="dashboard-stat-value">{platformOrgCount}</div>
+                                        <div className="dashboard-stat-label">Total Organisations</div>
+                                    </div>
+                                </div>
+                                <div className="dashboard-stat-card">
+                                    <div className="dashboard-stat-card-accent accent-gold" />
+                                    <div className="dashboard-stat-card-body">
+                                        <div className="dashboard-stat-icon gold"><LayoutDashboard size={20} /></div>
+                                        <div className="dashboard-stat-value">{totalCases}</div>
+                                        <div className="dashboard-stat-label">Total Cases</div>
+                                    </div>
+                                </div>
+                                <div className="dashboard-stat-card">
+                                    <div className="dashboard-stat-card-accent accent-red" />
+                                    <div className="dashboard-stat-card-body">
+                                        <div className="dashboard-stat-icon red"><AlertTriangle size={20} /></div>
+                                        <div className="dashboard-stat-value">{highRisk}</div>
+                                        <div className="dashboard-stat-label">High Risk Cases</div>
+                                    </div>
+                                </div>
+                                <div className="dashboard-stat-card">
+                                    <div className="dashboard-stat-card-accent accent-amber" />
+                                    <div className="dashboard-stat-card-body">
+                                        <div className="dashboard-stat-icon amber"><Clock size={20} /></div>
+                                        <div className="dashboard-stat-value">{needsReview}</div>
+                                        <div className="dashboard-stat-label">Cases Needing Review</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Recent cases across all orgs */}
+                            <div className="dashboard-panel" style={{ marginTop: '1.5rem' }}>
+                                <div className="dashboard-panel-header">
+                                    <h2 className="dashboard-panel-title">
+                                        <TrendingUp size={16} className="dashboard-panel-title-icon" />
+                                        Recent Cases (All Organisations)
+                                    </h2>
+                                    <span className="dashboard-panel-count">{recentCases.length}</span>
+                                </div>
+                                <div className="dashboard-panel-table-wrap" style={{ overflowX: 'auto' }}>
+                                    <table className="dashboard-panel-table" style={{ minWidth: '700px' }}>
+                                        <thead>
+                                            <tr>
+                                                <th style={{ minWidth: '100px' }}>Date</th>
+                                                <th style={{ minWidth: '160px' }}>Organisation</th>
+                                                <th style={{ minWidth: '140px' }}>Type</th>
+                                                <th style={{ minWidth: '100px' }}>Status</th>
+                                                <th style={{ minWidth: '90px' }}>Risk</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {recentCases.map((c) => (
+                                                <tr key={c.id}>
+                                                    <td>{fmtDate(c.submitted_at)}</td>
+                                                    <td style={{ fontWeight: 500 }}>{c.org_name ?? '—'}</td>
+                                                    <td>{c.submission_type ?? '—'}</td>
+                                                    <td>
+                                                        <span className={`dashboard-status-badge status-${statusClass(c.status)}`}>
+                                                            {statusLabel(c.status)}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`dashboard-risk-badge risk-${riskClass(c.risk_level)}`}>
+                                                            {c.risk_level ?? '—'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            );
+        }
+
+        // Non-admin with no org — original empty state
         return (
             <div>
                 <div className="dashboard-page-header">
@@ -322,7 +498,12 @@ export function OverviewPage() {
         <div>
             {/* Header */}
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">Overview</h1>
+                {orgName && (
+                    <p style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 500, letterSpacing: '0.02em', marginBottom: '0.15rem' }}>
+                        {orgName}
+                    </p>
+                )}
+                <h1 className="dashboard-page-title">Safeguarding Overview</h1>
                 <p className="dashboard-page-subtitle">
                     Your organisation&apos;s activity this month at a glance.
                 </p>
@@ -490,6 +671,41 @@ export function OverviewPage() {
                     <span>{insight}</span>
                 </div>
             )}
+
+            {/* ── Residents Needing Attention ────────────────────────────── */}
+            <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
+                <div className="dashboard-panel-header">
+                    <h2 className="dashboard-panel-title">
+                        <Users size={16} className="dashboard-panel-title-icon" />
+                        Residents Needing Attention
+                    </h2>
+                    <span className="dashboard-panel-count">{residentsAttention.length}</span>
+                </div>
+                {residentsAttention.length === 0 ? (
+                    <div className="dashboard-panel-empty">
+                        No repeated resident incidents detected.
+                    </div>
+                ) : (
+                    <div style={{ padding: '0 1rem 1rem' }}>
+                        {residentsAttention.map(([ref, count]) => (
+                            <div
+                                key={ref}
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '0.55rem 0',
+                                    borderBottom: '1px solid #f1f5f9',
+                                    fontSize: '0.85rem',
+                                }}
+                            >
+                                <span style={{ fontWeight: 500, color: '#1e293b' }}>{ref}</span>
+                                <span style={{ color: '#64748b', fontSize: '0.78rem' }}>{count} incident{count !== 1 ? 's' : ''}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
             {/* ── Panels ────────────────────────────────────────────────────── */}
             <div className="dashboard-overview-panels">

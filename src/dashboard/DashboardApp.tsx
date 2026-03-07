@@ -64,7 +64,7 @@ function getPage(
       return <SubmitCasePage onNavigate={navigate} />;
 
     case 'my-cases':
-      return <MyCasesPage />;
+      return <MyCasesPage onNavigate={navigate} />;
 
     case 'review-queue':
       return <ReviewQueuePage onNavigate={navigate} userRole={userRole} />;

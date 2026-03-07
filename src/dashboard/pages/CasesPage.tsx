@@ -15,6 +15,8 @@ interface Submission {
     decision: string | null;
     category: string | null;
     resident_ref: string | null;
+    meta?: Record<string, any>;
+    submitted_by: string | null;
 }
 
 interface Filters {
@@ -79,6 +81,11 @@ function fmtDate(iso: string): string {
     }
 }
 
+function formatLabel(value: string | null | undefined): string {
+    if (!value) return '—';
+    return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 /* ─── Component Props ─────────────────────────────────────────────────────── */
 
 interface CasesPageProps {
@@ -93,6 +100,16 @@ export function CasesPage({ onNavigate }: CasesPageProps) {
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
     const [activeFilters, setActiveFilters] = useState<Filters>(EMPTY_FILTERS);
+    const [triageFilter, setTriageFilter] = useState<'all' | 'needs_review' | 'closed'>('all');
+
+    /* ── Triage filtering (in-memory) ──────────────────────────────────────── */
+    const filteredSubmissions = submissions.filter((s) => {
+        if (triageFilter === 'needs_review') return s.status === 'new' || s.status === 'submitted';
+        if (triageFilter === 'closed') return s.status === 'closed';
+        return true;
+    });
+    const needsReviewCount = submissions.filter((s) => s.status === 'new' || s.status === 'submitted').length;
+    const closedCount = submissions.filter((s) => s.status === 'closed').length;
 
     /* ── Fetch data ───────────────────────────────────────────────────────── */
     const fetchData = useCallback(async (f: Filters) => {
@@ -135,7 +152,7 @@ export function CasesPage({ onNavigate }: CasesPageProps) {
             /* ── Build query ─────────────────────────────────────────────── */
             let query = supabase
                 .from('cases')
-                .select('id, submitted_at, submission_type, status, risk_level, decision, category, resident_ref')
+                .select('id, submitted_at, submission_type, status, risk_level, decision, category, resident_ref, meta, submitted_by')
                 .order('submitted_at', { ascending: false })
                 .eq('organisation_id', resolvedOrgId);
 
@@ -313,7 +330,7 @@ export function CasesPage({ onNavigate }: CasesPageProps) {
                     <AlertTriangle size={20} />
                     <span>{error}</span>
                 </div>
-            ) : submissions.length === 0 ? (
+            ) : filteredSubmissions.length === 0 && submissions.length === 0 ? (
                 <div className="dashboard-placeholder-card">
                     <div className="dashboard-placeholder-icon">
                         <FolderOpen />
@@ -329,57 +346,105 @@ export function CasesPage({ onNavigate }: CasesPageProps) {
                 </div>
             ) : (
                 <div className="dashboard-panel">
-                    <div className="dashboard-panel-header">
+                    <div className="dashboard-panel-header" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
                         <h2 className="dashboard-panel-title">
                             <FolderOpen size={16} className="dashboard-panel-title-icon" />
-                            All Cases
+                            {triageFilter === 'all' ? 'All Cases' : triageFilter === 'needs_review' ? 'Needs Review' : 'Closed Cases'}
                         </h2>
-                        <span className="dashboard-panel-count">{submissions.length}</span>
-                    </div>
-                    <div className="dashboard-panel-table-wrap">
-                        <table className="dashboard-panel-table dashboard-cases-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Status</th>
-                                    <th>Risk</th>
-                                    <th>Decision</th>
-                                    <th>Category</th>
-                                    <th>Resident Ref</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {submissions.map((s) => (
-                                    <tr
-                                        key={s.id}
-                                        className="dashboard-row-clickable"
-                                        onClick={() => onNavigate?.(`/dashboard/cases/${s.id}`)}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }}>
+                            {(['all', 'needs_review', 'closed'] as const).map((key) => {
+                                const label = key === 'all' ? 'All' : key === 'needs_review' ? 'Needs Review' : 'Closed';
+                                const count = key === 'all' ? submissions.length : key === 'needs_review' ? needsReviewCount : closedCount;
+                                const isActive = triageFilter === key;
+                                return (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => setTriageFilter(key)}
+                                        style={{
+                                            padding: '0.35rem 0.85rem',
+                                            fontSize: '0.78rem',
+                                            fontWeight: isActive ? 600 : 400,
+                                            fontFamily: "'Inter', system-ui, sans-serif",
+                                            border: isActive ? '1px solid #C9A84C' : '1px solid #e2e8f0',
+                                            borderRadius: '6px',
+                                            background: isActive ? '#0B1E36' : '#ffffff',
+                                            color: isActive ? '#C9A84C' : '#64748b',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.15s ease',
+                                        }}
                                     >
-                                        <td>{fmtDate(s.submitted_at)}</td>
-                                        <td>{s.submission_type ?? '—'}</td>
-                                        <td>
-                                            <span className={`dashboard-status-badge status-${statusClass(s.status)}`}>
-                                                {statusLabel(s.status)}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span className={`dashboard-risk-badge risk-${riskClass(s.risk_level)}`}>
-                                                {s.risk_level ?? '—'}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span className={`dashboard-decision-badge decision-${decisionClass(s.decision)}`}>
-                                                {s.decision ?? '—'}
-                                            </span>
-                                        </td>
-                                        <td>{s.category ?? '—'}</td>
-                                        <td>{s.resident_ref ?? '—'}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                        {label} ({count})
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
+                    {filteredSubmissions.length === 0 ? (
+                        <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.88rem' }}>
+                            No cases match the "{triageFilter === 'needs_review' ? 'Needs Review' : 'Closed'}" filter.
+                        </div>
+                    ) : (
+                        <div className="dashboard-panel-table-wrap" style={{ overflowX: 'auto' }}>
+                            <table className="dashboard-panel-table dashboard-cases-table" style={{ minWidth: '1100px' }}>
+                                <thead>
+                                    <tr>
+                                        <th style={{ minWidth: '120px' }}>Date</th>
+                                        <th style={{ minWidth: '200px' }}>Type</th>
+                                        <th style={{ minWidth: '120px' }}>Status</th>
+                                        <th style={{ minWidth: '140px' }}>Review</th>
+                                        <th style={{ minWidth: '100px' }}>Risk</th>
+                                        <th style={{ minWidth: '160px' }}>Decision</th>
+                                        <th style={{ minWidth: '90px' }}>Evidence</th>
+                                        <th style={{ minWidth: '140px' }}>Submitted By</th>
+                                        <th style={{ minWidth: '130px' }}>Resident Ref</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredSubmissions.map((s) => {
+                                        const evidenceCount = Array.isArray(s.meta?.evidence) ? s.meta!.evidence.length : 0;
+                                        const needsReview = s.status === 'new' || s.status === 'submitted';
+                                        const submittedBy = s.submitted_by ? s.submitted_by.slice(0, 8) + '…' : '—';
+                                        return (
+                                            <tr
+                                                key={s.id}
+                                                className="dashboard-row-clickable"
+                                                onClick={() => onNavigate?.(`/dashboard/cases/${s.id}`)}
+                                            >
+                                                <td>{fmtDate(s.submitted_at)}</td>
+                                                <td>{formatLabel(s.submission_type)}</td>
+                                                <td>
+                                                    <span className={`dashboard-status-badge status-${statusClass(s.status)}`}>
+                                                        {statusLabel(s.status)}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {needsReview ? (
+                                                        <span className="dashboard-status-badge status-new" style={{ fontSize: '0.68rem' }}>Needs Review</span>
+                                                    ) : (
+                                                        <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>—</span>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <span className={`dashboard-risk-badge risk-${riskClass(s.risk_level)}`}>
+                                                        {s.risk_level ?? '—'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span className={`dashboard-decision-badge decision-${decisionClass(s.decision)}`}>
+                                                        {formatLabel(s.decision)}
+                                                    </span>
+                                                </td>
+                                                <td>{evidenceCount}</td>
+                                                <td style={{ fontFamily: "'SF Mono', 'Fira Code', monospace", fontSize: '0.75rem', color: '#64748b' }}>{submittedBy}</td>
+                                                <td>{s.resident_ref ?? '—'}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

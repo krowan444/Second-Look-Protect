@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     ArrowLeft, Loader2, AlertTriangle, CheckCircle2, Lock,
     FileText, Image as ImageIcon, Clock, User, Shield, Activity,
-    Send, XCircle, MessageSquare, Eye,
+    Send, XCircle, MessageSquare, Eye, Download,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 import type { UserRole } from '../types';
@@ -26,6 +26,14 @@ interface CaseRow {
     decision: string | null;
     outcome: string | null;
     channel: string | null;
+    meta?: Record<string, any>;
+}
+
+interface EvidenceItem {
+    filename: string;
+    signedUrl: string | null;
+    path: string;
+    isImage: boolean;
 }
 
 interface CaseReview {
@@ -133,6 +141,11 @@ function friendlyActionType(t: string): string {
     return t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function formatLabel(value: string | null | undefined): string {
+    if (!value) return '\u2014';
+    return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 /* ─── Component Props ─────────────────────────────────────────────────────── */
 
 interface CaseDetailPageProps {
@@ -205,6 +218,11 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     const [noteText, setNoteText] = useState('');
     const [noteSaving, setNoteSaving] = useState(false);
     const [noteMsg, setNoteMsg] = useState<string | null>(null);
+
+    // Evidence / Attachments state
+    const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
+    const [evidenceError, setEvidenceError] = useState<string | null>(null);
+    const [evidenceLoading, setEvidenceLoading] = useState(false);
 
     /* ── Build merged timeline ───────────────────────────────────────────── */
     function buildTimeline(c: CaseRow, acts: CaseAction[], revs: CaseReview[], timelineEvents?: any[]): TimelineEntry[] {
@@ -388,6 +406,49 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     }, [caseId]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    /* ── Generate signed URLs for evidence files ─────────────────────────── */
+    useEffect(() => {
+        if (!caseData) return;
+        const evidence: { path: string; url: string }[] = caseData.meta?.evidence ?? [];
+        if (evidence.length === 0) {
+            setEvidenceItems([]);
+            setEvidenceError(null);
+            return;
+        }
+        let cancelled = false;
+        setEvidenceLoading(true);
+        (async () => {
+            try {
+                const supabase = getSupabase();
+                const items: EvidenceItem[] = await Promise.all(
+                    evidence.map(async (ev) => {
+                        const filename = ev.path.split('/').pop() ?? 'file';
+                        // Strip timestamp prefix for display (e.g. "1709123456789-photo.jpg" → "photo.jpg")
+                        const displayName = filename.replace(/^\d+-/, '');
+                        const isImage = /\.(jpg|jpeg|png|webp)$/i.test(filename);
+                        try {
+                            const { data, error: signErr } = await supabase.storage
+                                .from('evidence')
+                                .createSignedUrl(ev.path, 60);
+                            return { filename: displayName, signedUrl: signErr ? null : data!.signedUrl, path: ev.path, isImage };
+                        } catch {
+                            return { filename: displayName, signedUrl: null, path: ev.path, isImage };
+                        }
+                    }),
+                );
+                if (cancelled) return;
+                const anyFailed = items.some((i) => !i.signedUrl);
+                setEvidenceError(anyFailed ? 'Unable to load attachment preview. Please refresh.' : null);
+                setEvidenceItems(items);
+            } catch {
+                if (!cancelled) setEvidenceError('Unable to load attachment preview. Please refresh.');
+            } finally {
+                if (!cancelled) setEvidenceLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [caseData]);
 
     /* ── Mark In Review ───────────────────────────────────────────────────── */
     async function handleMarkInReview() {
@@ -765,7 +826,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 <h2 className="casedetail-section-title">
                     <FileText size={16} /> Case Summary
                 </h2>
-                <div className="casedetail-status-grid">
+                <div className="casedetail-status-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.25rem' }}>
                     <div className="casedetail-status-item">
                         <span className="casedetail-field-label">Status</span>
                         <span className={`dashboard-status-badge status-${statusClass(caseData.status)}`}>
@@ -778,9 +839,9 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                             {caseData.risk_level ?? '—'}
                         </span>
                     </div>
-                    <div className="casedetail-status-item">
+                    <div className="casedetail-status-item" style={{ minWidth: '220px' }}>
                         <span className="casedetail-field-label">Type</span>
-                        <span className="casedetail-field-value">{caseData.submission_type ?? caseData.channel ?? '—'}</span>
+                        <span className="casedetail-field-value" style={{ wordBreak: 'break-word' }}>{formatLabel(caseData.submission_type ?? caseData.channel)}</span>
                     </div>
                     <div className="casedetail-status-item">
                         <span className="casedetail-field-label">Submitted At</span>
@@ -789,16 +850,16 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                     <div className="casedetail-status-item">
                         <span className="casedetail-field-label">Decision</span>
                         <span className={`dashboard-decision-badge decision-${decisionClass(caseData.decision)}`}>
-                            {caseData.decision ?? '—'}
+                            {formatLabel(caseData.decision)}
                         </span>
                     </div>
                     <div className="casedetail-status-item">
                         <span className="casedetail-field-label">Category</span>
-                        <span className="casedetail-field-value">{caseData.category ?? '—'}</span>
+                        <span className="casedetail-field-value">{formatLabel(caseData.category)}</span>
                     </div>
                     <div className="casedetail-status-item">
                         <span className="casedetail-field-label">Outcome</span>
-                        <span className="casedetail-field-value">{caseData.outcome ?? '—'}</span>
+                        <span className="casedetail-field-value">{formatLabel(caseData.outcome)}</span>
                     </div>
                     <div className="casedetail-status-item">
                         <span className="casedetail-field-label">Reviewed At</span>
@@ -823,18 +884,75 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         <div className="casedetail-field-value casedetail-field-content">{caseData.description}</div>
                     </div>
                 )}
-                {caseData.attachment_url && (
-                    <div className="casedetail-field" style={{ marginTop: '0.5rem' }}>
-                        <span className="casedetail-field-label">Attachment</span>
-                        <div className="casedetail-field-value">
-                            {isImageUrl(caseData.attachment_url) ? (
-                                <img src={caseData.attachment_url} alt="Attachment" className="casedetail-attachment-img" />
-                            ) : (
-                                <a href={caseData.attachment_url} target="_blank" rel="noopener noreferrer" className="casedetail-attachment-link">View Attachment ↗</a>
-                            )}
+                {/* ── Evidence / Attachments ────────────────────────────── */}
+                <div className="casedetail-field" style={{ marginTop: '0.75rem' }}>
+                    <span className="casedetail-field-label">
+                        <ImageIcon size={14} style={{ verticalAlign: 'text-bottom', marginRight: '4px' }} />
+                        Evidence / Attachments
+                    </span>
+                    {evidenceLoading && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '0.5rem', color: '#64748b', fontSize: '0.82rem' }}>
+                            <Loader2 size={14} className="dsf-spinner" /> Loading attachments…
                         </div>
-                    </div>
-                )}
+                    )}
+                    {evidenceError && (
+                        <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '0.8rem', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <AlertTriangle size={14} />
+                            {evidenceError}
+                        </div>
+                    )}
+                    {!evidenceLoading && evidenceItems.length === 0 && !caseData.attachment_url && (
+                        <p className="casedetail-empty" style={{ marginTop: '0.35rem' }}>No evidence uploaded for this case.</p>
+                    )}
+                    {/* Legacy fallback: attachment_url exists but no meta.evidence */}
+                    {!evidenceLoading && evidenceItems.length === 0 && caseData.attachment_url && (
+                        <div className="casedetail-evidence-list" style={{ marginTop: '0.5rem' }}>
+                            <div className="casedetail-evidence-item">
+                                {isImageUrl(caseData.attachment_url) && (
+                                    <img src={caseData.attachment_url} alt="Attachment" className="casedetail-evidence-thumb" />
+                                )}
+                                <div className="casedetail-evidence-info">
+                                    <span className="casedetail-evidence-filename">Attachment</span>
+                                    <div className="casedetail-evidence-actions">
+                                        <a href={caseData.attachment_url} target="_blank" rel="noopener noreferrer" className="casedetail-evidence-btn">
+                                            <Eye size={13} /> View
+                                        </a>
+                                        <a href={caseData.attachment_url} download className="casedetail-evidence-btn">
+                                            <Download size={13} /> Download
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {/* Signed-URL evidence items */}
+                    {!evidenceLoading && evidenceItems.length > 0 && (
+                        <div className="casedetail-evidence-list" style={{ marginTop: '0.5rem' }}>
+                            {evidenceItems.map((ev, idx) => (
+                                <div key={idx} className="casedetail-evidence-item">
+                                    {ev.isImage && ev.signedUrl && (
+                                        <img src={ev.signedUrl} alt={ev.filename} className="casedetail-evidence-thumb" />
+                                    )}
+                                    <div className="casedetail-evidence-info">
+                                        <span className="casedetail-evidence-filename">{ev.filename}</span>
+                                        {ev.signedUrl ? (
+                                            <div className="casedetail-evidence-actions">
+                                                <a href={ev.signedUrl} target="_blank" rel="noopener noreferrer" className="casedetail-evidence-btn">
+                                                    <Eye size={13} /> View
+                                                </a>
+                                                <a href={ev.signedUrl} download={ev.filename} className="casedetail-evidence-btn">
+                                                    <Download size={13} /> Download
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>Unavailable</span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
                 {caseData.resident_ref && (
                     <div className="casedetail-field" style={{ marginTop: '0.5rem' }}>
                         <span className="casedetail-field-label">Resident Ref</span>
