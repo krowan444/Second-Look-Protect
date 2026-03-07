@@ -30,6 +30,7 @@ import { GroupMonthlyPage } from './pages/GroupMonthlyPage';
 import { GroupBenchmarkPage } from './pages/GroupBenchmarkPage';
 import { GroupTrendsPage } from './pages/GroupTrendsPage';
 import { GroupResidentIntelPage } from './pages/GroupResidentIntelPage';
+import { GroupResponseTimePage } from './pages/GroupResponseTimePage';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -143,6 +144,9 @@ function getPage(
 
     case 'group-residents':
       return <GroupResidentIntelPage />;
+
+    case 'group-response':
+      return <GroupResponseTimePage />;
 
     default:
       return <OverviewPage />;
