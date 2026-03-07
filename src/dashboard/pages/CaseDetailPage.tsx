@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     ArrowLeft, Loader2, AlertTriangle, CheckCircle2, Lock,
     FileText, Image as ImageIcon, Clock, User, Shield, Activity,
-    Send, XCircle, MessageSquare, Eye, Download,
+    Send, XCircle, MessageSquare, Eye, Download, UserPlus,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 import type { UserRole } from '../types';
@@ -26,6 +26,7 @@ interface CaseRow {
     decision: string | null;
     outcome: string | null;
     channel: string | null;
+    assigned_to: string | null;
     meta?: Record<string, any>;
 }
 
@@ -224,6 +225,12 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     const [evidenceError, setEvidenceError] = useState<string | null>(null);
     const [evidenceLoading, setEvidenceLoading] = useState(false);
 
+    // Assignment state
+    const [orgStaff, setOrgStaff] = useState<{ id: string; full_name: string | null; email?: string }[]>([]);
+    const [assignTo, setAssignTo] = useState('');
+    const [assigning, setAssigning] = useState(false);
+    const [assignMsg, setAssignMsg] = useState<string | null>(null);
+
     /* ── Build merged timeline ───────────────────────────────────────────── */
     function buildTimeline(c: CaseRow, acts: CaseAction[], revs: CaseReview[], timelineEvents?: any[]): TimelineEntry[] {
         const entries: TimelineEntry[] = [];
@@ -367,6 +374,16 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             setROutcome(c.outcome ?? '');
             setRStatus(c.status ?? 'new');
             setRNotes('');
+            setAssignTo(c.assigned_to ?? '');
+
+            // Fetch staff users for assignment dropdown
+            const { data: staffRows } = await supabase
+                .from('profiles')
+                .select('id, full_name')
+                .eq('organisation_id', resolvedOrgId)
+                .eq('is_active', true)
+                .order('full_name');
+            setOrgStaff((staffRows ?? []) as { id: string; full_name: string | null }[]);
 
             // 2. Fetch review history
             const { data: revs } = await supabase
@@ -481,6 +498,29 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             setReviewError(err?.message ?? 'Failed to mark in review');
         } finally {
             setMarkingReview(false);
+        }
+    }
+
+    /* ── Assign Case ─────────────────────────────────────────────────────── */
+    async function handleAssignCase() {
+        if (!caseData) return;
+        setAssigning(true);
+        setAssignMsg(null);
+        try {
+            const supabase = getSupabase();
+            const { error: updErr } = await supabase
+                .from('cases')
+                .update({ assigned_to: assignTo || null })
+                .eq('id', caseId)
+                .eq('organisation_id', orgId);
+            if (updErr) throw updErr;
+
+            setAssignMsg(assignTo ? 'Case assigned.' : 'Assignment removed.');
+            await fetchData();
+        } catch (err: any) {
+            setAssignMsg(`Error: ${err?.message ?? 'Failed to assign case'}`);
+        } finally {
+            setAssigning(false);
         }
     }
 
@@ -1197,6 +1237,31 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                     <select className="dsf-input" value={rStatus} onChange={(e) => setRStatus(e.target.value)}>
                                         {STATUS_OPTIONS.map((o) => <option key={o} value={o}>{statusLabel(o)}</option>)}
                                     </select>
+                                </div>
+                                {/* Assign To */}
+                                <div className="casedetail-form-field">
+                                    <label className="casedetail-form-label">Assign To</label>
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                        <select className="dsf-input" style={{ flex: 1 }} value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
+                                            <option value="">— Unassigned —</option>
+                                            {orgStaff.map((u) => (
+                                                <option key={u.id} value={u.id}>{u.full_name ?? u.id.slice(0, 8)}</option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            className="casedetail-btn casedetail-btn-action"
+                                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                                            disabled={assigning || assignTo === (caseData?.assigned_to ?? '')}
+                                            onClick={handleAssignCase}
+                                        >
+                                            {assigning ? <Loader2 size={13} className="dsf-spinner" /> : <UserPlus size={13} />}
+                                            {assigning ? 'Saving…' : 'Assign'}
+                                        </button>
+                                    </div>
+                                    {assignMsg && (
+                                        <span style={{ fontSize: '0.75rem', marginTop: '0.25rem', display: 'block', color: assignMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{assignMsg}</span>
+                                    )}
                                 </div>
                                 <div className="casedetail-form-field">
                                     <label className="casedetail-form-label">Category</label>
