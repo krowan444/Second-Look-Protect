@@ -23,6 +23,7 @@ import { InspectionPackPage } from './pages/InspectionPackPage';
 import { BillingPage } from './pages/BillingPage';
 import { OrganisationUsersPage } from './pages/OrganisationUsersPage';
 import { GroupDashboardPage } from './pages/GroupDashboardPage';
+import { GroupHighRiskQueuePage } from './pages/GroupHighRiskQueuePage';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -115,6 +116,9 @@ function getPage(
 
     case 'group-dashboard':
       return <GroupDashboardPage />;
+
+    case 'group-high-risk':
+      return <GroupHighRiskQueuePage onNavigate={navigate} />;
 
     default:
       return <OverviewPage />;

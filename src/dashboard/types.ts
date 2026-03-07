@@ -46,6 +46,7 @@ export const ROLE_NAV: Record<UserRole, NavItem[]> = {
     { label: 'Org Users', path: '/dashboard/org-users', icon: 'Users' },
     { label: 'Settings', path: '/dashboard/settings', icon: 'Settings' },
     { label: 'Group Dashboard', path: '/dashboard/group-dashboard', icon: 'Building2' },
+    { label: 'Group High-Risk', path: '/dashboard/group-high-risk', icon: 'ShieldAlert' },
   ],
 
   manager: [
@@ -75,6 +76,7 @@ export const ROLE_NAV: Record<UserRole, NavItem[]> = {
     { label: 'Reports', path: '/dashboard/reports', icon: 'BarChart3' },
     { label: 'Settings', path: '/dashboard/settings', icon: 'Settings' },
     { label: 'Group Dashboard', path: '/dashboard/group-dashboard', icon: 'Building2' },
+    { label: 'Group High-Risk', path: '/dashboard/group-high-risk', icon: 'ShieldAlert' },
 
     // Platform (super-admin only)
     { label: 'Platform Overview', path: '/dashboard/platform', icon: 'Globe' },
