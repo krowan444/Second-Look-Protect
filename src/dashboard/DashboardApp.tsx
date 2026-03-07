@@ -22,6 +22,7 @@ import { InspectionPage } from './pages/InspectionPage';
 import { InspectionPackPage } from './pages/InspectionPackPage';
 import { BillingPage } from './pages/BillingPage';
 import { OrganisationUsersPage } from './pages/OrganisationUsersPage';
+import { GroupDashboardPage } from './pages/GroupDashboardPage';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -111,6 +112,9 @@ function getPage(
 
     case 'org-users':
       return <OrganisationUsersPage />;
+
+    case 'group-dashboard':
+      return <GroupDashboardPage />;
 
     default:
       return <OverviewPage />;
