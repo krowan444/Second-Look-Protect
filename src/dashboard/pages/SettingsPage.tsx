@@ -182,18 +182,18 @@ export function SettingsPage() {
                     setNotifyStaffEvidenceAdded(s.notify_staff_evidence_added ?? true);
                 }
 
-                // Fetch group name if organisation has a group_id
+                // Fetch group name if organisation has a organisation_group_id
                 const { data: orgRow } = await supabase
                     .from('organisations')
-                    .select('group_id')
+                    .select('organisation_group_id')
                     .eq('id', resolvedOrgId)
                     .single();
 
-                if (!cancelled && orgRow?.group_id) {
+                if (!cancelled && orgRow?.organisation_group_id) {
                     const { data: grp } = await supabase
                         .from('organisation_groups')
                         .select('name')
-                        .eq('id', orgRow.group_id)
+                        .eq('id', orgRow.organisation_group_id)
                         .single();
                     if (grp?.name) setGroupName(grp.name);
                 }

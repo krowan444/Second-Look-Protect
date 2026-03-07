@@ -64,11 +64,11 @@ export function GroupDashboardPage() {
                 // Get the group_id for this org
                 const { data: orgRow } = await supabase
                     .from('organisations')
-                    .select('group_id')
+                    .select('organisation_group_id')
                     .eq('id', resolvedOrgId)
                     .single();
 
-                const groupId = orgRow?.group_id;
+                const groupId = orgRow?.organisation_group_id;
                 if (!groupId) {
                     setError('Your organisation is not part of a group.');
                     setLoading(false);
@@ -88,7 +88,7 @@ export function GroupDashboardPage() {
                 const { data: groupOrgs } = await supabase
                     .from('organisations')
                     .select('id, name')
-                    .eq('group_id', groupId)
+                    .eq('organisation_group_id', groupId)
                     .order('name');
 
                 if (!groupOrgs || groupOrgs.length === 0) {
