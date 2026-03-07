@@ -67,6 +67,24 @@ export function SettingsPage() {
     const [lossAlertThreshold, setLossAlertThreshold] = useState<number | ''>(1);
     const [monthlyReportDay, setMonthlyReportDay] = useState<number | ''>(1);
 
+    // Notification preferences (default true = opted-in)
+    const [notifyAdminCaseCreated, setNotifyAdminCaseCreated] = useState(true);
+    const [notifyAdminHighRisk, setNotifyAdminHighRisk] = useState(true);
+    const [notifyAdminCritical, setNotifyAdminCritical] = useState(true);
+    const [notifyAdminSlaBreach, setNotifyAdminSlaBreach] = useState(true);
+    const [notifyAdminNewEvidence, setNotifyAdminNewEvidence] = useState(true);
+    const [notifyAdminInspectionGenerated, setNotifyAdminInspectionGenerated] = useState(true);
+    const [notifyAdminInspectionSent, setNotifyAdminInspectionSent] = useState(true);
+    const [notifyAdminRepeatTargeting, setNotifyAdminRepeatTargeting] = useState(true);
+    const [notifyAdminLossThreshold, setNotifyAdminLossThreshold] = useState(true);
+    const [notifyAdminNewUser, setNotifyAdminNewUser] = useState(true);
+    const [notifyStaffCaseAssigned, setNotifyStaffCaseAssigned] = useState(true);
+    const [notifyStaffCaseInReview, setNotifyStaffCaseInReview] = useState(true);
+    const [notifyStaffCaseClosed, setNotifyStaffCaseClosed] = useState(true);
+    const [notifyStaffInfoRequested, setNotifyStaffInfoRequested] = useState(true);
+    const [notifyStaffEvidenceRequested, setNotifyStaffEvidenceRequested] = useState(true);
+    const [notifyStaffEvidenceAdded, setNotifyStaffEvidenceAdded] = useState(true);
+
     // Group awareness
     const [groupName, setGroupName] = useState<string | null>(null);
 
@@ -122,7 +140,7 @@ export function SettingsPage() {
                 // Get settings
                 const { data: settings } = await supabase
                     .from('organisation_settings')
-                    .select('report_recipients, alert_recipients, timezone, auto_send_inspection_pack, escalation_hours, high_risk_threshold, loss_alert_threshold, monthly_report_day')
+                    .select('report_recipients, alert_recipients, timezone, auto_send_inspection_pack, escalation_hours, high_risk_threshold, loss_alert_threshold, monthly_report_day, notify_admin_case_created, notify_admin_high_risk_case, notify_admin_critical_case, notify_admin_sla_breach, notify_admin_new_evidence, notify_admin_inspection_pack_generated, notify_admin_inspection_pack_sent, notify_admin_repeat_targeting, notify_admin_loss_threshold, notify_admin_new_user, notify_staff_case_assigned, notify_staff_case_in_review, notify_staff_case_closed, notify_staff_info_requested, notify_staff_evidence_requested, notify_staff_evidence_added')
                     .eq('organisation_id', resolvedOrgId)
                     .single();
 
@@ -143,6 +161,25 @@ export function SettingsPage() {
                     setHighRiskThreshold(settings.high_risk_threshold ?? 3);
                     setLossAlertThreshold(settings.loss_alert_threshold ?? 1);
                     setMonthlyReportDay(settings.monthly_report_day ?? 1);
+
+                    // Notification prefs (default true if column is null)
+                    const s = settings as any;
+                    setNotifyAdminCaseCreated(s.notify_admin_case_created ?? true);
+                    setNotifyAdminHighRisk(s.notify_admin_high_risk_case ?? true);
+                    setNotifyAdminCritical(s.notify_admin_critical_case ?? true);
+                    setNotifyAdminSlaBreach(s.notify_admin_sla_breach ?? true);
+                    setNotifyAdminNewEvidence(s.notify_admin_new_evidence ?? true);
+                    setNotifyAdminInspectionGenerated(s.notify_admin_inspection_pack_generated ?? true);
+                    setNotifyAdminInspectionSent(s.notify_admin_inspection_pack_sent ?? true);
+                    setNotifyAdminRepeatTargeting(s.notify_admin_repeat_targeting ?? true);
+                    setNotifyAdminLossThreshold(s.notify_admin_loss_threshold ?? true);
+                    setNotifyAdminNewUser(s.notify_admin_new_user ?? true);
+                    setNotifyStaffCaseAssigned(s.notify_staff_case_assigned ?? true);
+                    setNotifyStaffCaseInReview(s.notify_staff_case_in_review ?? true);
+                    setNotifyStaffCaseClosed(s.notify_staff_case_closed ?? true);
+                    setNotifyStaffInfoRequested(s.notify_staff_info_requested ?? true);
+                    setNotifyStaffEvidenceRequested(s.notify_staff_evidence_requested ?? true);
+                    setNotifyStaffEvidenceAdded(s.notify_staff_evidence_added ?? true);
                 }
 
                 // Fetch group name if organisation has a group_id
@@ -206,6 +243,23 @@ export function SettingsPage() {
                     high_risk_threshold: highRiskThreshold === '' ? null : highRiskThreshold,
                     loss_alert_threshold: lossAlertThreshold === '' ? null : lossAlertThreshold,
                     monthly_report_day: monthlyReportDay === '' ? null : monthlyReportDay,
+                    // Notification preferences
+                    notify_admin_case_created: notifyAdminCaseCreated,
+                    notify_admin_high_risk_case: notifyAdminHighRisk,
+                    notify_admin_critical_case: notifyAdminCritical,
+                    notify_admin_sla_breach: notifyAdminSlaBreach,
+                    notify_admin_new_evidence: notifyAdminNewEvidence,
+                    notify_admin_inspection_pack_generated: notifyAdminInspectionGenerated,
+                    notify_admin_inspection_pack_sent: notifyAdminInspectionSent,
+                    notify_admin_repeat_targeting: notifyAdminRepeatTargeting,
+                    notify_admin_loss_threshold: notifyAdminLossThreshold,
+                    notify_admin_new_user: notifyAdminNewUser,
+                    notify_staff_case_assigned: notifyStaffCaseAssigned,
+                    notify_staff_case_in_review: notifyStaffCaseInReview,
+                    notify_staff_case_closed: notifyStaffCaseClosed,
+                    notify_staff_info_requested: notifyStaffInfoRequested,
+                    notify_staff_evidence_requested: notifyStaffEvidenceRequested,
+                    notify_staff_evidence_added: notifyStaffEvidenceAdded,
                 }, { onConflict: 'organisation_id' });
 
             if (upsertErr) throw upsertErr;
@@ -451,6 +505,75 @@ export function SettingsPage() {
                         value={monthlyReportDay}
                         onChange={(e) => setMonthlyReportDay(e.target.value === '' ? '' : Number(e.target.value))}
                     />
+                </div>
+
+                {/* ── Notification Preferences ──────────────────────────── */}
+                <div style={{ borderTop: '1px solid #e2e8f0', margin: '1rem 0', paddingTop: '1rem' }}>
+                    <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
+                        Notification Preferences
+                    </p>
+                </div>
+
+                {/* Admin Notifications */}
+                <div className="dashboard-settings-field">
+                    <label className="dashboard-settings-label">
+                        <Bell size={16} />
+                        Admin Notifications
+                    </label>
+                    <p className="dashboard-settings-hint">
+                        Control which notifications are sent to organisation admins.
+                    </p>
+                    {[
+                        { key: 'case_created', label: 'New case created', val: notifyAdminCaseCreated, set: setNotifyAdminCaseCreated },
+                        { key: 'high_risk', label: 'High-risk case flagged', val: notifyAdminHighRisk, set: setNotifyAdminHighRisk },
+                        { key: 'critical', label: 'Critical case flagged', val: notifyAdminCritical, set: setNotifyAdminCritical },
+                        { key: 'sla_breach', label: 'SLA breach', val: notifyAdminSlaBreach, set: setNotifyAdminSlaBreach },
+                        { key: 'new_evidence', label: 'New evidence uploaded', val: notifyAdminNewEvidence, set: setNotifyAdminNewEvidence },
+                        { key: 'insp_generated', label: 'Inspection pack generated', val: notifyAdminInspectionGenerated, set: setNotifyAdminInspectionGenerated },
+                        { key: 'insp_sent', label: 'Inspection pack sent', val: notifyAdminInspectionSent, set: setNotifyAdminInspectionSent },
+                        { key: 'repeat_targeting', label: 'Repeat targeting detected', val: notifyAdminRepeatTargeting, set: setNotifyAdminRepeatTargeting },
+                        { key: 'loss_threshold', label: 'Loss threshold reached', val: notifyAdminLossThreshold, set: setNotifyAdminLossThreshold },
+                        { key: 'new_user', label: 'New user added', val: notifyAdminNewUser, set: setNotifyAdminNewUser },
+                    ].map(item => (
+                        <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                            <input
+                                type="checkbox"
+                                checked={item.val}
+                                onChange={(e) => item.set(e.target.checked)}
+                                style={{ width: 18, height: 18, accentColor: '#C9A84C' }}
+                            />
+                            {item.label}
+                        </label>
+                    ))}
+                </div>
+
+                {/* Staff Notifications */}
+                <div className="dashboard-settings-field">
+                    <label className="dashboard-settings-label">
+                        <Bell size={16} />
+                        Staff Notifications
+                    </label>
+                    <p className="dashboard-settings-hint">
+                        Control which notifications are sent to staff members.
+                    </p>
+                    {[
+                        { key: 'case_assigned', label: 'Case assigned to me', val: notifyStaffCaseAssigned, set: setNotifyStaffCaseAssigned },
+                        { key: 'case_in_review', label: 'Case moved to review', val: notifyStaffCaseInReview, set: setNotifyStaffCaseInReview },
+                        { key: 'case_closed', label: 'Case closed', val: notifyStaffCaseClosed, set: setNotifyStaffCaseClosed },
+                        { key: 'info_requested', label: 'Information requested', val: notifyStaffInfoRequested, set: setNotifyStaffInfoRequested },
+                        { key: 'evidence_requested', label: 'Evidence requested', val: notifyStaffEvidenceRequested, set: setNotifyStaffEvidenceRequested },
+                        { key: 'evidence_added', label: 'Evidence added to case', val: notifyStaffEvidenceAdded, set: setNotifyStaffEvidenceAdded },
+                    ].map(item => (
+                        <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                            <input
+                                type="checkbox"
+                                checked={item.val}
+                                onChange={(e) => item.set(e.target.checked)}
+                                style={{ width: 18, height: 18, accentColor: '#C9A84C' }}
+                            />
+                            {item.label}
+                        </label>
+                    ))}
                 </div>
 
                 {/* Feedback */}
