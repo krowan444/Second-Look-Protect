@@ -13,6 +13,7 @@ import {
   Shield,
   Users,
   ShieldAlert,
+  Activity,
 } from 'lucide-react';
 import { ROLE_NAV, type UserRole, type NavItem } from './types';
 
@@ -29,6 +30,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
   CreditCard,
   Users,
   ShieldAlert,
+  Activity,
 };
 
 interface DashboardSidebarProps {

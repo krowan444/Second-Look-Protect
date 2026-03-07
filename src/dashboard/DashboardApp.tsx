@@ -24,6 +24,7 @@ import { BillingPage } from './pages/BillingPage';
 import { OrganisationUsersPage } from './pages/OrganisationUsersPage';
 import { GroupDashboardPage } from './pages/GroupDashboardPage';
 import { GroupHighRiskQueuePage } from './pages/GroupHighRiskQueuePage';
+import { GroupActivityPage } from './pages/GroupActivityPage';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -119,6 +120,9 @@ function getPage(
 
     case 'group-high-risk':
       return <GroupHighRiskQueuePage onNavigate={navigate} />;
+
+    case 'group-activity':
+      return <GroupActivityPage onNavigate={navigate} />;
 
     default:
       return <OverviewPage />;
