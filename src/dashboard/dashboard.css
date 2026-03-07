@@ -15,7 +15,7 @@
 /* ─── Sidebar ────────────────────────────────────────────────────────────── */
 .dashboard-sidebar {
     width: 260px;
-    min-height: 100vh;
+    height: 100vh;
     background: #0B1E36;
     color: #e2e8f0;
     display: flex;
