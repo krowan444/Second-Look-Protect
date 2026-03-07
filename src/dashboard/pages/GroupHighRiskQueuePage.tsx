@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Loader2, AlertTriangle, ShieldAlert, Clock,
+    Loader2, AlertTriangle, ShieldAlert, Clock, Download,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
@@ -68,6 +68,16 @@ function formatLabel(value: string | null | undefined): string {
 function currency(n: number | null): string {
     if (n === null || n === undefined) return '—';
     return '£' + n.toLocaleString('en-GB', { minimumFractionDigits: 0 });
+}
+
+function downloadCsv(filename: string, headers: string[], rows: string[][]) {
+    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const csv = [headers.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
 }
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
@@ -217,6 +227,19 @@ export function GroupHighRiskQueuePage({ onNavigate }: GroupHighRiskQueuePagePro
                 <p className="dashboard-page-subtitle">
                     {cases.length} open high-risk case{cases.length !== 1 ? 's' : ''} across all homes
                 </p>
+                {cases.length > 0 && (
+                    <button
+                        className="casedetail-btn casedetail-btn-action"
+                        style={{ marginTop: '0.5rem', fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
+                        onClick={() => downloadCsv(
+                            'group-high-risk.csv',
+                            ['Home', 'Case Type', 'Risk Level', 'Status', 'Submitted At', 'Resident Ref', 'Loss Amount'],
+                            cases.map(c => [c.orgName, c.submission_type ?? '', c.risk_level, c.status ?? '', c.submitted_at, c.resident_ref ?? '', c.loss_amount != null ? String(c.loss_amount) : ''])
+                        )}
+                    >
+                        <Download size={13} /> Export CSV
+                    </button>
+                )}
             </div>
 
             {/* Queue table */}

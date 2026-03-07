@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Loader2, AlertTriangle, Building2, Shield, Activity, Clock,
+    Loader2, AlertTriangle, Building2, Shield, Activity, Clock, Download,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
@@ -22,6 +22,16 @@ const SLA_DAYS = 3;
 
 function currency(n: number): string {
     return '£' + n.toLocaleString('en-GB', { minimumFractionDigits: 0 });
+}
+
+function downloadCsv(filename: string, headers: string[], rows: string[][]) {
+    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const csv = [headers.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
 }
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
@@ -188,6 +198,19 @@ export function GroupDashboardPage() {
                 <p className="dashboard-page-subtitle">
                     Multi-site group overview — {totals.homes} home{totals.homes !== 1 ? 's' : ''}
                 </p>
+                {orgStats.length > 0 && (
+                    <button
+                        className="casedetail-btn casedetail-btn-action"
+                        style={{ marginTop: '0.5rem', fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
+                        onClick={() => downloadCsv(
+                            'group-dashboard.csv',
+                            ['Home', 'Total Cases', 'Open Cases', 'High-Risk Open', 'Overdue Cases', 'Total Loss'],
+                            orgStats.map(o => [o.name, String(o.totalCases), String(o.openCases), String(o.highRiskOpen), String(o.overdueCases), String(o.totalLoss)])
+                        )}
+                    >
+                        <Download size={13} /> Export CSV
+                    </button>
+                )}
             </div>
 
             {/* ── Group Totals ─────────────────────────────────────────────── */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Loader2, AlertTriangle, Activity,
+    Loader2, AlertTriangle, Activity, Download,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
@@ -29,6 +29,16 @@ function fmtDateTime(iso: string): string {
 
 function friendlyType(t: string): string {
     return t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function downloadCsv(filename: string, headers: string[], rows: string[][]) {
+    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const csv = [headers.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
 }
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
@@ -169,6 +179,19 @@ export function GroupActivityPage({ onNavigate }: GroupActivityPageProps) {
                 <p className="dashboard-page-subtitle">
                     Latest {items.length} event{items.length !== 1 ? 's' : ''} across all homes
                 </p>
+                {items.length > 0 && (
+                    <button
+                        className="casedetail-btn casedetail-btn-action"
+                        style={{ marginTop: '0.5rem', fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
+                        onClick={() => downloadCsv(
+                            'group-activity.csv',
+                            ['Home', 'Event Message', 'Event Type', 'Created At', 'Case ID'],
+                            items.map(i => [i.orgName, i.message, i.type, i.created_at, i.case_id ?? ''])
+                        )}
+                    >
+                        <Download size={13} /> Export CSV
+                    </button>
+                )}
             </div>
 
             {/* Activity table */}
