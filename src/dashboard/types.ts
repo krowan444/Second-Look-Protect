@@ -55,6 +55,7 @@ export const ROLE_NAV: Record<UserRole, NavItem[]> = {
     { label: 'Group Residents', path: '/dashboard/group-residents', icon: 'UserSearch' },
     { label: 'Group Response', path: '/dashboard/group-response', icon: 'Timer' },
     { label: 'Group Pressure', path: '/dashboard/group-pressure', icon: 'Gauge' },
+    { label: 'Group Alerts', path: '/dashboard/group-alerts', icon: 'BellRing' },
   ],
 
   manager: [
@@ -93,6 +94,7 @@ export const ROLE_NAV: Record<UserRole, NavItem[]> = {
     { label: 'Group Residents', path: '/dashboard/group-residents', icon: 'UserSearch' },
     { label: 'Group Response', path: '/dashboard/group-response', icon: 'Timer' },
     { label: 'Group Pressure', path: '/dashboard/group-pressure', icon: 'Gauge' },
+    { label: 'Group Alerts', path: '/dashboard/group-alerts', icon: 'BellRing' },
 
     // Platform (super-admin only)
     { label: 'Platform Overview', path: '/dashboard/platform', icon: 'Globe' },

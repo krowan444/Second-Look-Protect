@@ -20,6 +20,7 @@ import {
   UserSearch,
   Timer,
   Gauge,
+  BellRing,
 } from 'lucide-react';
 import { ROLE_NAV, type UserRole, type NavItem } from './types';
 
@@ -43,6 +44,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
   UserSearch,
   Timer,
   Gauge,
+  BellRing,
 };
 
 interface DashboardSidebarProps {

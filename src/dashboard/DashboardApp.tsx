@@ -32,6 +32,7 @@ import { GroupTrendsPage } from './pages/GroupTrendsPage';
 import { GroupResidentIntelPage } from './pages/GroupResidentIntelPage';
 import { GroupResponseTimePage } from './pages/GroupResponseTimePage';
 import { GroupPressurePage } from './pages/GroupPressurePage';
+import { GroupAlertsPage } from './pages/GroupAlertsPage';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -151,6 +152,9 @@ function getPage(
 
     case 'group-pressure':
       return <GroupPressurePage />;
+
+    case 'group-alerts':
+      return <GroupAlertsPage />;
 
     default:
       return <OverviewPage />;
