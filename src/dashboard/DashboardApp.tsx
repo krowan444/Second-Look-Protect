@@ -25,6 +25,7 @@ import { OrganisationUsersPage } from './pages/OrganisationUsersPage';
 import { GroupDashboardPage } from './pages/GroupDashboardPage';
 import { GroupHighRiskQueuePage } from './pages/GroupHighRiskQueuePage';
 import { GroupActivityPage } from './pages/GroupActivityPage';
+import { GroupIntelPage } from './pages/GroupIntelPage';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -123,6 +124,9 @@ function getPage(
 
     case 'group-activity':
       return <GroupActivityPage onNavigate={navigate} />;
+
+    case 'group-intel':
+      return <GroupIntelPage />;
 
     default:
       return <OverviewPage />;

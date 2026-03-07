@@ -48,6 +48,7 @@ export const ROLE_NAV: Record<UserRole, NavItem[]> = {
     { label: 'Group Dashboard', path: '/dashboard/group-dashboard', icon: 'Building2' },
     { label: 'Group High-Risk', path: '/dashboard/group-high-risk', icon: 'ShieldAlert' },
     { label: 'Group Activity', path: '/dashboard/group-activity', icon: 'Activity' },
+    { label: 'Group Intel', path: '/dashboard/group-intel', icon: 'BarChart3' },
   ],
 
   manager: [
@@ -79,6 +80,7 @@ export const ROLE_NAV: Record<UserRole, NavItem[]> = {
     { label: 'Group Dashboard', path: '/dashboard/group-dashboard', icon: 'Building2' },
     { label: 'Group High-Risk', path: '/dashboard/group-high-risk', icon: 'ShieldAlert' },
     { label: 'Group Activity', path: '/dashboard/group-activity', icon: 'Activity' },
+    { label: 'Group Intel', path: '/dashboard/group-intel', icon: 'BarChart3' },
 
     // Platform (super-admin only)
     { label: 'Platform Overview', path: '/dashboard/platform', icon: 'Globe' },
