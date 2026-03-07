@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Loader2, AlertTriangle, Calendar, Clock, Download,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
+import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -25,7 +27,6 @@ function currency(n: number): string {
     return '£' + n.toLocaleString('en-GB', { minimumFractionDigits: 0 });
 }
 
-/** Return list of last 12 months as { value: 'YYYY-MM', label: 'Mon YYYY' } */
 function recentMonths(): { value: string; label: string }[] {
     const out: { value: string; label: string }[] = [];
     const now = new Date();
@@ -57,14 +58,12 @@ export function GroupMonthlyPage() {
     const [error, setError] = useState<string | null>(null);
     const [groupName, setGroupName] = useState('Group Monthly Report');
     const [orgMetrics, setOrgMetrics] = useState<OrgMonthly[]>([]);
-
-    // Resolved group org IDs — stored so month changes don't re-resolve the group
     const [groupOrgIds, setGroupOrgIds] = useState<{ id: string; name: string }[] | null>(null);
+    const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
+    const [filterHomeId, setFilterHomeId] = useGroupHomeFilter();
 
-    /* ── Resolve group on mount ───────────────────────────────────────────── */
     useEffect(() => {
         let cancelled = false;
-
         (async () => {
             try {
                 const supabase = getSupabase();
@@ -77,18 +76,10 @@ export function GroupMonthlyPage() {
                     .eq('id', session.user.id)
                     .single();
 
-                if (!profile?.organisation_id) {
-                    setError('No organisation linked to your account.');
-                    setLoading(false);
-                    return;
-                }
+                if (!profile?.organisation_id) { setError('No organisation linked to your account.'); setLoading(false); return; }
 
                 const allowedRoles = ['org_admin', 'super_admin'];
-                if (!allowedRoles.includes(profile.role)) {
-                    setError('Access denied. Group pages are only available to administrators.');
-                    setLoading(false);
-                    return;
-                }
+                if (!allowedRoles.includes(profile.role)) { setError('Access denied.'); setLoading(false); return; }
 
                 let resolvedOrgId = profile.organisation_id;
                 if (profile.role === 'super_admin') {
@@ -96,55 +87,29 @@ export function GroupMonthlyPage() {
                     if (switcherOrg) resolvedOrgId = switcherOrg;
                 }
 
-                const { data: orgRow } = await supabase
-                    .from('organisations')
-                    .select('organisation_group_id')
-                    .eq('id', resolvedOrgId)
-                    .single();
-
+                const { data: orgRow } = await supabase.from('organisations').select('organisation_group_id').eq('id', resolvedOrgId).single();
                 const groupId = orgRow?.organisation_group_id;
-                if (!groupId) {
-                    setError('Your organisation is not part of a group.');
-                    setLoading(false);
-                    return;
-                }
+                if (!groupId) { setError('Your organisation is not part of a group.'); setLoading(false); return; }
 
-                const { data: groupRow } = await supabase
-                    .from('organisation_groups')
-                    .select('name')
-                    .eq('id', groupId)
-                    .single();
-
+                const { data: groupRow } = await supabase.from('organisation_groups').select('name').eq('id', groupId).single();
                 if (!cancelled && groupRow?.name) setGroupName(groupRow.name + ' — Monthly Report');
 
-                const { data: groupOrgs } = await supabase
-                    .from('organisations')
-                    .select('id, name')
-                    .eq('organisation_group_id', groupId)
-                    .order('name');
+                const { data: groupOrgs } = await supabase.from('organisations').select('id, name').eq('organisation_group_id', groupId).order('name');
+                if (!groupOrgs || groupOrgs.length === 0) { setError('No organisations found in this group.'); setLoading(false); return; }
 
-                if (!groupOrgs || groupOrgs.length === 0) {
-                    setError('No organisations found in this group.');
-                    setLoading(false);
-                    return;
-                }
-
-                if (!cancelled) setGroupOrgIds(groupOrgs);
+                if (!cancelled) { setGroupOrgIds(groupOrgs); setAllOrgs(groupOrgs); }
             } catch (err: any) {
                 if (!cancelled) setError(err?.message ?? 'Failed to resolve group');
             } finally {
                 if (!cancelled) setLoading(false);
             }
         })();
-
         return () => { cancelled = true; };
     }, []);
 
-    /* ── Fetch monthly data whenever month or group changes ───────────────── */
     const fetchMonth = useCallback(async () => {
         if (!groupOrgIds || groupOrgIds.length === 0) return;
         setLoading(true);
-
         try {
             const supabase = getSupabase();
             const [year, month] = selectedMonth.split('-').map(Number);
@@ -168,20 +133,9 @@ export function GroupMonthlyPage() {
                 const open = orgCases.filter(c => c.status !== 'closed');
                 const highRisk = open.filter(c => ['high', 'critical'].includes((c.risk_level ?? '').toLowerCase()));
                 const overdue = open.filter(c => new Date(c.submitted_at) < overdueThreshold);
-                const loss = orgCases
-                    .filter(c => c.outcome === 'lost' && typeof c.loss_amount === 'number')
-                    .reduce((sum, c) => sum + (c.loss_amount as number), 0);
+                const loss = orgCases.filter(c => c.outcome === 'lost' && typeof c.loss_amount === 'number').reduce((sum, c) => sum + (c.loss_amount as number), 0);
 
-                return {
-                    id: org.id,
-                    name: org.name,
-                    totalCases: orgCases.length,
-                    openCases: open.length,
-                    closedCases: closed.length,
-                    overdueCases: overdue.length,
-                    highRiskOpen: highRisk.length,
-                    totalLoss: loss,
-                };
+                return { id: org.id, name: org.name, totalCases: orgCases.length, openCases: open.length, closedCases: closed.length, overdueCases: overdue.length, highRiskOpen: highRisk.length, totalLoss: loss };
             });
 
             setOrgMetrics(stats);
@@ -194,65 +148,51 @@ export function GroupMonthlyPage() {
 
     useEffect(() => { fetchMonth(); }, [fetchMonth]);
 
-    /* ── Totals ───────────────────────────────────────────────────────────── */
+    const displayMetrics = useMemo(
+        () => filterHomeId ? orgMetrics.filter(m => m.id === filterHomeId) : orgMetrics,
+        [orgMetrics, filterHomeId]
+    );
+
     const totals = {
-        totalCases: orgMetrics.reduce((s, o) => s + o.totalCases, 0),
-        openCases: orgMetrics.reduce((s, o) => s + o.openCases, 0),
-        closedCases: orgMetrics.reduce((s, o) => s + o.closedCases, 0),
-        overdue: orgMetrics.reduce((s, o) => s + o.overdueCases, 0),
-        highRisk: orgMetrics.reduce((s, o) => s + o.highRiskOpen, 0),
-        totalLoss: orgMetrics.reduce((s, o) => s + o.totalLoss, 0),
+        totalCases: displayMetrics.reduce((s, o) => s + o.totalCases, 0),
+        openCases: displayMetrics.reduce((s, o) => s + o.openCases, 0),
+        closedCases: displayMetrics.reduce((s, o) => s + o.closedCases, 0),
+        overdue: displayMetrics.reduce((s, o) => s + o.overdueCases, 0),
+        highRisk: displayMetrics.reduce((s, o) => s + o.highRiskOpen, 0),
+        totalLoss: displayMetrics.reduce((s, o) => s + o.totalLoss, 0),
     };
 
-    /* ── Render ───────────────────────────────────────────────────────────── */
-
     if (loading && !groupOrgIds) {
-        return (
-            <div className="dashboard-overview-loading">
-                <Loader2 className="dashboard-overview-spinner-icon" />
-                <p>Loading group monthly report…</p>
-            </div>
-        );
+        return (<div className="dashboard-overview-loading"><Loader2 className="dashboard-overview-spinner-icon" /><p>Loading group monthly report…</p></div>);
     }
-
     if (error) {
-        return (
-            <div className="dashboard-overview-error">
-                <AlertTriangle size={20} />
-                <span>{error}</span>
-            </div>
-        );
+        return (<div className="dashboard-overview-error"><AlertTriangle size={20} /><span>{error}</span></div>);
     }
 
     const monthLabel = months.find(m => m.value === selectedMonth)?.label ?? selectedMonth;
 
     return (
         <div>
-            {/* Header */}
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">
-                    <Calendar size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                    {groupName}
-                </h1>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div>
+                        <h1 className="dashboard-page-title">
+                            <Calendar size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
+                            {groupName}
+                        </h1>
+                    </div>
+                    {allOrgs.length > 0 && (
+                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                    )}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-                    <select
-                        className="dsf-input"
-                        style={{ width: 'auto', minWidth: '180px' }}
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                    >
+                    <select className="dsf-input" style={{ width: 'auto', minWidth: '180px' }} value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
                         {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
-                    {orgMetrics.length > 0 && (
-                        <button
-                            className="casedetail-btn casedetail-btn-action"
-                            style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
-                            onClick={() => downloadCsv(
-                                `group-monthly-${selectedMonth}.csv`,
-                                ['Home', 'Total Cases', 'Open', 'Closed', 'Overdue', 'High-Risk Open', 'Total Loss'],
-                                orgMetrics.map(o => [o.name, String(o.totalCases), String(o.openCases), String(o.closedCases), String(o.overdueCases), String(o.highRiskOpen), String(o.totalLoss)])
-                            )}
-                        >
+                    {displayMetrics.length > 0 && (
+                        <button className="casedetail-btn casedetail-btn-action" style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
+                            onClick={() => downloadCsv(`group-monthly-${selectedMonth}.csv`, ['Home', 'Total Cases', 'Open', 'Closed', 'Overdue', 'High-Risk Open', 'Total Loss'],
+                                displayMetrics.map(o => [o.name, String(o.totalCases), String(o.openCases), String(o.closedCases), String(o.overdueCases), String(o.highRiskOpen), String(o.totalLoss)]))}>
                             <Download size={13} /> Export CSV
                         </button>
                     )}
@@ -260,45 +200,18 @@ export function GroupMonthlyPage() {
                 </div>
             </div>
 
-            {/* ── Group Totals ─────────────────────────────────────────────── */}
             <div className="dashboard-stats-row" style={{ marginBottom: '2rem' }}>
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-value">{totals.totalCases}</div>
-                    <div className="dashboard-stat-label">Total Cases</div>
-                    <div className="dashboard-stat-period">{monthLabel}</div>
-                </div>
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-value">{totals.openCases}</div>
-                    <div className="dashboard-stat-label">Open</div>
-                </div>
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-value">{totals.closedCases}</div>
-                    <div className="dashboard-stat-label">Closed</div>
-                </div>
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-value" style={totals.overdue > 0 ? { color: '#f59e0b' } : undefined}>
-                        {totals.overdue}
-                    </div>
-                    <div className="dashboard-stat-label">Overdue</div>
-                </div>
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-value" style={totals.highRisk > 0 ? { color: '#dc2626' } : undefined}>
-                        {totals.highRisk}
-                    </div>
-                    <div className="dashboard-stat-label">High-Risk Open</div>
-                </div>
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-value">{currency(totals.totalLoss)}</div>
-                    <div className="dashboard-stat-label">Total Loss</div>
-                </div>
+                <div className="dashboard-stat-card"><div className="dashboard-stat-value">{totals.totalCases}</div><div className="dashboard-stat-label">Total Cases</div><div className="dashboard-stat-period">{monthLabel}</div></div>
+                <div className="dashboard-stat-card"><div className="dashboard-stat-value">{totals.openCases}</div><div className="dashboard-stat-label">Open</div></div>
+                <div className="dashboard-stat-card"><div className="dashboard-stat-value">{totals.closedCases}</div><div className="dashboard-stat-label">Closed</div></div>
+                <div className="dashboard-stat-card"><div className="dashboard-stat-value" style={totals.overdue > 0 ? { color: '#f59e0b' } : undefined}>{totals.overdue}</div><div className="dashboard-stat-label">Overdue</div></div>
+                <div className="dashboard-stat-card"><div className="dashboard-stat-value" style={totals.highRisk > 0 ? { color: '#dc2626' } : undefined}>{totals.highRisk}</div><div className="dashboard-stat-label">High-Risk Open</div></div>
+                <div className="dashboard-stat-card"><div className="dashboard-stat-value">{currency(totals.totalLoss)}</div><div className="dashboard-stat-label">Total Loss</div></div>
             </div>
 
-            {/* ── Per-Home Breakdown ───────────────────────────────────────── */}
             <div className="dashboard-panel">
                 <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">
-                        <Clock size={16} className="dashboard-panel-title-icon" /> Home Breakdown — {monthLabel}
-                    </h2>
+                    <h2 className="dashboard-panel-title"><Clock size={16} className="dashboard-panel-title-icon" /> Home Breakdown — {monthLabel}</h2>
                 </div>
                 <div className="dashboard-table-wrap">
                     <table className="dashboard-table">
@@ -314,28 +227,16 @@ export function GroupMonthlyPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {orgMetrics.length === 0 ? (
-                                <tr>
-                                    <td className="dashboard-table-td" colSpan={7} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
-                                        No cases submitted in {monthLabel}
-                                    </td>
-                                </tr>
-                            ) : orgMetrics.map(m => (
-                                <tr key={m.id}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{m.name}</td>
+                            {displayMetrics.length === 0 ? (
+                                <tr><td className="dashboard-table-td" colSpan={7} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>No cases submitted in {monthLabel}</td></tr>
+                            ) : displayMetrics.map(m => (
+                                <tr key={m.id} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === m.id ? null : m.id)}>
+                                    <td className="dashboard-table-td" style={{ fontWeight: 600, color: '#C9A84C' }}>{m.name}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{m.totalCases}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{m.openCases}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{m.closedCases}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={m.overdueCases > 0 ? { color: '#f59e0b', fontWeight: 600 } : undefined}>
-                                            {m.overdueCases}
-                                        </span>
-                                    </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={m.highRiskOpen > 0 ? { color: '#dc2626', fontWeight: 600 } : undefined}>
-                                            {m.highRiskOpen}
-                                        </span>
-                                    </td>
+                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}><span style={m.overdueCases > 0 ? { color: '#f59e0b', fontWeight: 600 } : undefined}>{m.overdueCases}</span></td>
+                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}><span style={m.highRiskOpen > 0 ? { color: '#dc2626', fontWeight: 600 } : undefined}>{m.highRiskOpen}</span></td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{currency(m.totalLoss)}</td>
                                 </tr>
                             ))}

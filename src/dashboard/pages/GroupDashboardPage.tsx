@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Loader2, AlertTriangle, Building2, Shield, Activity, Clock, Download,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { useGroupHomeFilter, groupNavigate } from '../hooks/useGroupHomeFilter';
+import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -41,6 +43,8 @@ export function GroupDashboardPage() {
     const [error, setError] = useState<string | null>(null);
     const [groupName, setGroupName] = useState('Group Dashboard');
     const [orgStats, setOrgStats] = useState<OrgStats[]>([]);
+    const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
+    const [filterHomeId, setFilterHomeId] = useGroupHomeFilter();
 
     useEffect(() => {
         let cancelled = false;
@@ -115,6 +119,7 @@ export function GroupDashboardPage() {
                 }
 
                 const orgIds = groupOrgs.map(o => o.id);
+                if (!cancelled) setAllOrgs(groupOrgs);
 
                 // Fetch ALL cases for these orgs in one query
                 const { data: cases } = await supabase
@@ -157,14 +162,19 @@ export function GroupDashboardPage() {
         return () => { cancelled = true; };
     }, []);
 
-    /* ── Totals ───────────────────────────────────────────────────────────── */
+    /* ── Filtered data ────────────────────────────────────────────────────── */
+    const displayStats = useMemo(
+        () => filterHomeId ? orgStats.filter(o => o.id === filterHomeId) : orgStats,
+        [orgStats, filterHomeId]
+    );
+
     const totals = {
-        homes: orgStats.length,
-        totalCases: orgStats.reduce((s, o) => s + o.totalCases, 0),
-        openCases: orgStats.reduce((s, o) => s + o.openCases, 0),
-        highRisk: orgStats.reduce((s, o) => s + o.highRiskOpen, 0),
-        overdue: orgStats.reduce((s, o) => s + o.overdueCases, 0),
-        totalLoss: orgStats.reduce((s, o) => s + o.totalLoss, 0),
+        homes: displayStats.length,
+        totalCases: displayStats.reduce((s, o) => s + o.totalCases, 0),
+        openCases: displayStats.reduce((s, o) => s + o.openCases, 0),
+        highRisk: displayStats.reduce((s, o) => s + o.highRiskOpen, 0),
+        overdue: displayStats.reduce((s, o) => s + o.overdueCases, 0),
+        totalLoss: displayStats.reduce((s, o) => s + o.totalLoss, 0),
     };
 
     /* ── Render ───────────────────────────────────────────────────────────── */
@@ -191,21 +201,28 @@ export function GroupDashboardPage() {
         <div>
             {/* Header */}
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">
-                    <Building2 size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                    {groupName}
-                </h1>
-                <p className="dashboard-page-subtitle">
-                    Multi-site group overview — {totals.homes} home{totals.homes !== 1 ? 's' : ''}
-                </p>
-                {orgStats.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div>
+                        <h1 className="dashboard-page-title">
+                            <Building2 size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
+                            {groupName}
+                        </h1>
+                        <p className="dashboard-page-subtitle">
+                            Multi-site group overview — {totals.homes} home{totals.homes !== 1 ? 's' : ''}
+                        </p>
+                    </div>
+                    {allOrgs.length > 0 && (
+                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                    )}
+                </div>
+                {displayStats.length > 0 && (
                     <button
                         className="casedetail-btn casedetail-btn-action"
                         style={{ marginTop: '0.5rem', fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
                         onClick={() => downloadCsv(
                             'group-dashboard.csv',
                             ['Home', 'Total Cases', 'Open Cases', 'High-Risk Open', 'Overdue Cases', 'Total Loss'],
-                            orgStats.map(o => [o.name, String(o.totalCases), String(o.openCases), String(o.highRiskOpen), String(o.overdueCases), String(o.totalLoss)])
+                            displayStats.map(o => [o.name, String(o.totalCases), String(o.openCases), String(o.highRiskOpen), String(o.overdueCases), String(o.totalLoss)])
                         )}
                     >
                         <Download size={13} /> Export CSV
@@ -227,21 +244,21 @@ export function GroupDashboardPage() {
                     <div className="dashboard-stat-value">{totals.openCases}</div>
                     <div className="dashboard-stat-label">Open Cases</div>
                 </div>
-                <div className="dashboard-stat-card">
+                <div className="dashboard-stat-card" style={{ cursor: 'pointer' }} onClick={() => groupNavigate('/dashboard/group-high-risk')}>
                     <div className="dashboard-stat-value" style={totals.highRisk > 0 ? { color: '#dc2626' } : undefined}>
                         {totals.highRisk}
                     </div>
-                    <div className="dashboard-stat-label">High-Risk Open</div>
+                    <div className="dashboard-stat-label">High-Risk Open →</div>
                 </div>
-                <div className="dashboard-stat-card">
+                <div className="dashboard-stat-card" style={{ cursor: 'pointer' }} onClick={() => groupNavigate('/dashboard/group-response')}>
                     <div className="dashboard-stat-value" style={totals.overdue > 0 ? { color: '#f59e0b' } : undefined}>
                         {totals.overdue}
                     </div>
-                    <div className="dashboard-stat-label">Overdue ({SLA_DAYS}+ days)</div>
+                    <div className="dashboard-stat-label">Overdue ({SLA_DAYS}+ days) →</div>
                 </div>
-                <div className="dashboard-stat-card">
+                <div className="dashboard-stat-card" style={{ cursor: 'pointer' }} onClick={() => groupNavigate('/dashboard/group-pressure')}>
                     <div className="dashboard-stat-value">{currency(totals.totalLoss)}</div>
-                    <div className="dashboard-stat-label">Total Loss</div>
+                    <div className="dashboard-stat-label">Total Loss →</div>
                 </div>
             </div>
 
@@ -268,9 +285,9 @@ export function GroupDashboardPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {orgStats.map(org => (
-                                <tr key={org.id}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{org.name}</td>
+                            {displayStats.map(org => (
+                                <tr key={org.id} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === org.id ? null : org.id)}>
+                                    <td className="dashboard-table-td" style={{ fontWeight: 600, color: '#C9A84C' }}>{org.name}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{org.totalCases}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{org.openCases}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>

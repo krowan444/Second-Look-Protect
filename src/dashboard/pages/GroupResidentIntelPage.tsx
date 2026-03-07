@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Loader2, AlertTriangle, UserSearch, AlertOctagon, Repeat,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
+import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -37,8 +39,11 @@ export function GroupResidentIntelPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [groupName, setGroupName] = useState('Group Resident Intelligence');
-    const [residents, setResidents] = useState<ResidentRow[]>([]);
-    const [homeRepeats, setHomeRepeats] = useState<HomeRepeatRow[]>([]);
+    const [rawCases, setRawCases] = useState<any[]>([]);
+    const [groupOrgsData, setGroupOrgsData] = useState<{ id: string; name: string }[]>([]);
+    const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
+    const [filterHomeId, setFilterHomeId] = useGroupHomeFilter();
+
 
     useEffect(() => {
         let cancelled = false;
@@ -95,6 +100,7 @@ export function GroupResidentIntelPage() {
 
                 if (!groupOrgs || groupOrgs.length === 0) { setError('No organisations found in this group.'); setLoading(false); return; }
 
+                if (!cancelled) setAllOrgs(groupOrgs);
                 const orgMap = new Map(groupOrgs.map(o => [o.id, o.name]));
                 const orgIds = groupOrgs.map(o => o.id);
 
@@ -103,63 +109,7 @@ export function GroupResidentIntelPage() {
                     .select('id, organisation_id, resident_ref, status, risk_level, outcome, loss_amount')
                     .in('organisation_id', orgIds);
 
-                const allCases = cases ?? [];
-
-                // ── Build per-resident stats ────────────────────────────────
-                // Key = orgId::resident_ref to keep per-home uniqueness
-                const resMap: Record<string, {
-                    residentRef: string; orgId: string; incidents: number;
-                    openCount: number; highRiskOpen: number; totalLoss: number;
-                }> = {};
-
-                allCases.forEach(c => {
-                    const ref = c.resident_ref?.trim();
-                    if (!ref) return; // skip cases without a resident ref
-                    const key = `${c.organisation_id}::${ref}`;
-                    if (!resMap[key]) {
-                        resMap[key] = { residentRef: ref, orgId: c.organisation_id, incidents: 0, openCount: 0, highRiskOpen: 0, totalLoss: 0 };
-                    }
-                    const r = resMap[key];
-                    r.incidents++;
-                    if (c.status !== 'closed') {
-                        r.openCount++;
-                        if (['high', 'critical'].includes((c.risk_level ?? '').toLowerCase())) r.highRiskOpen++;
-                    }
-                    if (c.outcome === 'lost' && typeof c.loss_amount === 'number') r.totalLoss += c.loss_amount;
-                });
-
-                // Filter to residents with > 1 incident
-                const repeatedResidents: ResidentRow[] = Object.values(resMap)
-                    .filter(r => r.incidents > 1)
-                    .map(r => ({ ...r, homeName: orgMap.get(r.orgId) ?? 'Unknown' }))
-                    .sort((a, b) => b.incidents - a.incidents || b.highRiskOpen - a.highRiskOpen || b.totalLoss - a.totalLoss);
-
-                // ── Build per-home repeat summary ───────────────────────────
-                const homeMap: Record<string, { orgId: string; residents: Set<string>; incidents: number; loss: number; topResident: string; topCount: number }> = {};
-                repeatedResidents.forEach(r => {
-                    if (!homeMap[r.orgId]) {
-                        homeMap[r.orgId] = { orgId: r.orgId, residents: new Set(), incidents: 0, loss: 0, topResident: '', topCount: 0 };
-                    }
-                    const h = homeMap[r.orgId];
-                    h.residents.add(r.residentRef);
-                    h.incidents += r.incidents;
-                    h.loss += r.totalLoss;
-                    if (r.incidents > h.topCount) { h.topCount = r.incidents; h.topResident = r.residentRef; }
-                });
-
-                const homeRows: HomeRepeatRow[] = groupOrgs.map(org => {
-                    const h = homeMap[org.id];
-                    return {
-                        orgId: org.id,
-                        homeName: org.name,
-                        repeatedResidents: h ? h.residents.size : 0,
-                        totalRepeatIncidents: h ? h.incidents : 0,
-                        totalRepeatLoss: h ? h.loss : 0,
-                        topResident: h ? h.topResident : '—',
-                    };
-                }).sort((a, b) => b.repeatedResidents - a.repeatedResidents);
-
-                if (!cancelled) { setResidents(repeatedResidents); setHomeRepeats(homeRows); }
+                if (!cancelled) { setRawCases(cases ?? []); setGroupOrgsData(groupOrgs); }
             } catch (err: any) {
                 if (!cancelled) setError(err?.message ?? 'Failed to load resident data');
             } finally {
@@ -169,9 +119,43 @@ export function GroupResidentIntelPage() {
 
         return () => { cancelled = true; };
     }, []);
+    /* ── Derived filtered data ────────────────────────────────────────────── */
+    const { residents, homeRepeats, hotspots } = useMemo(() => {
+        const allCases = filterHomeId ? rawCases.filter(c => c.organisation_id === filterHomeId) : rawCases;
+        const orgMap = new Map(groupOrgsData.map(o => [o.id, o.name]));
 
-    /* ── Priority hotspots (top 5) ───────────────────────────────────────── */
-    const hotspots = residents.slice(0, 5);
+        const resMap: Record<string, { residentRef: string; orgId: string; incidents: number; openCount: number; highRiskOpen: number; totalLoss: number }> = {};
+        allCases.forEach(c => {
+            const ref = c.resident_ref?.trim();
+            if (!ref) return;
+            const key = `${c.organisation_id}::${ref}`;
+            if (!resMap[key]) resMap[key] = { residentRef: ref, orgId: c.organisation_id, incidents: 0, openCount: 0, highRiskOpen: 0, totalLoss: 0 };
+            const r = resMap[key];
+            r.incidents++;
+            if (c.status !== 'closed') { r.openCount++; if (['high', 'critical'].includes((c.risk_level ?? '').toLowerCase())) r.highRiskOpen++; }
+            if (c.outcome === 'lost' && typeof c.loss_amount === 'number') r.totalLoss += c.loss_amount;
+        });
+
+        const repeatedResidents: ResidentRow[] = Object.values(resMap)
+            .filter(r => r.incidents > 1)
+            .map(r => ({ ...r, homeName: (orgMap.get(r.orgId) as string) ?? 'Unknown' }))
+            .sort((a, b) => b.incidents - a.incidents || b.highRiskOpen - a.highRiskOpen || b.totalLoss - a.totalLoss);
+
+        const homeMap: Record<string, { orgId: string; residents: Set<string>; incidents: number; loss: number; topResident: string; topCount: number }> = {};
+        repeatedResidents.forEach(r => {
+            if (!homeMap[r.orgId]) homeMap[r.orgId] = { orgId: r.orgId, residents: new Set(), incidents: 0, loss: 0, topResident: '', topCount: 0 };
+            const h = homeMap[r.orgId]; h.residents.add(r.residentRef); h.incidents += r.incidents; h.loss += r.totalLoss;
+            if (r.incidents > h.topCount) { h.topCount = r.incidents; h.topResident = r.residentRef; }
+        });
+
+        const orgsToShow = filterHomeId ? groupOrgsData.filter(o => o.id === filterHomeId) : groupOrgsData;
+        const homeRows: HomeRepeatRow[] = orgsToShow.map(org => {
+            const h = homeMap[org.id];
+            return { orgId: org.id, homeName: org.name, repeatedResidents: h ? h.residents.size : 0, totalRepeatIncidents: h ? h.incidents : 0, totalRepeatLoss: h ? h.loss : 0, topResident: h ? h.topResident : '—' };
+        }).sort((a, b) => b.repeatedResidents - a.repeatedResidents);
+
+        return { residents: repeatedResidents, homeRepeats: homeRows, hotspots: repeatedResidents.slice(0, 5) };
+    }, [rawCases, groupOrgsData, filterHomeId]);
 
     /* ── Render ───────────────────────────────────────────────────────────── */
 
@@ -197,13 +181,20 @@ export function GroupResidentIntelPage() {
         <div>
             {/* Header */}
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">
-                    <UserSearch size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                    {groupName}
-                </h1>
-                <p className="dashboard-page-subtitle">
-                    Repeat resident targeting across all homes — {residents.length} repeated resident{residents.length !== 1 ? 's' : ''} identified
-                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div>
+                        <h1 className="dashboard-page-title">
+                            <UserSearch size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
+                            {groupName}
+                        </h1>
+                        <p className="dashboard-page-subtitle">
+                            Repeat resident targeting across all homes — {residents.length} repeated resident{residents.length !== 1 ? 's' : ''} identified
+                        </p>
+                    </div>
+                    {allOrgs.length > 0 && (
+                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                    )}
+                </div>
             </div>
 
             {/* ── Priority Hotspots ───────────────────────────────────────── */}
@@ -253,8 +244,8 @@ export function GroupResidentIntelPage() {
                                     </td>
                                 </tr>
                             ) : homeRepeats.map(h => (
-                                <tr key={h.orgId}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{h.homeName}</td>
+                                <tr key={h.orgId} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === h.orgId ? null : h.orgId)}>
+                                    <td className="dashboard-table-td" style={{ fontWeight: 600, color: '#C9A84C' }}>{h.homeName}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
                                         <span style={h.repeatedResidents > 0 ? { color: '#dc2626', fontWeight: 600 } : undefined}>
                                             {h.repeatedResidents}

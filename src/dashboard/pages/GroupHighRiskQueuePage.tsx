@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Loader2, AlertTriangle, ShieldAlert, Clock, Download,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
+import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -91,6 +93,8 @@ export function GroupHighRiskQueuePage({ onNavigate }: GroupHighRiskQueuePagePro
     const [error, setError] = useState<string | null>(null);
     const [groupName, setGroupName] = useState('Group High-Risk Queue');
     const [cases, setCases] = useState<HighRiskCase[]>([]);
+    const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
+    const [filterHomeId, setFilterHomeId] = useGroupHomeFilter();
 
     useEffect(() => {
         let cancelled = false;
@@ -162,6 +166,7 @@ export function GroupHighRiskQueuePage({ onNavigate }: GroupHighRiskQueuePagePro
 
                 const orgMap = new Map(groupOrgs.map(o => [o.id, o.name]));
                 const orgIds = groupOrgs.map(o => o.id);
+                if (!cancelled) setAllOrgs(groupOrgs);
 
                 // Fetch high/critical open cases
                 const { data: rows } = await supabase
@@ -196,6 +201,11 @@ export function GroupHighRiskQueuePage({ onNavigate }: GroupHighRiskQueuePagePro
         return () => { cancelled = true; };
     }, []);
 
+    const displayCases = useMemo(
+        () => filterHomeId ? cases.filter(c => c.organisation_id === filterHomeId) : cases,
+        [cases, filterHomeId]
+    );
+
     /* ── Render ───────────────────────────────────────────────────────────── */
 
     if (loading) {
@@ -220,21 +230,28 @@ export function GroupHighRiskQueuePage({ onNavigate }: GroupHighRiskQueuePagePro
         <div>
             {/* Header */}
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">
-                    <ShieldAlert size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                    {groupName}
-                </h1>
-                <p className="dashboard-page-subtitle">
-                    {cases.length} open high-risk case{cases.length !== 1 ? 's' : ''} across all homes
-                </p>
-                {cases.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div>
+                        <h1 className="dashboard-page-title">
+                            <ShieldAlert size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
+                            {groupName}
+                        </h1>
+                        <p className="dashboard-page-subtitle">
+                            {displayCases.length} open high-risk case{displayCases.length !== 1 ? 's' : ''}{filterHomeId ? '' : ' across all homes'}
+                        </p>
+                    </div>
+                    {allOrgs.length > 0 && (
+                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                    )}
+                </div>
+                {displayCases.length > 0 && (
                     <button
                         className="casedetail-btn casedetail-btn-action"
                         style={{ marginTop: '0.5rem', fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
                         onClick={() => downloadCsv(
                             'group-high-risk.csv',
                             ['Home', 'Case Type', 'Risk Level', 'Status', 'Submitted At', 'Resident Ref', 'Loss Amount'],
-                            cases.map(c => [c.orgName, c.submission_type ?? '', c.risk_level, c.status ?? '', c.submitted_at, c.resident_ref ?? '', c.loss_amount != null ? String(c.loss_amount) : ''])
+                            displayCases.map(c => [c.orgName, c.submission_type ?? '', c.risk_level, c.status ?? '', c.submitted_at, c.resident_ref ?? '', c.loss_amount != null ? String(c.loss_amount) : ''])
                         )}
                     >
                         <Download size={13} /> Export CSV
@@ -258,13 +275,13 @@ export function GroupHighRiskQueuePage({ onNavigate }: GroupHighRiskQueuePagePro
                             </tr>
                         </thead>
                         <tbody>
-                            {cases.length === 0 ? (
+                            {displayCases.length === 0 ? (
                                 <tr>
                                     <td className="dashboard-table-td" colSpan={7} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
-                                        No open high-risk cases across the group
+                                        No open high-risk cases{filterHomeId ? ' for this home' : ' across the group'}
                                     </td>
                                 </tr>
-                            ) : cases.map(c => (
+                            ) : displayCases.map(c => (
                                 <tr
                                     key={c.id}
                                     style={{ cursor: onNavigate ? 'pointer' : undefined }}

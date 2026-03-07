@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Loader2, AlertTriangle, Gauge, ArrowUp, ArrowDown,
     AlertOctagon, Clock, ShieldAlert,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
+import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -74,6 +76,9 @@ export function GroupPressurePage() {
     const [error, setError] = useState<string | null>(null);
     const [groupName, setGroupName] = useState('Group Pressure');
     const [homes, setHomes] = useState<HomePressure[]>([]);
+    const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
+    const [filterHomeId, setFilterHomeId] = useGroupHomeFilter();
+
 
     useEffect(() => {
         let cancelled = false;
@@ -209,25 +214,30 @@ export function GroupPressurePage() {
         return () => { cancelled = true; };
     }, []);
 
+    const displayHomes = useMemo(
+        () => filterHomeId ? homes.filter(h => h.id === filterHomeId) : homes,
+        [homes, filterHomeId]
+    );
+
     /* ── Highlights ──────────────────────────────────────────────────────── */
     function buildHighlights(): Highlight[] {
-        if (homes.length === 0) return [];
+        if (displayHomes.length === 0) return [];
         const hl: Highlight[] = [];
 
-        const highest = homes[0];
+        const highest = displayHomes[0];
         hl.push({ label: 'Highest Pressure', homeName: highest.name, value: `${highest.totalScore} — ${highest.band}`, color: bandColor(highest.band), icon: <ArrowUp size={18} /> });
 
-        if (homes.length > 1) {
-            const lowest = homes[homes.length - 1];
+        if (displayHomes.length > 1) {
+            const lowest = displayHomes[displayHomes.length - 1];
             hl.push({ label: 'Lowest Pressure', homeName: lowest.name, value: `${lowest.totalScore} — ${lowest.band}`, color: bandColor(lowest.band), icon: <ArrowDown size={18} /> });
         }
 
-        const worstOverdue = [...homes].sort((a, b) => b.overdueScore - a.overdueScore)[0];
+        const worstOverdue = [...displayHomes].sort((a, b) => b.overdueScore - a.overdueScore)[0];
         if (worstOverdue.overdueScore > 0) {
             hl.push({ label: 'Highest Overdue Pressure', homeName: worstOverdue.name, value: `${worstOverdue.overdueCases} overdue`, color: '#f59e0b', icon: <Clock size={18} /> });
         }
 
-        const worstHighRisk = [...homes].sort((a, b) => b.highRiskScore - a.highRiskScore)[0];
+        const worstHighRisk = [...displayHomes].sort((a, b) => b.highRiskScore - a.highRiskScore)[0];
         if (worstHighRisk.highRiskScore > 0) {
             hl.push({ label: 'Highest High-Risk Pressure', homeName: worstHighRisk.name, value: `${worstHighRisk.highRiskOpen} high-risk`, color: '#dc2626', icon: <ShieldAlert size={18} /> });
         }
@@ -261,13 +271,20 @@ export function GroupPressurePage() {
         <div>
             {/* Header */}
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">
-                    <Gauge size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                    {groupName}
-                </h1>
-                <p className="dashboard-page-subtitle">
-                    Operational risk pressure across {homes.length} home{homes.length !== 1 ? 's' : ''}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div>
+                        <h1 className="dashboard-page-title">
+                            <Gauge size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
+                            {groupName}
+                        </h1>
+                        <p className="dashboard-page-subtitle">
+                            Operational risk pressure across {displayHomes.length} home{displayHomes.length !== 1 ? 's' : ''}
+                        </p>
+                    </div>
+                    {allOrgs.length > 0 && (
+                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                    )}
+                </div>
             </div>
 
             {/* ── Highlight Cards ─────────────────────────────────────────── */}
@@ -310,14 +327,14 @@ export function GroupPressurePage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {homes.length === 0 ? (
+                            {displayHomes.length === 0 ? (
                                 <tr>
                                     <td className="dashboard-table-td" colSpan={8} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
                                         No data available
                                     </td>
                                 </tr>
-                            ) : homes.map(h => (
-                                <tr key={h.id}>
+                            ) : displayHomes.map(h => (
+                                <tr key={h.id} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === h.id ? null : h.id)}>
                                     <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{h.name}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'center', fontWeight: 700, fontSize: '1.1rem', color: bandColor(h.band) }}>
                                         {h.totalScore}

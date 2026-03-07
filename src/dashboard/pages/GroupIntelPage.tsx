@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Loader2, AlertTriangle, BarChart3, TrendingUp, TrendingDown,
     AlertOctagon, Clock, DollarSign,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
+import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -47,6 +49,8 @@ export function GroupIntelPage() {
     const [error, setError] = useState<string | null>(null);
     const [groupName, setGroupName] = useState('Group Intelligence');
     const [metrics, setMetrics] = useState<OrgMetrics[]>([]);
+    const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
+    const [filterHomeId, setFilterHomeId] = useGroupHomeFilter();
 
     useEffect(() => {
         let cancelled = false;
@@ -116,6 +120,7 @@ export function GroupIntelPage() {
                 }
 
                 const orgIds = groupOrgs.map(o => o.id);
+                if (!cancelled) setAllOrgs(groupOrgs);
 
                 const { data: cases } = await supabase
                     .from('cases')
@@ -160,6 +165,11 @@ export function GroupIntelPage() {
 
         return () => { cancelled = true; };
     }, []);
+
+    const displayMetrics = useMemo(
+        () => filterHomeId ? metrics.filter(m => m.id === filterHomeId) : metrics,
+        [metrics, filterHomeId]
+    );
 
     /* ── Derive insights ─────────────────────────────────────────────────── */
 
@@ -250,13 +260,20 @@ export function GroupIntelPage() {
         <div>
             {/* Header */}
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">
-                    <BarChart3 size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                    {groupName}
-                </h1>
-                <p className="dashboard-page-subtitle">
-                    Cross-home risk and performance comparison — {metrics.length} home{metrics.length !== 1 ? 's' : ''}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div>
+                        <h1 className="dashboard-page-title">
+                            <BarChart3 size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
+                            {groupName}
+                        </h1>
+                        <p className="dashboard-page-subtitle">
+                            Cross-home risk and performance comparison — {displayMetrics.length} home{displayMetrics.length !== 1 ? 's' : ''}
+                        </p>
+                    </div>
+                    {allOrgs.length > 0 && (
+                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                    )}
+                </div>
             </div>
 
             {/* ── Insight Cards ────────────────────────────────────────────── */}
@@ -300,9 +317,9 @@ export function GroupIntelPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {metrics.map(m => (
-                                <tr key={m.id}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{m.name}</td>
+                            {displayMetrics.map(m => (
+                                <tr key={m.id} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === m.id ? null : m.id)}>
+                                    <td className="dashboard-table-td" style={{ fontWeight: 600, color: '#C9A84C' }}>{m.name}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{m.totalCases}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{m.openCases}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{m.closedCases}</td>

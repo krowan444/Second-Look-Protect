@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Loader2, AlertTriangle, Activity, Download,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
+import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -52,6 +54,8 @@ export function GroupActivityPage({ onNavigate }: GroupActivityPageProps) {
     const [error, setError] = useState<string | null>(null);
     const [groupName, setGroupName] = useState('Group Recent Activity');
     const [items, setItems] = useState<ActivityItem[]>([]);
+    const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
+    const [filterHomeId, setFilterHomeId] = useGroupHomeFilter();
 
     useEffect(() => {
         let cancelled = false;
@@ -123,6 +127,7 @@ export function GroupActivityPage({ onNavigate }: GroupActivityPageProps) {
 
                 const orgMap = new Map(groupOrgs.map(o => [o.id, o.name]));
                 const orgIds = groupOrgs.map(o => o.id);
+                if (!cancelled) setAllOrgs(groupOrgs);
 
                 // Fetch latest 50 notifications across group
                 const { data: rows } = await supabase
@@ -148,6 +153,11 @@ export function GroupActivityPage({ onNavigate }: GroupActivityPageProps) {
         return () => { cancelled = true; };
     }, []);
 
+    const displayItems = useMemo(
+        () => filterHomeId ? items.filter(i => i.organisation_id === filterHomeId) : items,
+        [items, filterHomeId]
+    );
+
     /* ── Render ───────────────────────────────────────────────────────────── */
 
     if (loading) {
@@ -172,21 +182,28 @@ export function GroupActivityPage({ onNavigate }: GroupActivityPageProps) {
         <div>
             {/* Header */}
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">
-                    <Activity size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                    {groupName}
-                </h1>
-                <p className="dashboard-page-subtitle">
-                    Latest {items.length} event{items.length !== 1 ? 's' : ''} across all homes
-                </p>
-                {items.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div>
+                        <h1 className="dashboard-page-title">
+                            <Activity size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
+                            {groupName}
+                        </h1>
+                        <p className="dashboard-page-subtitle">
+                            Latest {displayItems.length} event{displayItems.length !== 1 ? 's' : ''}{filterHomeId ? '' : ' across all homes'}
+                        </p>
+                    </div>
+                    {allOrgs.length > 0 && (
+                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                    )}
+                </div>
+                {displayItems.length > 0 && (
                     <button
                         className="casedetail-btn casedetail-btn-action"
                         style={{ marginTop: '0.5rem', fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
                         onClick={() => downloadCsv(
                             'group-activity.csv',
                             ['Home', 'Event Message', 'Event Type', 'Created At', 'Case ID'],
-                            items.map(i => [i.orgName, i.message, i.type, i.created_at, i.case_id ?? ''])
+                            displayItems.map(i => [i.orgName, i.message, i.type, i.created_at, i.case_id ?? ''])
                         )}
                     >
                         <Download size={13} /> Export CSV
@@ -207,13 +224,13 @@ export function GroupActivityPage({ onNavigate }: GroupActivityPageProps) {
                             </tr>
                         </thead>
                         <tbody>
-                            {items.length === 0 ? (
+                            {displayItems.length === 0 ? (
                                 <tr>
                                     <td className="dashboard-table-td" colSpan={4} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
-                                        No recent activity across the group
+                                        No recent activity{filterHomeId ? ' for this home' : ' across the group'}
                                     </td>
                                 </tr>
-                            ) : items.map(item => (
+                            ) : displayItems.map(item => (
                                 <tr
                                     key={item.id}
                                     style={{ cursor: item.case_id && onNavigate ? 'pointer' : undefined }}

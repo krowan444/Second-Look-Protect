@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Loader2, AlertTriangle, Bell, CheckCircle2,
     TrendingUp, TrendingDown, Minus,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
+import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -11,7 +13,8 @@ type Severity = 'critical' | 'warning' | 'info';
 
 interface Alert {
     title: string;
-    home: string;          // home name or "Group-wide"
+    home: string;
+    orgId: string;
     current: number;
     previous: number;
     delta: number;
@@ -63,6 +66,9 @@ export function GroupAlertsPage() {
     const [error, setError] = useState<string | null>(null);
     const [groupName, setGroupName] = useState('Group Alerts');
     const [alerts, setAlerts] = useState<Alert[]>([]);
+    const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
+    const [filterHomeId, setFilterHomeId] = useGroupHomeFilter();
+
 
     useEffect(() => {
         let cancelled = false;
@@ -154,9 +160,9 @@ export function GroupAlertsPage() {
                         const prev = prevCats[cat] || 0;
                         const delta = cur - prev;
                         if (delta >= SPIKE_CRITICAL) {
-                            detected.push({ title: `${formatLabel(cat)} spike`, home: org.name, current: cur, previous: prev, delta, severity: 'critical', explanation: `${formatLabel(cat)} cases at ${org.name} increased by ${delta} compared to the previous 30 days.` });
+                            detected.push({ title: `${formatLabel(cat)} spike`, home: org.name, orgId: org.id, current: cur, previous: prev, delta, severity: 'critical', explanation: `${formatLabel(cat)} cases at ${org.name} increased by ${delta} compared to the previous 30 days.` });
                         } else if (delta >= SPIKE_WARNING) {
-                            detected.push({ title: `${formatLabel(cat)} increase`, home: org.name, current: cur, previous: prev, delta, severity: 'warning', explanation: `${formatLabel(cat)} cases at ${org.name} rose by ${delta}.` });
+                            detected.push({ title: `${formatLabel(cat)} increase`, home: org.name, orgId: org.id, current: cur, previous: prev, delta, severity: 'warning', explanation: `${formatLabel(cat)} cases at ${org.name} rose by ${delta}.` });
                         }
                     }
                 }
@@ -176,9 +182,9 @@ export function GroupAlertsPage() {
                         const prev = prevCh[ch] || 0;
                         const delta = cur - prev;
                         if (delta >= SPIKE_CRITICAL) {
-                            detected.push({ title: `${formatLabel(ch)} channel spike`, home: org.name, current: cur, previous: prev, delta, severity: 'critical', explanation: `${formatLabel(ch)} submissions at ${org.name} increased by ${delta}.` });
+                            detected.push({ title: `${formatLabel(ch)} channel spike`, home: org.name, orgId: org.id, current: cur, previous: prev, delta, severity: 'critical', explanation: `${formatLabel(ch)} submissions at ${org.name} increased by ${delta}.` });
                         } else if (delta >= SPIKE_WARNING) {
-                            detected.push({ title: `${formatLabel(ch)} channel increase`, home: org.name, current: cur, previous: prev, delta, severity: 'warning', explanation: `${formatLabel(ch)} submissions at ${org.name} rose by ${delta}.` });
+                            detected.push({ title: `${formatLabel(ch)} channel increase`, home: org.name, orgId: org.id, current: cur, previous: prev, delta, severity: 'warning', explanation: `${formatLabel(ch)} submissions at ${org.name} rose by ${delta}.` });
                         }
                     }
                 }
@@ -189,11 +195,11 @@ export function GroupAlertsPage() {
                     const prevHR = previous.filter(c => c.organisation_id === org.id && ['high', 'critical'].includes((c.risk_level ?? '').toLowerCase())).length;
                     const delta = curHR - prevHR;
                     if (delta >= SPIKE_CRITICAL) {
-                        detected.push({ title: 'High-risk case spike', home: org.name, current: curHR, previous: prevHR, delta, severity: 'critical', explanation: `High-risk cases at ${org.name} increased by ${delta}.` });
+                        detected.push({ title: 'High-risk case spike', home: org.name, orgId: org.id, current: curHR, previous: prevHR, delta, severity: 'critical', explanation: `High-risk cases at ${org.name} increased by ${delta}.` });
                     } else if (delta >= SPIKE_WARNING) {
-                        detected.push({ title: 'High-risk case increase', home: org.name, current: curHR, previous: prevHR, delta, severity: 'warning', explanation: `High-risk cases at ${org.name} rose by ${delta}.` });
+                        detected.push({ title: 'High-risk case increase', home: org.name, orgId: org.id, current: curHR, previous: prevHR, delta, severity: 'warning', explanation: `High-risk cases at ${org.name} rose by ${delta}.` });
                     } else if (delta >= SPIKE_INFO) {
-                        detected.push({ title: 'High-risk case uptick', home: org.name, current: curHR, previous: prevHR, delta, severity: 'info', explanation: `High-risk cases at ${org.name} rose by ${delta}.` });
+                        detected.push({ title: 'High-risk case uptick', home: org.name, orgId: org.id, current: curHR, previous: prevHR, delta, severity: 'info', explanation: `High-risk cases at ${org.name} rose by ${delta}.` });
                     }
                 }
 
@@ -203,9 +209,9 @@ export function GroupAlertsPage() {
                     const prevLoss = previous.filter(c => c.organisation_id === org.id && c.outcome === 'lost' && typeof c.loss_amount === 'number').reduce((s, c) => s + (c.loss_amount as number), 0);
                     const delta = curLoss - prevLoss;
                     if (delta >= LOSS_CRITICAL) {
-                        detected.push({ title: 'Financial loss spike', home: org.name, current: curLoss, previous: prevLoss, delta, severity: 'critical', explanation: `Financial loss at ${org.name} increased by £${delta.toLocaleString()}.` });
+                        detected.push({ title: 'Financial loss spike', home: org.name, orgId: org.id, current: curLoss, previous: prevLoss, delta, severity: 'critical', explanation: `Financial loss at ${org.name} increased by £${delta.toLocaleString()}.` });
                     } else if (delta >= LOSS_WARNING) {
-                        detected.push({ title: 'Financial loss increase', home: org.name, current: curLoss, previous: prevLoss, delta, severity: 'warning', explanation: `Financial loss at ${org.name} rose by £${delta.toLocaleString()}.` });
+                        detected.push({ title: 'Financial loss increase', home: org.name, orgId: org.id, current: curLoss, previous: prevLoss, delta, severity: 'warning', explanation: `Financial loss at ${org.name} rose by £${delta.toLocaleString()}.` });
                     }
                 }
 
@@ -220,9 +226,9 @@ export function GroupAlertsPage() {
                     const prevRep = countRepeats(previous);
                     const delta = curRep - prevRep;
                     if (delta >= SPIKE_WARNING) {
-                        detected.push({ title: 'Repeat targeting spike', home: org.name, current: curRep, previous: prevRep, delta, severity: 'warning', explanation: `Repeated resident targeting at ${org.name} increased by ${delta} resident(s).` });
+                        detected.push({ title: 'Repeat targeting spike', home: org.name, orgId: org.id, current: curRep, previous: prevRep, delta, severity: 'warning', explanation: `Repeated resident targeting at ${org.name} increased by ${delta} resident(s).` });
                     } else if (delta >= SPIKE_INFO) {
-                        detected.push({ title: 'Repeat targeting uptick', home: org.name, current: curRep, previous: prevRep, delta, severity: 'info', explanation: `Repeated resident targeting at ${org.name} rose by ${delta}.` });
+                        detected.push({ title: 'Repeat targeting uptick', home: org.name, orgId: org.id, current: curRep, previous: prevRep, delta, severity: 'info', explanation: `Repeated resident targeting at ${org.name} rose by ${delta}.` });
                     }
                 }
 
@@ -239,6 +245,11 @@ export function GroupAlertsPage() {
 
         return () => { cancelled = true; };
     }, []);
+
+    const displayAlerts = useMemo(
+        () => filterHomeId ? alerts.filter(a => a.orgId === filterHomeId) : alerts,
+        [alerts, filterHomeId]
+    );
 
     /* ── Render ───────────────────────────────────────────────────────────── */
 
@@ -264,19 +275,26 @@ export function GroupAlertsPage() {
         <div>
             {/* Header */}
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">
-                    <Bell size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                    {groupName}
-                </h1>
-                <p className="dashboard-page-subtitle">
-                    {alerts.length > 0
-                        ? `${alerts.length} alert${alerts.length !== 1 ? 's' : ''} detected — last 30 days vs previous 30 days`
-                        : 'Last 30 days vs previous 30 days'}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div>
+                        <h1 className="dashboard-page-title">
+                            <Bell size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
+                            {groupName}
+                        </h1>
+                        <p className="dashboard-page-subtitle">
+                            {alerts.length > 0
+                                ? `${displayAlerts.length} alert${displayAlerts.length !== 1 ? 's' : ''} detected — last 30 days vs previous 30 days`
+                                : 'Last 30 days vs previous 30 days'}
+                        </p>
+                    </div>
+                    {allOrgs.length > 0 && (
+                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                    )}
+                </div>
             </div>
 
             {/* ── No alerts state ─────────────────────────────────────────── */}
-            {alerts.length === 0 && (
+            {displayAlerts.length === 0 && (
                 <div className="dashboard-panel" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
                     <CheckCircle2 size={40} style={{ color: '#16a34a', marginBottom: '0.75rem' }} />
                     <p style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.35rem' }}>No significant anomalies detected</p>
@@ -287,7 +305,7 @@ export function GroupAlertsPage() {
             {/* ── Alert cards ─────────────────────────────────────────────── */}
             {alerts.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {alerts.map((a, i) => (
+                    {displayAlerts.map((a, i) => (
                         <div
                             key={i}
                             style={{

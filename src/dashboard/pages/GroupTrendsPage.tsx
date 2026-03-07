@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Loader2, AlertTriangle, TrendingUp, TrendingDown, Minus, BarChart3,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
+import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -44,10 +46,11 @@ export function GroupTrendsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [groupName, setGroupName] = useState('Group Trends');
-    const [categories, setCategories] = useState<RankedRow[]>([]);
-    const [channels, setChannels] = useState<RankedRow[]>([]);
-    const [categoryTrends, setCategoryTrends] = useState<TrendRow[]>([]);
-    const [channelTrends, setChannelTrends] = useState<TrendRow[]>([]);
+    const [rawCases, setRawCases] = useState<any[]>([]);
+    const [orgMap, setOrgMap] = useState<Map<string, string>>(new Map());
+    const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
+    const [filterHomeId, setFilterHomeId] = useGroupHomeFilter();
+
 
     useEffect(() => {
         let cancelled = false;
@@ -103,108 +106,16 @@ export function GroupTrendsPage() {
 
                 if (!groupOrgs || groupOrgs.length === 0) { setError('No organisations found in this group.'); setLoading(false); return; }
 
-                const orgMap = new Map(groupOrgs.map(o => [o.id, o.name]));
+                if (!cancelled) setAllOrgs(groupOrgs);
+                const orgMapLocal = new Map(groupOrgs.map(o => [o.id, o.name]));
                 const orgIds = groupOrgs.map(o => o.id);
 
-                // Fetch all cases for group
                 const { data: cases } = await supabase
                     .from('cases')
                     .select('id, organisation_id, category, submission_type, channel, submitted_at')
                     .in('organisation_id', orgIds);
 
-                const allCases = cases ?? [];
-                const total = allCases.length;
-
-                // ── Build category rankings ─────────────────────────────────
-                const catMap: Record<string, { count: number; orgCounts: Record<string, number> }> = {};
-                allCases.forEach(c => {
-                    const cat = c.category || 'Uncategorised';
-                    if (!catMap[cat]) catMap[cat] = { count: 0, orgCounts: {} };
-                    catMap[cat].count++;
-                    const org = c.organisation_id;
-                    catMap[cat].orgCounts[org] = (catMap[cat].orgCounts[org] || 0) + 1;
-                });
-
-                const catRows: RankedRow[] = Object.entries(catMap)
-                    .sort((a, b) => b[1].count - a[1].count)
-                    .map(([key, v]) => {
-                        const topOrgId = Object.entries(v.orgCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-                        return {
-                            key,
-                            count: v.count,
-                            share: total > 0 ? (v.count / total) * 100 : 0,
-                            topHome: topOrgId ? (orgMap.get(topOrgId) ?? 'Unknown') : 'Unknown',
-                        };
-                    });
-
-                // ── Build channel rankings ──────────────────────────────────
-                const chMap: Record<string, { count: number; orgCounts: Record<string, number> }> = {};
-                allCases.forEach(c => {
-                    const ch = c.submission_type || c.channel || 'Unknown';
-                    if (!chMap[ch]) chMap[ch] = { count: 0, orgCounts: {} };
-                    chMap[ch].count++;
-                    const org = c.organisation_id;
-                    chMap[ch].orgCounts[org] = (chMap[ch].orgCounts[org] || 0) + 1;
-                });
-
-                const chRows: RankedRow[] = Object.entries(chMap)
-                    .sort((a, b) => b[1].count - a[1].count)
-                    .map(([key, v]) => {
-                        const topOrgId = Object.entries(v.orgCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-                        return {
-                            key,
-                            count: v.count,
-                            share: total > 0 ? (v.count / total) * 100 : 0,
-                            topHome: topOrgId ? (orgMap.get(topOrgId) ?? 'Unknown') : 'Unknown',
-                        };
-                    });
-
-                // ── 30-day trend comparison ─────────────────────────────────
-                const now = Date.now();
-                const d30 = 30 * 24 * 60 * 60 * 1000;
-                const currentCut = new Date(now - d30);
-                const prevCut = new Date(now - d30 * 2);
-
-                const current = allCases.filter(c => new Date(c.submitted_at) >= currentCut);
-                const previous = allCases.filter(c => {
-                    const d = new Date(c.submitted_at);
-                    return d >= prevCut && d < currentCut;
-                });
-
-                function buildTrends(field: 'category' | 'channel'): TrendRow[] {
-                    const curMap: Record<string, number> = {};
-                    const prevMap: Record<string, number> = {};
-                    const extractor = (c: typeof allCases[0]) =>
-                        field === 'category'
-                            ? (c.category || 'Uncategorised')
-                            : (c.submission_type || c.channel || 'Unknown');
-
-                    current.forEach(c => { const k = extractor(c); curMap[k] = (curMap[k] || 0) + 1; });
-                    previous.forEach(c => { const k = extractor(c); prevMap[k] = (prevMap[k] || 0) + 1; });
-
-                    const allKeys = new Set([...Object.keys(curMap), ...Object.keys(prevMap)]);
-                    const rows: TrendRow[] = [];
-                    allKeys.forEach(key => {
-                        const cur = curMap[key] || 0;
-                        const prev = prevMap[key] || 0;
-                        const delta = cur - prev;
-                        rows.push({
-                            key,
-                            current: cur,
-                            previous: prev,
-                            delta,
-                            direction: delta > 0 ? 'rising' : delta < 0 ? 'falling' : 'flat',
-                        });
-                    });
-                    return rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
-                }
-
-                if (!cancelled) {
-                    setCategories(catRows);
-                    setChannels(chRows);
-                    setCategoryTrends(buildTrends('category'));
-                    setChannelTrends(buildTrends('channel'));
-                }
+                if (!cancelled) { setRawCases(cases ?? []); setOrgMap(orgMapLocal); }
             } catch (err: any) {
                 if (!cancelled) setError(err?.message ?? 'Failed to load trend data');
             } finally {
@@ -214,6 +125,57 @@ export function GroupTrendsPage() {
 
         return () => { cancelled = true; };
     }, []);
+
+    /* ── Derived filtered data ────────────────────────────────────────────── */
+    const { categories, channels, categoryTrends, channelTrends } = useMemo(() => {
+        const allCases = filterHomeId ? rawCases.filter(c => c.organisation_id === filterHomeId) : rawCases;
+        const total = allCases.length;
+
+        const catMap: Record<string, { count: number; orgCounts: Record<string, number> }> = {};
+        allCases.forEach(c => {
+            const cat = c.category || 'Uncategorised';
+            if (!catMap[cat]) catMap[cat] = { count: 0, orgCounts: {} };
+            catMap[cat].count++;
+            catMap[cat].orgCounts[c.organisation_id] = (catMap[cat].orgCounts[c.organisation_id] || 0) + 1;
+        });
+        const cats: RankedRow[] = Object.entries(catMap).sort((a, b) => b[1].count - a[1].count).map(([key, v]) => {
+            const topOrgId = Object.entries(v.orgCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+            return { key, count: v.count, share: total > 0 ? (v.count / total) * 100 : 0, topHome: topOrgId ? (orgMap.get(topOrgId) ?? 'Unknown') : 'Unknown' };
+        });
+
+        const chMap: Record<string, { count: number; orgCounts: Record<string, number> }> = {};
+        allCases.forEach(c => {
+            const ch = c.submission_type || c.channel || 'Unknown';
+            if (!chMap[ch]) chMap[ch] = { count: 0, orgCounts: {} };
+            chMap[ch].count++;
+            chMap[ch].orgCounts[c.organisation_id] = (chMap[ch].orgCounts[c.organisation_id] || 0) + 1;
+        });
+        const chs: RankedRow[] = Object.entries(chMap).sort((a, b) => b[1].count - a[1].count).map(([key, v]) => {
+            const topOrgId = Object.entries(v.orgCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+            return { key, count: v.count, share: total > 0 ? (v.count / total) * 100 : 0, topHome: topOrgId ? (orgMap.get(topOrgId) ?? 'Unknown') : 'Unknown' };
+        });
+
+        const now = Date.now();
+        const d30 = 30 * 24 * 60 * 60 * 1000;
+        const currentCut = new Date(now - d30);
+        const prevCut = new Date(now - d30 * 2);
+        const current = allCases.filter(c => new Date(c.submitted_at) >= currentCut);
+        const previous = allCases.filter(c => { const d = new Date(c.submitted_at); return d >= prevCut && d < currentCut; });
+
+        function buildTrends(field: 'category' | 'channel'): TrendRow[] {
+            const curMap: Record<string, number> = {};
+            const prevMap: Record<string, number> = {};
+            const extractor = (c: any) => field === 'category' ? (c.category || 'Uncategorised') : (c.submission_type || c.channel || 'Unknown');
+            current.forEach(c => { const k = extractor(c); curMap[k] = (curMap[k] || 0) + 1; });
+            previous.forEach(c => { const k = extractor(c); prevMap[k] = (prevMap[k] || 0) + 1; });
+            const allKeys = new Set([...Object.keys(curMap), ...Object.keys(prevMap)]);
+            const rows: TrendRow[] = [];
+            allKeys.forEach(key => { const cur = curMap[key] || 0; const prev = prevMap[key] || 0; const delta = cur - prev; rows.push({ key, current: cur, previous: prev, delta, direction: delta > 0 ? 'rising' : delta < 0 ? 'falling' : 'flat' }); });
+            return rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+        }
+
+        return { categories: cats, channels: chs, categoryTrends: buildTrends('category'), channelTrends: buildTrends('channel') };
+    }, [rawCases, orgMap, filterHomeId]);
 
     /* ── Render ───────────────────────────────────────────────────────────── */
 
@@ -239,13 +201,20 @@ export function GroupTrendsPage() {
         <div>
             {/* Header */}
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">
-                    <BarChart3 size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                    {groupName}
-                </h1>
-                <p className="dashboard-page-subtitle">
-                    Cross-home scam pattern intelligence
-                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div>
+                        <h1 className="dashboard-page-title">
+                            <BarChart3 size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
+                            {groupName}
+                        </h1>
+                        <p className="dashboard-page-subtitle">
+                            Cross-home scam pattern intelligence
+                        </p>
+                    </div>
+                    {allOrgs.length > 0 && (
+                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                    )}
+                </div>
             </div>
 
             {/* ── Top Categories ───────────────────────────────────────────── */}

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Loader2, AlertTriangle, GitCompareArrows, TrendingUp, TrendingDown,
     AlertOctagon, Clock, DollarSign, ArrowUp, ArrowDown, Minus,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
+import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -62,6 +64,9 @@ export function GroupBenchmarkPage() {
     const [groupName, setGroupName] = useState('Group Benchmarking');
     const [homes, setHomes] = useState<HomeBenchmark[]>([]);
     const [avg, setAvg] = useState<GroupAvg>({ openRate: 0, closureRate: 0, overdueRate: 0, highRiskRate: 0, avgLossPerCase: 0 });
+    const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
+    const [filterHomeId, setFilterHomeId] = useGroupHomeFilter();
+
 
     useEffect(() => {
         let cancelled = false;
@@ -210,6 +215,11 @@ export function GroupBenchmarkPage() {
 
     const highlights = buildHighlights();
 
+    const displayHomes = useMemo(
+        () => filterHomeId ? homes.filter(h => h.id === filterHomeId) : homes,
+        [homes, filterHomeId]
+    );
+
     /* ── Render ───────────────────────────────────────────────────────────── */
 
     if (loading) {
@@ -234,13 +244,20 @@ export function GroupBenchmarkPage() {
         <div>
             {/* Header */}
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">
-                    <GitCompareArrows size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                    {groupName}
-                </h1>
-                <p className="dashboard-page-subtitle">
-                    Comparing {homes.length} home{homes.length !== 1 ? 's' : ''} against group average
-                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div>
+                        <h1 className="dashboard-page-title">
+                            <GitCompareArrows size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
+                            {groupName}
+                        </h1>
+                        <p className="dashboard-page-subtitle">
+                            Comparing {displayHomes.length} home{displayHomes.length !== 1 ? 's' : ''} against group average
+                        </p>
+                    </div>
+                    {allOrgs.length > 0 && (
+                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                    )}
+                </div>
             </div>
 
             {/* ── Highlight Cards ─────────────────────────────────────────── */}
@@ -294,8 +311,8 @@ export function GroupBenchmarkPage() {
                                 <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>—</td>
                                 <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>{currency(Math.round(avg.avgLossPerCase))}</td>
                             </tr>
-                            {homes.map(h => (
-                                <tr key={h.id}>
+                            {displayHomes.map(h => (
+                                <tr key={h.id} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === h.id ? null : h.id)}>
                                     <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{h.name}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{h.totalCases}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>

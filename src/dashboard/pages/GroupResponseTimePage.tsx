@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Loader2, AlertTriangle, Timer, ArrowUp, ArrowDown, Minus,
     Zap, Clock,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
+import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -62,6 +64,9 @@ export function GroupResponseTimePage() {
     const [error, setError] = useState<string | null>(null);
     const [groupName, setGroupName] = useState('Group Response-Time');
     const [homes, setHomes] = useState<HomeSpeed[]>([]);
+    const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
+    const [filterHomeId, setFilterHomeId] = useGroupHomeFilter();
+
 
     useEffect(() => {
         let cancelled = false;
@@ -227,6 +232,11 @@ export function GroupResponseTimePage() {
 
     const highlights = buildHighlights();
 
+    const displayHomes = useMemo(
+        () => filterHomeId ? homes.filter(h => h.id === filterHomeId) : homes,
+        [homes, filterHomeId]
+    );
+
     /* ── Render ───────────────────────────────────────────────────────────── */
 
     if (loading) {
@@ -251,13 +261,20 @@ export function GroupResponseTimePage() {
         <div>
             {/* Header */}
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">
-                    <Timer size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                    {groupName}
-                </h1>
-                <p className="dashboard-page-subtitle">
-                    Operational speed comparison across {homes.length} home{homes.length !== 1 ? 's' : ''}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div>
+                        <h1 className="dashboard-page-title">
+                            <Timer size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
+                            {groupName}
+                        </h1>
+                        <p className="dashboard-page-subtitle">
+                            Operational speed comparison across {displayHomes.length} home{displayHomes.length !== 1 ? 's' : ''}
+                        </p>
+                    </div>
+                    {allOrgs.length > 0 && (
+                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                    )}
+                </div>
             </div>
 
             {/* ── Highlight Cards ─────────────────────────────────────────── */}
@@ -305,8 +322,8 @@ export function GroupResponseTimePage() {
                                 <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>{fmtDuration(avgGroupOpenAge)}</td>
                                 <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>—</td>
                             </tr>
-                            {homes.map(h => (
-                                <tr key={h.id}>
+                            {displayHomes.map(h => (
+                                <tr key={h.id} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === h.id ? null : h.id)}>
                                     <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{h.name}</td>
                                     <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
                                         <span style={h.avgReviewHours !== null && avgGroupReview !== null && h.avgReviewHours > avgGroupReview ? { color: '#dc2626', fontWeight: 600 } : undefined}>
