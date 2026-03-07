@@ -27,6 +27,7 @@ import { GroupHighRiskQueuePage } from './pages/GroupHighRiskQueuePage';
 import { GroupActivityPage } from './pages/GroupActivityPage';
 import { GroupIntelPage } from './pages/GroupIntelPage';
 import { GroupMonthlyPage } from './pages/GroupMonthlyPage';
+import { GroupBenchmarkPage } from './pages/GroupBenchmarkPage';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -131,6 +132,9 @@ function getPage(
 
     case 'group-monthly':
       return <GroupMonthlyPage />;
+
+    case 'group-benchmark':
+      return <GroupBenchmarkPage />;
 
     default:
       return <OverviewPage />;
