@@ -17,6 +17,7 @@ import {
   Calendar,
   GitCompareArrows,
   TrendingUp,
+  UserSearch,
 } from 'lucide-react';
 import { ROLE_NAV, type UserRole, type NavItem } from './types';
 
@@ -37,6 +38,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
   Calendar,
   GitCompareArrows,
   TrendingUp,
+  UserSearch,
 };
 
 interface DashboardSidebarProps {

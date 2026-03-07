@@ -29,6 +29,7 @@ import { GroupIntelPage } from './pages/GroupIntelPage';
 import { GroupMonthlyPage } from './pages/GroupMonthlyPage';
 import { GroupBenchmarkPage } from './pages/GroupBenchmarkPage';
 import { GroupTrendsPage } from './pages/GroupTrendsPage';
+import { GroupResidentIntelPage } from './pages/GroupResidentIntelPage';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -139,6 +140,9 @@ function getPage(
 
     case 'group-trends':
       return <GroupTrendsPage />;
+
+    case 'group-residents':
+      return <GroupResidentIntelPage />;
 
     default:
       return <OverviewPage />;

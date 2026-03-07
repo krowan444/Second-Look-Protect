@@ -52,6 +52,7 @@ export const ROLE_NAV: Record<UserRole, NavItem[]> = {
     { label: 'Group Monthly', path: '/dashboard/group-monthly', icon: 'Calendar' },
     { label: 'Group Benchmark', path: '/dashboard/group-benchmark', icon: 'GitCompareArrows' },
     { label: 'Group Trends', path: '/dashboard/group-trends', icon: 'TrendingUp' },
+    { label: 'Group Residents', path: '/dashboard/group-residents', icon: 'UserSearch' },
   ],
 
   manager: [
@@ -87,6 +88,7 @@ export const ROLE_NAV: Record<UserRole, NavItem[]> = {
     { label: 'Group Monthly', path: '/dashboard/group-monthly', icon: 'Calendar' },
     { label: 'Group Benchmark', path: '/dashboard/group-benchmark', icon: 'GitCompareArrows' },
     { label: 'Group Trends', path: '/dashboard/group-trends', icon: 'TrendingUp' },
+    { label: 'Group Residents', path: '/dashboard/group-residents', icon: 'UserSearch' },
 
     // Platform (super-admin only)
     { label: 'Platform Overview', path: '/dashboard/platform', icon: 'Globe' },
