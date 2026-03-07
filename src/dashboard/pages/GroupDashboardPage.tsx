@@ -54,6 +54,13 @@ export function GroupDashboardPage() {
                     return;
                 }
 
+                const allowedRoles = ['org_admin', 'super_admin'];
+                if (!allowedRoles.includes(profile.role)) {
+                    setError('Access denied. Group pages are only available to administrators.');
+                    setLoading(false);
+                    return;
+                }
+
                 // Allow super_admin org switcher
                 let resolvedOrgId = profile.organisation_id;
                 if (profile.role === 'super_admin') {

@@ -103,6 +103,13 @@ export function GroupHighRiskQueuePage({ onNavigate }: GroupHighRiskQueuePagePro
                     return;
                 }
 
+                const allowedRoles = ['org_admin', 'super_admin'];
+                if (!allowedRoles.includes(profile.role)) {
+                    setError('Access denied. Group pages are only available to administrators.');
+                    setLoading(false);
+                    return;
+                }
+
                 let resolvedOrgId = profile.organisation_id;
                 if (profile.role === 'super_admin') {
                     const switcherOrg = localStorage.getItem('slp_active_org_id');
