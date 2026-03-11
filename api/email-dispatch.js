@@ -638,9 +638,29 @@ export default async function handler(req, res) {
 
 
 // ── Helper: resolve email from Supabase Auth (auth.users) ────────────────
-// profiles table does NOT have an email column; emails live in auth.users.
+// Prefers profiles.notification_email if set, else falls back to auth.users.email.
 async function resolveEmailFromAuth(supabaseUrl, serviceKey, userId) {
     try {
+        // 1) Check profiles.notification_email first
+        const profileRes = await fetch(
+            `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=notification_email&limit=1`,
+            {
+                headers: {
+                    apikey: serviceKey,
+                    Authorization: `Bearer ${serviceKey}`,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+        if (profileRes.ok) {
+            const profileRows = await profileRes.json();
+            const notifEmail = profileRows?.[0]?.notification_email;
+            if (notifEmail && notifEmail.trim()) {
+                return notifEmail.trim();
+            }
+        }
+
+        // 2) Fallback to auth.users.email
         const res = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
             headers: {
                 apikey: serviceKey,

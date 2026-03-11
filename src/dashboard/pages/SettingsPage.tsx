@@ -68,6 +68,7 @@ export function SettingsPage() {
     const [personalSaving, setPersonalSaving] = useState(false);
     const [personalSaveError, setPersonalSaveError] = useState<string | null>(null);
     const [personalSaveSuccess, setPersonalSaveSuccess] = useState(false);
+    const [notificationEmail, setNotificationEmail] = useState('');
 
     // Settings fields
     const [reportRecipients, setReportRecipients] = useState('');
@@ -148,7 +149,7 @@ export function SettingsPage() {
                 // Get profile
                 const { data: profile, error: profErr } = await supabase
                     .from('profiles')
-                    .select('organisation_id, role')
+                    .select('organisation_id, role, notification_email')
                     .eq('id', currentUserId)
                     .single();
 
@@ -156,6 +157,10 @@ export function SettingsPage() {
                     setError('Could not load profile.');
                     setLoading(false);
                     return;
+                }
+
+                if (!cancelled) {
+                    setNotificationEmail(profile.notification_email ?? '');
                 }
 
                 // Load personal notification preferences (for ALL users)
@@ -340,6 +345,15 @@ export function SettingsPage() {
                 }, { onConflict: 'user_id' });
 
             if (upsertErr) throw upsertErr;
+
+            // Also save notification_email to profiles
+            const trimmedEmail = notificationEmail.trim();
+            const { error: profileErr } = await supabase
+                .from('profiles')
+                .update({ notification_email: trimmedEmail || null })
+                .eq('id', userId);
+
+            if (profileErr) throw profileErr;
 
             setPersonalSaveSuccess(true);
             setTimeout(() => setPersonalSaveSuccess(false), 3000);
@@ -535,6 +549,25 @@ export function SettingsPage() {
                         />
                         Enabled
                     </label>
+                </div>
+
+                {/* Notification destination email */}
+                <div className="dashboard-settings-field">
+                    <label className="dashboard-settings-label">
+                        <Mail size={16} />
+                        Notification Email Address
+                    </label>
+                    <p className="dashboard-settings-hint">
+                        If set, notification emails will be sent to this address instead of your account email. Leave blank to use your account email.
+                    </p>
+                    <input
+                        type="email"
+                        className="dashboard-settings-select"
+                        style={{ maxWidth: '340px' }}
+                        value={notificationEmail}
+                        onChange={(e) => setNotificationEmail(e.target.value)}
+                        placeholder="e.g. notifications@example.com"
+                    />
                 </div>
 
                 {/* Per-event toggles */}
