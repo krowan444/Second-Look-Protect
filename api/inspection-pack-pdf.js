@@ -12,11 +12,11 @@ export default async function handler(req, res) {
         return res.status(500).json({ ok: false, error: 'Missing required env vars' });
     }
 
-    // Authenticate via Supabase JWT (browser sends Authorization: Bearer <token>)
+    // Authenticate via Supabase JWT or service-role key (server-to-server)
     const authHeader = req.headers['authorization'] ?? '';
     const token = authHeader.replace(/^Bearer\s+/i, '');
     if (!token) {
-        return res.status(401).json({ ok: false, error: 'Unauthorized' });
+        return res.status(401).json({ ok: false, error: 'Unauthorized: no token' });
     }
 
     const headers = {
@@ -25,35 +25,60 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
     };
 
-    // Verify user from token
-    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${token}` },
-    });
-    if (!userRes.ok) {
-        return res.status(401).json({ ok: false, error: 'Unauthorized' });
-    }
-    const userData = await userRes.json();
-    const userId = userData?.id;
-    if (!userId) {
-        return res.status(401).json({ ok: false, error: 'Unauthorized' });
-    }
-
-    // Check super_admin role
-    const profileRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role&limit=1`,
-        { headers }
-    );
-    if (!profileRes.ok) {
-        return res.status(401).json({ ok: false, error: 'Unauthorized' });
-    }
-    const profiles = await profileRes.json();
-    if (!profiles?.[0] || profiles[0].role !== 'super_admin') {
-        return res.status(401).json({ ok: false, error: 'Unauthorized' });
-    }
-
     const { org_id, month } = req.query;
     if (!org_id || !month) {
         return res.status(400).json({ ok: false, error: 'Missing required query params: org_id, month' });
+    }
+
+    // Check if this is a service-role key call (server-to-server, e.g. from send-inspection-pack)
+    const isServiceRole = token === SERVICE_KEY;
+    let callerRole = null;
+    let callerOrgId = null;
+
+    if (isServiceRole) {
+        // Service role key = trusted server-to-server call, skip user auth
+        console.log('[inspection-pack-pdf] Authenticated via service-role key for org:', org_id);
+        callerRole = 'super_admin'; // service role has full access
+    } else {
+        // Verify user from JWT token
+        const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+            headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${token}` },
+        });
+        if (!userRes.ok) {
+            console.error('[inspection-pack-pdf] JWT user verification failed:', userRes.status);
+            return res.status(401).json({ ok: false, error: 'Unauthorized: invalid token' });
+        }
+        const userData = await userRes.json();
+        const userId = userData?.id;
+        if (!userId) {
+            return res.status(401).json({ ok: false, error: 'Unauthorized: no user id' });
+        }
+
+        // Check role
+        const profileRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role,organisation_id&limit=1`,
+            { headers }
+        );
+        if (!profileRes.ok) {
+            console.error('[inspection-pack-pdf] Profile fetch failed:', profileRes.status);
+            return res.status(401).json({ ok: false, error: 'Unauthorized: profile lookup failed' });
+        }
+        const profiles = await profileRes.json();
+        const profile = profiles?.[0];
+        if (!profile) {
+            return res.status(401).json({ ok: false, error: 'Unauthorized: profile not found' });
+        }
+
+        callerRole = profile.role;
+        callerOrgId = profile.organisation_id;
+        console.log('[inspection-pack-pdf] User auth — role:', callerRole, 'userOrg:', callerOrgId, 'requestedOrg:', org_id);
+
+        // Allow super_admin (any org) or org_admin (own org only)
+        const allowed = callerRole === 'super_admin' || (callerRole === 'org_admin' && callerOrgId === org_id);
+        if (!allowed) {
+            console.error('[inspection-pack-pdf] Forbidden — role:', callerRole, 'userOrg:', callerOrgId, 'requestedOrg:', org_id);
+            return res.status(403).json({ ok: false, error: `Forbidden: ${callerRole} cannot generate PDF for this organisation` });
+        }
     }
 
     try {
@@ -67,15 +92,30 @@ export default async function handler(req, res) {
         const orgName = orgRows?.[0]?.name ?? 'Unknown organisation';
 
         // 2) Fetch snapshot
-        const snapRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/inspection_snapshots?organisation_id=eq.${org_id}&snapshot_month=eq.${month}&select=total_open_cases,overdue_open_cases,sla_compliance_percent,safeguarding_score,generated_at&order=generated_at.desc&limit=1`,
-            { headers }
-        );
-        if (!snapRes.ok) throw new Error(`Failed to fetch snapshot: ${snapRes.status}`);
-        const snapRows = await snapRes.json();
+        // Normalize month: frontend sends YYYY-MM, DB column is date (YYYY-MM-01)
+        const snapshotMonth = month.length === 7 ? `${month}-01` : month;
+        const snapUrl = `${SUPABASE_URL}/rest/v1/inspection_snapshots?organisation_id=eq.${org_id}&snapshot_month=eq.${snapshotMonth}&select=*&order=generated_at.desc&limit=1`;
+        console.log('[inspection-pack-pdf] Snapshot fetch — org_id:', org_id, 'rawMonth:', month, 'snapshotMonth:', snapshotMonth);
+        console.log('[inspection-pack-pdf] Snapshot URL:', snapUrl);
+        const snapRes = await fetch(snapUrl, { headers });
+        const snapBody = await snapRes.text();
+        console.log('[inspection-pack-pdf] Snapshot response — status:', snapRes.status, 'body:', snapBody);
 
-        if (!snapRows || snapRows.length === 0) {
-            return res.status(404).json({ ok: false, error: 'Snapshot not found' });
+        if (!snapRes.ok) {
+            console.error('[inspection-pack-pdf] Snapshot fetch failed — status:', snapRes.status);
+            throw new Error(`Failed to fetch snapshot: ${snapRes.status} — ${snapBody}`);
+        }
+
+        let snapRows;
+        try { snapRows = JSON.parse(snapBody); } catch { snapRows = []; }
+        console.log('[inspection-pack-pdf] Snapshot rows count:', Array.isArray(snapRows) ? snapRows.length : 'not-array', 'keys:', snapRows?.[0] ? Object.keys(snapRows[0]) : 'none');
+
+        if (!Array.isArray(snapRows) || snapRows.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                error: 'Snapshot not found',
+                debug: { org_id, snapshotMonth, queryStatus: snapRes.status, rowCount: Array.isArray(snapRows) ? snapRows.length : 0 }
+            });
         }
 
         const snap = snapRows[0];
@@ -85,7 +125,7 @@ export default async function handler(req, res) {
         let notesMeta = null;
         try {
             const notesRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/inspection_pack_notes?organisation_id=eq.${org_id}&snapshot_month=eq.${month}&select=notes,updated_at,created_at&limit=1`,
+                `${SUPABASE_URL}/rest/v1/inspection_pack_notes?organisation_id=eq.${org_id}&snapshot_month=eq.${snapshotMonth}&select=notes,updated_at,created_at&limit=1`,
                 { headers }
             );
             if (notesRes.ok) {

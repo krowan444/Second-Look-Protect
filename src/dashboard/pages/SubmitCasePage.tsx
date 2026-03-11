@@ -69,6 +69,9 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
     const [msgSender, setMsgSender] = useState('');
     const [msgLinkIncluded, setMsgLinkIncluded] = useState('');
     const [msgContent, setMsgContent] = useState('');
+    const [msgMoneyRequested, setMsgMoneyRequested] = useState('');
+    const [msgInfoShared, setMsgInfoShared] = useState('');
+    const [msgPaymentMade, setMsgPaymentMade] = useState('');
 
     // Email
     const [emailSender, setEmailSender] = useState('');
@@ -183,6 +186,8 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                 meta.details = {
                     platform: msgPlatform || null, sender: msgSender || null,
                     link_included: msgLinkIncluded || null, message_content: msgContent || null,
+                    money_requested: msgMoneyRequested || null, information_shared: msgInfoShared || null,
+                    payment_made: msgPaymentMade || null,
                 };
                 break;
             case 'suspicious_email':
@@ -347,7 +352,34 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                 }
             }
 
-            /* 6. Success → toast + navigate */
+            /* 7. Dispatch admin email alert for new case */
+            try {
+                await fetch('/api/email-dispatch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                        event_type: 'admin_case_created',
+                        organisation_id: finalOrgId,
+                        case_id: caseId,
+                        context: { message: `New case submitted (${incidentType})` },
+                    }),
+                });
+            } catch { /* Email dispatch is best-effort — never block submission */ }
+
+            /* 8. Trigger AI triage generation (fire-and-forget, non-blocking) */
+            try {
+                console.log('[SLP] Triggering AI triage — case_id:', caseId, '| organisation_id:', finalOrgId);
+                fetch('/api/ai-triage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ case_id: caseId, organisation_id: finalOrgId }),
+                }).catch((err) => { console.warn('[SLP] AI triage fetch failed:', err); });
+            } catch { /* AI triage is best-effort — never block submission */ }
+
+            /* 8. Success → toast + navigate */
             setShowToast(true);
             setTimeout(() => {
                 setShowToast(false);
@@ -460,6 +492,9 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                     {renderInput('Sender number or username', msgSender, setMsgSender)}
                     {renderYesNo('Link included?', msgLinkIncluded, setMsgLinkIncluded)}
                     {renderTextarea('Message content', msgContent, setMsgContent, { placeholder: 'Paste the message here if available…' })}
+                    {renderYesNo('Money requested?', msgMoneyRequested, setMsgMoneyRequested)}
+                    {renderYesNo('Information shared?', msgInfoShared, setMsgInfoShared, 'Did the resident share personal or financial information?')}
+                    {renderYesNo('Payment made?', msgPaymentMade, setMsgPaymentMade)}
                 </>);
             case 'suspicious_email':
                 return (<>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     BarChart3, Loader2, AlertTriangle, Calendar, ShieldAlert, PieChart,
     CheckCircle2, TrendingUp, Info, Printer, Save, Lock, Eye,
-    ClipboardList, Clock, FileText, Download, Activity,
+    ClipboardList, Clock, FileText, Download, Activity, Mail,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
@@ -167,19 +167,16 @@ export function ReportsPage() {
     // Send inspection pack
     const [sendingPack, setSendingPack] = useState(false);
     const [sendPackMsg, setSendPackMsg] = useState<string | null>(null);
-    const [deliveries, setDeliveries] = useState<{ id: string; status: string; sent_at: string | null; created_at: string; recipients: string[] | null }[]>([]);
 
-    // Org inspection pack settings
-    const [settingsRecipients, setSettingsRecipients] = useState('');
-    const [settingsCc, setSettingsCc] = useState('');
-    const [settingsAutoSend, setSettingsAutoSend] = useState(false);
-    const [savingSettings, setSavingSettings] = useState(false);
-    const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
+    // Send report email
+    const [sendingReport, setSendingReport] = useState(false);
+    const [sendReportMsg, setSendReportMsg] = useState<string | null>(null);
+    const [deliveries, setDeliveries] = useState<{ id: string; status: string; sent_at: string | null; created_at: string; recipients: string[] | null }[]>([]);
 
     const isLocked = reportStatus === 'locked' || reportStatus === 'approved' || reportLocked;
     const fieldsDisabled = isLocked || inspectionMode || userRole === 'read_only';
-    const canEditSettings = userRole === 'super_admin' || userRole === 'org_admin';
-    const canSendPack = userRole === 'super_admin' || userRole === 'org_admin' || userRole === 'safeguarding_lead';
+    const canSendPack = userRole === 'super_admin' || userRole === 'org_admin';
+    const canSendReportEmail = userRole === 'super_admin' || userRole === 'org_admin' || userRole === 'safeguarding_lead';
 
     /* ── Resolve org context once on mount ───────────────────────────────── */
     useEffect(() => {
@@ -207,20 +204,28 @@ export function ReportsPage() {
 
                 setAllOrgs(orgs ?? []);
 
-                const stored = localStorage.getItem('slp_active_org_id');
+                // Check both localStorage keys used by different parts of the dashboard
+                const stored = localStorage.getItem('slp_active_org_id')
+                    || localStorage.getItem('slp_viewing_as_org_id');
                 if (stored) {
                     setOrgId(stored);
                     const match = (orgs ?? []).find(o => o.id === stored);
                     setOrgName(match?.name ?? '');
                 }
+                console.log('[ReportsPage] Mount — super_admin, resolved orgId:', stored ?? '(none)', 'slp_active_org_id:', localStorage.getItem('slp_active_org_id'), 'slp_viewing_as_org_id:', localStorage.getItem('slp_viewing_as_org_id'));
             } else if (profile?.organisation_id) {
-                setOrgId(profile.organisation_id);
+                // For org_admin: check if dashboard "Viewing As" override is set
+                const viewingAs = localStorage.getItem('slp_viewing_as_org_id')
+                    || localStorage.getItem('slp_active_org_id');
+                const resolvedOrg = viewingAs || profile.organisation_id;
+                setOrgId(resolvedOrg);
                 setUserRole(profile.role ?? '');
+                console.log('[ReportsPage] Mount — role:', profile.role, 'profile.organisation_id:', profile.organisation_id, 'viewingAs:', viewingAs, 'resolved orgId:', resolvedOrg);
 
                 const { data: org } = await supabase
                     .from('organisations')
                     .select('name')
-                    .eq('id', profile.organisation_id)
+                    .eq('id', resolvedOrg)
                     .single();
 
                 setOrgName(org?.name ?? '');
@@ -621,34 +626,6 @@ export function ReportsPage() {
 
     useEffect(() => { fetchDeliveries(); }, [fetchDeliveries]);
 
-    // Fetch organisation_settings when orgId changes
-    useEffect(() => {
-        if (!orgId) return;
-        (async () => {
-            try {
-                const supabase = getSupabase();
-                const { data } = await supabase
-                    .from('organisation_settings')
-                    .select('*')
-                    .eq('organisation_id', orgId)
-                    .single();
-                if (data) {
-                    setSettingsRecipients(Array.isArray(data.report_recipients) ? data.report_recipients.join(', ') : '');
-                    setSettingsCc(Array.isArray(data.report_cc) ? data.report_cc.join(', ') : '');
-                    setSettingsAutoSend(!!data.auto_send_inspection_pack);
-                } else {
-                    setSettingsRecipients('');
-                    setSettingsCc('');
-                    setSettingsAutoSend(false);
-                }
-            } catch {
-                setSettingsRecipients('');
-                setSettingsCc('');
-                setSettingsAutoSend(false);
-            }
-            setSettingsMsg(null);
-        })();
-    }, [orgId]);
 
     if (!orgId && !loading) {
         return (
@@ -1038,106 +1015,6 @@ export function ReportsPage() {
                         </div>
                     </div>
 
-                    {/* Inspection Pack Recipients Settings */}
-                    {canEditSettings && orgId && (
-                        <div className="dashboard-panel reports-no-print" style={{ marginBottom: '1rem' }}>
-                            <div className="dashboard-panel-header">
-                                <h2 className="dashboard-panel-title"><Save size={16} className="dashboard-panel-title-icon" /> Inspection Pack Recipients</h2>
-                            </div>
-                            <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                <div>
-                                    <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Recipients (comma-separated emails)</label>
-                                    <input
-                                        type="text"
-                                        className="dsf-input"
-                                        value={settingsRecipients}
-                                        onChange={(e) => setSettingsRecipients(e.target.value)}
-                                        placeholder="alice@example.com, bob@example.com"
-                                        style={{ width: '100%', fontSize: '0.82rem' }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>CC (comma-separated emails)</label>
-                                    <input
-                                        type="text"
-                                        className="dsf-input"
-                                        value={settingsCc}
-                                        onChange={(e) => setSettingsCc(e.target.value)}
-                                        placeholder="manager@example.com"
-                                        style={{ width: '100%', fontSize: '0.82rem' }}
-                                    />
-                                </div>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#334155' }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={settingsAutoSend}
-                                        onChange={(e) => setSettingsAutoSend(e.target.checked)}
-                                    />
-                                    Auto-send inspection pack when generated
-                                </label>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <button
-                                        type="button"
-                                        className="dashboard-reports-action-btn"
-                                        disabled={savingSettings}
-                                        onClick={async () => {
-                                            setSavingSettings(true);
-                                            setSettingsMsg(null);
-                                            try {
-                                                const supabase = getSupabase();
-                                                const recipientsArr = settingsRecipients.split(',').map(s => s.trim()).filter(Boolean);
-                                                const ccArr = settingsCc.split(',').map(s => s.trim()).filter(Boolean);
-
-                                                // Fetch current settings for audit before state
-                                                const { data: prevSettings } = await supabase
-                                                    .from('organisation_settings')
-                                                    .select('report_recipients, report_cc, auto_send_inspection_pack')
-                                                    .eq('organisation_id', orgId)
-                                                    .single();
-
-                                                const { error: uErr } = await supabase
-                                                    .from('organisation_settings')
-                                                    .upsert({
-                                                        organisation_id: orgId,
-                                                        report_recipients: recipientsArr,
-                                                        report_cc: ccArr,
-                                                        auto_send_inspection_pack: settingsAutoSend,
-                                                        updated_at: new Date().toISOString(),
-                                                    }, { onConflict: 'organisation_id' });
-                                                if (uErr) throw uErr;
-
-                                                try {
-                                                    const { data: { session: auditSession } } = await supabase.auth.getSession();
-                                                    await supabase.from('audit_logs').insert({
-                                                        organisation_id: orgId,
-                                                        actor_profile_id: auditSession?.user?.id ?? null,
-                                                        actor_type: userRole || null,
-                                                        action: 'org_settings_updated',
-                                                        entity_type: 'organisation_settings',
-                                                        entity_id: orgId,
-                                                        before: prevSettings ?? {},
-                                                        after: { report_recipients: recipientsArr, report_cc: ccArr, auto_send_inspection_pack: settingsAutoSend },
-                                                    });
-                                                } catch { /* audit insert non-blocking */ }
-
-                                                setSettingsMsg('Saved');
-                                            } catch (err: any) {
-                                                setSettingsMsg(`Error: ${err?.message ?? 'Failed to save'}`);
-                                            } finally {
-                                                setSavingSettings(false);
-                                            }
-                                        }}
-                                    >
-                                        {savingSettings ? <Loader2 size={14} className="dsf-spinner" /> : <Save size={14} />}
-                                        {savingSettings ? 'Saving…' : 'Save Settings'}
-                                    </button>
-                                    {settingsMsg && (
-                                        <span style={{ fontSize: '0.75rem', color: settingsMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{settingsMsg}</span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     {/* ACTION BAR */}
                     <div className="reports-no-print" style={{ height: '84px' }} />
@@ -1264,6 +1141,7 @@ export function ReportsPage() {
                                     if (sendingPack || !orgId) return;
                                     setSendingPack(true);
                                     setSendPackMsg(null);
+                                    console.log('[ReportsPage] Send Inspection Pack — orgId:', orgId, 'selectedMonth:', selectedMonth);
                                     try {
                                         const supabase = getSupabase();
                                         const { data: { session } } = await supabase.auth.getSession();
@@ -1293,6 +1171,53 @@ export function ReportsPage() {
                         )}
                         {sendPackMsg && (
                             <span style={{ fontSize: '0.75rem', alignSelf: 'center', color: sendPackMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{sendPackMsg}</span>
+                        )}
+
+                        {/* Send Report by Email */}
+                        {orgId && canSendReportEmail && reportId && (
+                            <button
+                                type="button"
+                                className="dashboard-reports-action-btn"
+                                disabled={sendingReport}
+                                style={{ background: '#0f766e', color: '#fff' }}
+                                onClick={async () => {
+                                    if (sendingReport || !orgId || !reportId) return;
+                                    setSendingReport(true);
+                                    setSendReportMsg(null);
+                                    console.log('[ReportsPage] Send Report Email — orgId:', orgId, 'reportId:', reportId, 'selectedMonth:', selectedMonth);
+                                    try {
+                                        const supabase = getSupabase();
+                                        const { data: { session } } = await supabase.auth.getSession();
+                                        if (!session?.access_token) throw new Error('Not authenticated');
+                                        const resp = await fetch('/api/send-report-email', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                Authorization: `Bearer ${session.access_token}`,
+                                            },
+                                            body: JSON.stringify({
+                                                organisation_id: orgId,
+                                                report_period: selectedMonth,
+                                                report_id: reportId,
+                                            }),
+                                        });
+                                        const result = await resp.json().catch(() => null);
+                                        if (!resp.ok) throw new Error(result?.error ?? 'Failed to send report email');
+                                        setSendReportMsg(result?.message ?? 'Report email sent');
+                                        if (reportId) fetchAuditLogs(reportId);
+                                    } catch (err: any) {
+                                        setSendReportMsg(`Error: ${err?.message ?? 'Send failed'}`);
+                                    } finally {
+                                        setSendingReport(false);
+                                    }
+                                }}
+                            >
+                                {sendingReport ? <Loader2 size={16} className="dsf-spinner" /> : <Mail size={16} />}
+                                {sendingReport ? 'Sending…' : 'Send Report by Email'}
+                            </button>
+                        )}
+                        {sendReportMsg && (
+                            <span style={{ fontSize: '0.75rem', alignSelf: 'center', color: sendReportMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{sendReportMsg}</span>
                         )}
                     </div>
 

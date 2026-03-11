@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     ArrowLeft, Loader2, AlertTriangle, CheckCircle2, Lock,
     FileText, Image as ImageIcon, Clock, User, Shield, Activity,
-    Send, XCircle, MessageSquare, Eye, Download, UserPlus,
+    Send, XCircle, MessageSquare, Eye, Download, UserPlus, Bot,
+    Phone, Search,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 import type { UserRole } from '../types';
@@ -55,6 +56,34 @@ interface CaseAction {
     action_notes: string | null;
     actor_id: string | null;
     created_at: string;
+}
+
+interface AiTriageResult {
+    id: string;
+    case_id: string;
+    organisation_id: string;
+    model: string | null;
+    risk_level: string | null;
+    summary: string | null;
+    actions: any;
+    indicators: any;
+    confidence: number | null;
+    suggested_category: string | null;
+    suggested_urgency: string | null;
+    likely_scam_pattern: string | null;
+    repeat_targeting_suspected: boolean | null;
+    financial_harm_indicator: boolean | null;
+    human_review_required: boolean | null;
+    reviewed_by: string | null;
+    reviewed_at: string | null;
+    accepted: boolean | null;
+    human_final_risk_level: string | null;
+    human_final_category: string | null;
+    human_final_urgency: string | null;
+    human_final_notes: string | null;
+    raw_response: any;
+    created_at: string;
+    updated_at: string | null;
 }
 
 /** Merged timeline entry */
@@ -230,6 +259,21 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     const [assignTo, setAssignTo] = useState('');
     const [assigning, setAssigning] = useState(false);
     const [assignMsg, setAssignMsg] = useState<string | null>(null);
+
+    // AI Triage Assist state
+    const [aiTriage, setAiTriage] = useState<AiTriageResult | null>(null);
+    const [aiTriageLoading, setAiTriageLoading] = useState(false);
+    const [aiAccepting, setAiAccepting] = useState(false);
+    const [aiSaving, setAiSaving] = useState(false);
+    const [aiHumanRisk, setAiHumanRisk] = useState('');
+    const [aiHumanCategory, setAiHumanCategory] = useState('');
+    const [aiHumanUrgency, setAiHumanUrgency] = useState('');
+    const [aiHumanNotes, setAiHumanNotes] = useState('');
+    const [aiMsg, setAiMsg] = useState<string | null>(null);
+
+    // Number Intelligence state
+    const [numberIntelLoading, setNumberIntelLoading] = useState(false);
+    const [numberIntelMsg, setNumberIntelMsg] = useState<string | null>(null);
 
     /* ── Build merged timeline ───────────────────────────────────────────── */
     function buildTimeline(c: CaseRow, acts: CaseAction[], revs: CaseReview[], timelineEvents?: any[]): TimelineEntry[] {
@@ -415,6 +459,27 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             // 5. Build merged timeline
             setTimeline(buildTimeline(c as CaseRow, actsTyped, revsTyped, timelineEvts ?? []));
 
+            // 6. Fetch AI triage result
+            setAiTriageLoading(true);
+            try {
+                const { data: aiRow } = await supabase
+                    .from('ai_triage_results')
+                    .select('*')
+                    .eq('case_id', caseId)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                const typed = aiRow as AiTriageResult | null;
+                setAiTriage(typed);
+                if (typed) {
+                    setAiHumanRisk(typed.human_final_risk_level ?? typed.risk_level ?? '');
+                    setAiHumanCategory(typed.human_final_category ?? typed.suggested_category ?? '');
+                    setAiHumanUrgency(typed.human_final_urgency ?? typed.suggested_urgency ?? '');
+                    setAiHumanNotes(typed.human_final_notes ?? '');
+                }
+            } catch { /* non-critical */ }
+            setAiTriageLoading(false);
+
         } catch (err: any) {
             setError(err?.message ?? 'Failed to load case');
         } finally {
@@ -423,6 +488,16 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     }, [caseId]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    /* ── Auto-poll while number intelligence is still running ─────────── */
+    useEffect(() => {
+        const pending = aiTriage?.raw_response?.number_intel_pending === true;
+        if (!pending) return;
+        const interval = setInterval(() => { fetchData(); }, 4_000);
+        // Safety: stop polling after 2 minutes regardless
+        const timeout = setTimeout(() => clearInterval(interval), 120_000);
+        return () => { clearInterval(interval); clearTimeout(timeout); };
+    }, [aiTriage?.raw_response?.number_intel_pending, fetchData]);
 
     /* ── Generate signed URLs for evidence files ─────────────────────────── */
     useEffect(() => {
@@ -466,6 +541,36 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         })();
         return () => { cancelled = true; };
     }, [caseData]);
+
+    /* ── Notify submitter on review completion (best-effort, deduplicated) ── */
+    async function notifySubmitter(reviewCaseId: string, reviewerUid: string) {
+        try {
+            if (!caseData?.submitted_by) return;
+            if (caseData.submitted_by === reviewerUid) return; // don't notify yourself
+            const supabase = getSupabase();
+
+            // Deduplicate: skip if a review_completed notification for this case+user
+            // was already created in the last 60 seconds (covers rapid multi-handler flows)
+            const cutoff = new Date(Date.now() - 60_000).toISOString();
+            const { data: existing } = await supabase
+                .from('notifications')
+                .select('id')
+                .eq('user_id', caseData.submitted_by)
+                .eq('case_id', reviewCaseId)
+                .eq('type', 'review_completed')
+                .gte('created_at', cutoff)
+                .limit(1);
+            if (existing && existing.length > 0) return; // already notified
+
+            await supabase.from('notifications').insert({
+                user_id: caseData.submitted_by,
+                type: 'review_completed',
+                case_id: reviewCaseId,
+                message: 'A manager/admin has reviewed your case. Open to view the latest guidance and outcome.',
+                read: false,
+            });
+        } catch { /* best-effort — never block the review */ }
+    }
 
     /* ── Mark In Review ───────────────────────────────────────────────────── */
     async function handleMarkInReview() {
@@ -579,6 +684,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             if (updErr) throw updErr;
 
             setReviewSuccess('Review saved successfully.');
+            notifySubmitter(caseId, uid);
             await fetchData();
             fetchCaseHistory();
         } catch (err: any) {
@@ -757,6 +863,125 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     }, [caseId, orgId]);
 
     useEffect(() => { if (orgId) fetchCaseHistory(); }, [orgId, fetchCaseHistory]);
+
+    /* ── Accept AI Triage ──────────────────────────────────────────────────── */
+    async function handleAcceptAi() {
+        if (!aiTriage) return;
+        setAiAccepting(true);
+        setAiMsg(null);
+        try {
+            const supabase = getSupabase();
+            const now = new Date().toISOString();
+            const { error: updErr } = await supabase
+                .from('ai_triage_results')
+                .update({
+                    accepted: true,
+                    reviewed_by: uid,
+                    reviewed_at: now,
+                    human_final_risk_level: aiTriage.risk_level,
+                    human_final_category: aiTriage.suggested_category,
+                    human_final_urgency: aiTriage.suggested_urgency,
+                })
+                .eq('id', aiTriage.id);
+            if (updErr) throw updErr;
+
+            /* Record audit timeline entry */
+            await supabase.from('case_actions').insert({
+                case_id: caseId,
+                organisation_id: orgId,
+                actor_id: uid,
+                action_type: 'ai_review_accepted',
+                action_notes: `AI review accepted — risk: ${formatLabel(aiTriage.risk_level)}, category: ${formatLabel(aiTriage.suggested_category)}, urgency: ${formatLabel(aiTriage.suggested_urgency)}`,
+            });
+
+            setAiMsg('AI suggestions accepted.');
+            notifySubmitter(caseId, uid);
+            await fetchData();
+        } catch (err: any) {
+            setAiMsg(`Error: ${err?.message ?? 'Failed to accept AI triage'}`);
+        } finally {
+            setAiAccepting(false);
+        }
+    }
+
+    /* ── Save AI Triage Human Review ──────────────────────────────────────── */
+    async function handleSaveAiReview() {
+        if (!aiTriage) return;
+        setAiSaving(true);
+        setAiMsg(null);
+        try {
+            const supabase = getSupabase();
+            const now = new Date().toISOString();
+            const { error: updErr } = await supabase
+                .from('ai_triage_results')
+                .update({
+                    reviewed_by: uid,
+                    reviewed_at: now,
+                    human_final_risk_level: aiHumanRisk || null,
+                    human_final_category: aiHumanCategory || null,
+                    human_final_urgency: aiHumanUrgency || null,
+                    human_final_notes: aiHumanNotes || null,
+                })
+                .eq('id', aiTriage.id);
+            if (updErr) throw updErr;
+
+            /* Record audit timeline entry */
+            const overrideParts: string[] = [];
+            if (aiHumanRisk) overrideParts.push(`risk: ${formatLabel(aiHumanRisk)}`);
+            if (aiHumanCategory) overrideParts.push(`category: ${formatLabel(aiHumanCategory)}`);
+            if (aiHumanUrgency) overrideParts.push(`urgency: ${formatLabel(aiHumanUrgency)}`);
+            if (aiHumanNotes) overrideParts.push('notes added');
+            const overrideSummary = overrideParts.length > 0 ? ` — ${overrideParts.join(', ')}` : '';
+            await supabase.from('case_actions').insert({
+                case_id: caseId,
+                organisation_id: orgId,
+                actor_id: uid,
+                action_type: 'ai_assessment_override',
+                action_notes: `Final assessment saved${overrideSummary}`,
+            });
+
+            setAiMsg('AI triage review saved.');
+            notifySubmitter(caseId, uid);
+            await fetchData();
+        } catch (err: any) {
+            setAiMsg(`Error: ${err?.message ?? 'Failed to save AI review'}`);
+        } finally {
+            setAiSaving(false);
+        }
+    }
+
+    /* ── Run Number Intelligence ───────────────────────────────────────────── */
+    async function handleRunNumberIntel() {
+        if (!aiTriage || !caseData) return;
+        const details = caseData.meta?.details;
+        const phoneNumber = details?.phone_number || details?.sender || null;
+        if (!phoneNumber) { setNumberIntelMsg('No phone number found in case details.'); return; }
+
+        setNumberIntelLoading(true);
+        setNumberIntelMsg(null);
+        try {
+            const resp = await fetch('/api/number-intel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    triage_id: aiTriage.id,
+                    case_id: caseData.id,
+                    phone_number: phoneNumber,
+                }),
+            });
+            const result = await resp.json();
+            if (!result.ok) {
+                setNumberIntelMsg(`Error: ${result.error || 'Failed to run number intelligence'}`);
+            } else {
+                setNumberIntelMsg('Number intelligence completed.');
+                await fetchData();
+            }
+        } catch (err: any) {
+            setNumberIntelMsg(`Error: ${err?.message || 'Failed'}`);
+        } finally {
+            setNumberIntelLoading(false);
+        }
+    }
 
     /* ── Record Escalation ─────────────────────────────────────────────────── */
     async function handleRecordEscalation() {
@@ -993,6 +1218,35 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         </div>
                     )}
                 </div>
+                {/* ── Suspicious Contact Details ───────────────────────── */}
+                {(() => {
+                    const d = caseData.meta?.details;
+                    if (!d || typeof d !== 'object') return null;
+                    const contacts: { label: string; value: string }[] = [];
+                    if (d.phone_number) contacts.push({ label: 'Reported phone number', value: d.phone_number });
+                    if (d.sender_email) contacts.push({ label: 'Reported email', value: d.sender_email });
+                    if (d.url) contacts.push({ label: 'Reported website / link', value: d.url });
+                    if (d.sender) contacts.push({ label: 'Reported sender / contact', value: d.sender });
+                    if (d.claimed_sender) contacts.push({ label: 'Claimed sender', value: d.claimed_sender });
+                    if (d.claimed_organisation) contacts.push({ label: 'Claimed organisation', value: d.claimed_organisation });
+                    if (contacts.length === 0) return null;
+                    return (
+                        <div className="casedetail-field" style={{ marginTop: '0.75rem' }}>
+                            <span className="casedetail-field-label">
+                                <Phone size={14} style={{ verticalAlign: 'text-bottom', marginRight: '4px' }} />
+                                Suspicious Contact Details
+                            </span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.35rem' }}>
+                                {contacts.map((c, i) => (
+                                    <div key={i} style={{ display: 'flex', gap: '0.5rem', fontSize: '0.85rem' }}>
+                                        <span style={{ color: '#64748b', minWidth: '160px', flexShrink: 0 }}>{c.label}:</span>
+                                        <span style={{ color: '#1e293b', fontWeight: 500, wordBreak: 'break-all' }}>{c.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })()}
                 {caseData.resident_ref && (
                     <div className="casedetail-field" style={{ marginTop: '0.5rem' }}>
                         <span className="casedetail-field-label">Resident Ref</span>
@@ -1217,6 +1471,663 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
 
                 {/* ════ RIGHT COLUMN ════ */}
                 <div className="casedetail-right">
+
+                    {/* ── AI Triage Assist ─────────────────────────────────── */}
+                    <div className="casedetail-section aitriage-card">
+                        <h2 className="casedetail-section-title">
+                            <Bot size={16} /> AI Triage Assist
+                        </h2>
+                        <div className="aitriage-advisory">
+                            <AlertTriangle size={13} />
+                            AI suggestions are advisory only and require human review.
+                        </div>
+
+                        {aiTriageLoading && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.82rem', padding: '0.5rem 0' }}>
+                                <Loader2 size={14} className="dsf-spinner" /> Loading AI triage…
+                            </div>
+                        )}
+
+                        {!aiTriageLoading && !aiTriage && (
+                            <p className="casedetail-empty">AI triage not generated yet.</p>
+                        )}
+
+                        {!aiTriageLoading && aiTriage && (
+                            <>
+                                {/* AI Summary */}
+                                {aiTriage.summary && (
+                                    <div className="aitriage-field">
+                                        <span className="aitriage-label">AI Summary</span>
+                                        <div className="aitriage-value aitriage-summary">{aiTriage.summary}</div>
+                                    </div>
+                                )}
+
+                                {/* Grid of key fields */}
+                                <div className="aitriage-grid">
+                                    <div className="aitriage-field">
+                                        <span className="aitriage-label">Suggested Risk</span>
+                                        {(() => {
+                                            const numIntel = aiTriage.raw_response?.number_intel;
+                                            const calibratedLabel = numIntel?.scam_likelihood?.label;
+                                            if (calibratedLabel) {
+                                                // Map calibrated label to risk class
+                                                const calibratedClass = calibratedLabel.toLowerCase().includes('very high') ? 'high' : calibratedLabel.toLowerCase().includes('high') ? 'high' : calibratedLabel.toLowerCase().includes('suspicious') ? 'medium' : calibratedLabel.toLowerCase().includes('uncertain') ? 'medium' : 'low';
+                                                return (
+                                                    <span className={`dashboard-risk-badge risk-${calibratedClass}`}>
+                                                        {calibratedLabel}
+                                                    </span>
+                                                );
+                                            }
+                                            return (
+                                                <span className={`dashboard-risk-badge risk-${riskClass(aiTriage.risk_level)}`}>
+                                                    {formatLabel(aiTriage.risk_level)}
+                                                </span>
+                                            );
+                                        })()}
+                                    </div>
+                                    <div className="aitriage-field">
+                                        <span className="aitriage-label">Suggested Category</span>
+                                        <span className="aitriage-value">{formatLabel(aiTriage.suggested_category)}</span>
+                                    </div>
+                                    <div className="aitriage-field">
+                                        <span className="aitriage-label">Suggested Urgency</span>
+                                        <span className={`aitriage-urgency-badge aitriage-urgency-${(aiTriage.suggested_urgency ?? 'unknown').toLowerCase()}`}>
+                                            {formatLabel(aiTriage.suggested_urgency)}
+                                        </span>
+                                    </div>
+                                    <div className="aitriage-field">
+                                        <span className="aitriage-label">Likely Scam Pattern</span>
+                                        <span className="aitriage-value">{formatLabel(aiTriage.likely_scam_pattern)}</span>
+                                    </div>
+                                </div>
+
+                                {/* Indicators (bullet list) */}
+                                {(() => {
+                                    const items = Array.isArray(aiTriage.indicators) ? aiTriage.indicators : [];
+                                    if (items.length === 0) return null;
+                                    return (
+                                        <div className="aitriage-field">
+                                            <span className="aitriage-label">Indicators</span>
+                                            <ul className="aitriage-bullets">
+                                                {items.map((ind: any, i: number) => (
+                                                    <li key={i}>{typeof ind === 'string' ? ind : JSON.stringify(ind)}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* Recommended Next Actions (bullet list) */}
+                                {(() => {
+                                    const items = Array.isArray(aiTriage.actions) ? aiTriage.actions : [];
+                                    if (items.length === 0) return null;
+                                    return (
+                                        <div className="aitriage-field">
+                                            <span className="aitriage-label">Recommended Next Actions</span>
+                                            <ul className="aitriage-bullets">
+                                                {items.map((act: any, i: number) => (
+                                                    <li key={i}>{typeof act === 'string' ? act : JSON.stringify(act)}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    );
+                                })()}
+
+                                {(() => {
+                                    const numIntel = aiTriage.raw_response?.number_intel;
+                                    const calibratedScore = numIntel?.scam_likelihood?.score;
+                                    const calibratedLabel = numIntel?.scam_likelihood?.label;
+                                    const calibratedExplanation = numIntel?.scam_likelihood?.explanation;
+
+                                    if (calibratedScore != null) {
+                                        // Use calibrated score as primary
+                                        const pct = Math.min(100, Math.max(0, calibratedScore));
+                                        const barColor = pct >= 80 ? '#dc2626' : pct >= 60 ? '#ea580c' : pct >= 40 ? '#d97706' : pct >= 20 ? '#65a30d' : '#16a34a';
+                                        return (
+                                            <div className="aitriage-field">
+                                                <span className="aitriage-label">Scam Likelihood (Evidence-weighted)</span>
+                                                <div className="aitriage-confidence-wrap">
+                                                    <div className="aitriage-confidence-bar">
+                                                        <div
+                                                            className="aitriage-confidence-fill"
+                                                            style={{ width: `${pct}%`, background: barColor }}
+                                                        />
+                                                    </div>
+                                                    <span className="aitriage-confidence-text">
+                                                        {pct}% — {calibratedLabel || 'Unknown'}
+                                                    </span>
+                                                </div>
+                                                {calibratedExplanation && (
+                                                    <span style={{ display: 'block', fontSize: '0.76rem', color: '#475569', marginTop: '4px', lineHeight: 1.45 }}>
+                                                        {calibratedExplanation}
+                                                    </span>
+                                                )}
+                                                <span style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px', lineHeight: 1.4 }}>
+                                                    Based on IPQS technical data, complaint source checks, web corroboration, and case context. Requires human review.
+                                                </span>
+                                            </div>
+                                        );
+                                    }
+
+                                    // Fallback: original confidence if no calibrated score
+                                    if (aiTriage.confidence != null) {
+                                        return (
+                                            <div className="aitriage-field">
+                                                <span className="aitriage-label">Scam Likelihood Confidence</span>
+                                                <div className="aitriage-confidence-wrap">
+                                                    <div className="aitriage-confidence-bar">
+                                                        <div
+                                                            className="aitriage-confidence-fill"
+                                                            style={{ width: `${Math.round(aiTriage.confidence * 100)}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="aitriage-confidence-text">
+                                                        {Math.round(aiTriage.confidence * 100)}% — {aiTriage.confidence < 0.4 ? 'Low confidence' : aiTriage.confidence < 0.75 ? 'Moderate confidence' : 'High confidence'}
+                                                    </span>
+                                                </div>
+                                                <span style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px', lineHeight: 1.4 }}>
+                                                    Based on submitted case details only. Number intelligence not yet available.
+                                                </span>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+
+                                {/* Human Review Required */}
+                                <div className="aitriage-field">
+                                    <span className="aitriage-label">Human Review Required</span>
+                                    <span className={`aitriage-bool-badge ${aiTriage.human_review_required ? 'aitriage-bool-yes' : 'aitriage-bool-no'}`}>
+                                        {aiTriage.human_review_required ? 'Yes' : 'No'}
+                                    </span>
+                                </div>
+
+                                {/* ── Number Intelligence ──────────────────────── */}
+                                {(() => {
+                                    const phoneNumber = caseData?.meta?.details?.phone_number || caseData?.meta?.details?.sender || null;
+                                    const intel = aiTriage.raw_response?.number_intel;
+                                    const lookupStatus = intel?.lookup_status || null;
+                                    const extLookup = intel?.external_lookup || null;
+                                    const complaints = intel?.complaint_sources || null;
+
+                                    // Technical lookup status
+                                    const techStatus = extLookup ? 'completed' : lookupStatus === 'no_service' ? 'no_service' : 'unavailable';
+                                    const techLabel = techStatus === 'completed' ? 'Technical lookup completed' : techStatus === 'no_service' ? 'No technical lookup service configured' : 'Technical lookup unavailable';
+                                    const techColor = techStatus === 'completed' ? '#2563eb' : '#94a3b8';
+
+                                    // Complaint source status
+                                    const compStatus = complaints?.overall_status || 'unavailable';
+                                    const compLabel = compStatus === 'match_found' ? 'Public complaint-source match found' : compStatus === 'no_match' ? 'No reliable public complaint-source match found' : 'Complaint-source lookup unavailable';
+                                    const compColor = compStatus === 'match_found' ? '#dc2626' : compStatus === 'no_match' ? '#16a34a' : '#94a3b8';
+
+                                    // Web corroboration status
+                                    const webCorr = intel?.web_corroboration || null;
+                                    const webStatus = webCorr?.status || 'not_performed';
+                                    const webLabel = webStatus === 'corroboration_found' ? 'Number-specific corroboration found' : webStatus === 'no_corroboration' ? 'Web search performed — no number-specific corroboration' : webStatus === 'unavailable' ? 'Web search unavailable' : 'Web search not performed';
+                                    const webColor = webStatus === 'corroboration_found' ? '#dc2626' : webStatus === 'no_corroboration' ? '#16a34a' : '#94a3b8';
+
+                                    // Gemini corroboration status
+                                    const gemCorr = intel?.gemini_corroboration || null;
+                                    const gemStatus = gemCorr?.status || 'not_performed';
+                                    const gemLabel = gemStatus === 'corroboration_found' ? 'Gemini corroboration found'
+                                        : gemStatus === 'related_evidence' ? 'Gemini found related evidence'
+                                        : gemStatus === 'no_corroboration' ? 'Gemini found no number-specific corroboration'
+                                        : gemStatus === 'unavailable' ? 'Gemini unavailable'
+                                        : 'Gemini not performed';
+                                    const gemColor = gemStatus === 'corroboration_found' ? '#dc2626' : gemStatus === 'related_evidence' ? '#d97706' : gemStatus === 'no_corroboration' ? '#16a34a' : '#94a3b8';
+
+                                    return (
+                                        <div className="aitriage-field" style={{ marginTop: '0.5rem' }}>
+                                            <div className="aitriage-review-divider" />
+                                            <span className="aitriage-label" style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '0.5rem' }}>
+                                                <Search size={13} /> Number Intelligence
+                                            </span>
+
+                                            {!phoneNumber && !intel && (
+                                                <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '0.35rem 0 0', fontStyle: 'italic' }}>
+                                                    No phone number available for number intelligence.
+                                                </p>
+                                            )}
+
+                                            {phoneNumber && (!intel || aiTriage.raw_response?.number_intel_pending) && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#2563eb', margin: '0.35rem 0 0' }}>
+                                                    <Loader2 size={13} className="dsf-spinner" />
+                                                    Building number intelligence — awaiting corroboration sources…
+                                                </div>
+                                            )}
+
+                                            {intel && (
+                                                <div style={{ marginTop: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                    {/* Reported number */}
+                                                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem' }}>
+                                                        <span style={{ color: '#64748b', minWidth: '120px' }}>Reported number:</span>
+                                                        <span style={{ color: '#1e293b', fontWeight: 500 }}>{intel.phone_number || '—'}</span>
+                                                    </div>
+
+                                                    {/* Technical lookup status */}
+                                                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem', alignItems: 'center' }}>
+                                                        <span style={{ color: '#64748b', minWidth: '120px' }}>Technical lookup:</span>
+                                                        <span style={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                                            fontSize: '0.76rem', fontWeight: 600, color: techColor,
+                                                            background: techStatus === 'completed' ? '#eff6ff' : '#f8fafc',
+                                                            padding: '2px 8px', borderRadius: '4px',
+                                                            border: `1px solid ${techStatus === 'completed' ? '#bfdbfe' : '#e2e8f0'}`,
+                                                        }}>
+                                                            {techLabel}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Complaint source status */}
+                                                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem', alignItems: 'center' }}>
+                                                        <span style={{ color: '#64748b', minWidth: '120px' }}>Complaint sources:</span>
+                                                        <span style={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                                            fontSize: '0.76rem', fontWeight: 600, color: compColor,
+                                                            background: compStatus === 'match_found' ? '#fef2f2' : compStatus === 'no_match' ? '#f0fdf4' : '#f8fafc',
+                                                            padding: '2px 8px', borderRadius: '4px',
+                                                            border: `1px solid ${compStatus === 'match_found' ? '#fecaca' : compStatus === 'no_match' ? '#bbf7d0' : '#e2e8f0'}`,
+                                                        }}>
+                                                            {compLabel}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Web corroboration status */}
+                                                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem', alignItems: 'center' }}>
+                                                        <span style={{ color: '#64748b', minWidth: '120px' }}>Web corroboration:</span>
+                                                        <span style={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                                            fontSize: '0.76rem', fontWeight: 600, color: webColor,
+                                                            background: webStatus === 'corroboration_found' ? '#fef2f2' : webStatus === 'no_corroboration' ? '#f0fdf4' : '#f8fafc',
+                                                            padding: '2px 8px', borderRadius: '4px',
+                                                            border: `1px solid ${webStatus === 'corroboration_found' ? '#fecaca' : webStatus === 'no_corroboration' ? '#bbf7d0' : '#e2e8f0'}`,
+                                                        }}>
+                                                            {webLabel}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Web corroboration summary */}
+                                                    {webCorr && webCorr.search_performed && webCorr.summary && (
+                                                        <div style={{ background: '#f8fafc', borderRadius: '6px', padding: '0.5rem 0.65rem', border: '1px solid #e2e8f0', marginTop: '0.1rem' }}>
+                                                            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Web Search Findings</span>
+                                                            <div style={{ fontSize: '0.79rem', color: '#475569', marginTop: '0.25rem', lineHeight: 1.45 }}>
+                                                                {webCorr.summary}
+                                                            </div>
+                                                            {Array.isArray(webCorr.sources) && webCorr.sources.length > 0 && (
+                                                                <div style={{ marginTop: '0.3rem', fontSize: '0.72rem', color: '#64748b' }}>
+                                                                    Sources: {webCorr.sources.map((url: string, i: number) => (
+                                                                        <span key={i}>{i > 0 ? ', ' : ''}<a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>{new URL(url).hostname}</a></span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Gemini corroboration status */}
+                                                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem', alignItems: 'center' }}>
+                                                        <span style={{ color: '#64748b', minWidth: '120px' }}>Gemini search:</span>
+                                                        <span style={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                                            fontSize: '0.76rem', fontWeight: 600, color: gemColor,
+                                                            background: gemStatus === 'corroboration_found' ? '#fef2f2' : gemStatus === 'related_evidence' ? '#fff7ed' : gemStatus === 'no_corroboration' ? '#f0fdf4' : '#f8fafc',
+                                                            padding: '2px 8px', borderRadius: '4px',
+                                                            border: `1px solid ${gemStatus === 'corroboration_found' ? '#fecaca' : gemStatus === 'related_evidence' ? '#fed7aa' : gemStatus === 'no_corroboration' ? '#bbf7d0' : '#e2e8f0'}`,
+                                                        }}>
+                                                            {gemLabel}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Gemini corroboration summary */}
+                                                    {gemCorr && gemCorr.search_performed && gemCorr.summary && (
+                                                        <div style={{ background: '#f8fafc', borderRadius: '6px', padding: '0.5rem 0.65rem', border: '1px solid #e2e8f0', marginTop: '0.1rem' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Gemini Findings</span>
+                                                                {gemCorr.classification && (
+                                                                    <span style={{
+                                                                        fontSize: '0.65rem', fontWeight: 600, padding: '1px 5px', borderRadius: '3px',
+                                                                        color: gemCorr.classification === 'direct_match' ? '#dc2626' : gemCorr.classification === 'related_match' ? '#d97706' : '#64748b',
+                                                                        background: gemCorr.classification === 'direct_match' ? '#fef2f2' : gemCorr.classification === 'related_match' ? '#fff7ed' : '#f1f5f9',
+                                                                    }}>
+                                                                        {gemCorr.classification === 'direct_match' ? 'Direct match' : gemCorr.classification === 'related_match' ? 'Related match' : gemCorr.classification === 'generic_only' ? 'Generic only' : 'No evidence'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div style={{ fontSize: '0.79rem', color: '#475569', marginTop: '0.25rem', lineHeight: 1.45 }}>{gemCorr.summary}</div>
+                                                            {Array.isArray(gemCorr.sources) && gemCorr.sources.length > 0 && (
+                                                                <div style={{ marginTop: '0.3rem', fontSize: '0.72rem', color: '#64748b' }}>
+                                                                    Sources: {gemCorr.sources.map((url: string, i: number) => (
+                                                                        <span key={i}>{i > 0 ? ', ' : ''}<a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>{(() => { try { return new URL(url).hostname; } catch { return url; } })()}</a></span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Sources checked */}
+                                                    {Array.isArray(intel.sources_checked) && intel.sources_checked.length > 0 && (
+                                                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem' }}>
+                                                            <span style={{ color: '#64748b', minWidth: '120px' }}>Sources checked:</span>
+                                                            <span style={{ color: '#1e293b' }}>{intel.sources_checked.join(', ')}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Scam likelihood score */}
+                                                    {intel.scam_likelihood && intel.scam_likelihood.score != null && (
+                                                        <div style={{ background: '#f8fafc', borderRadius: '6px', padding: '0.5rem 0.65rem', border: '1px solid #e2e8f0', marginTop: '0.1rem' }}>
+                                                            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Scam Likelihood</span>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.3rem' }}>
+                                                                {/* Score bar */}
+                                                                <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                                                                    <div style={{
+                                                                        height: '100%', borderRadius: '4px',
+                                                                        width: `${Math.min(100, Math.max(0, intel.scam_likelihood.score))}%`,
+                                                                        background: intel.scam_likelihood.score >= 80 ? '#dc2626' : intel.scam_likelihood.score >= 60 ? '#ea580c' : intel.scam_likelihood.score >= 40 ? '#d97706' : intel.scam_likelihood.score >= 20 ? '#65a30d' : '#16a34a',
+                                                                    }} />
+                                                                </div>
+                                                                <span style={{ fontSize: '0.79rem', fontWeight: 600, color: '#1e293b', minWidth: '2.5rem', textAlign: 'right' }}>
+                                                                    {intel.scam_likelihood.score}%
+                                                                </span>
+                                                            </div>
+                                                            {intel.scam_likelihood.label && (
+                                                                <span style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '0.2rem', display: 'block' }}>
+                                                                    {intel.scam_likelihood.label}
+                                                                </span>
+                                                            )}
+                                                            {intel.scam_likelihood.explanation && (
+                                                                <div style={{ fontSize: '0.79rem', color: '#475569', marginTop: '0.25rem', lineHeight: 1.45 }}>
+                                                                    {intel.scam_likelihood.explanation}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Evidence Strength */}
+                                                    {intel.evidence_strength && (
+                                                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem', alignItems: 'center' }}>
+                                                            <span style={{ color: '#64748b', minWidth: '120px' }}>Evidence strength:</span>
+                                                            <span style={{
+                                                                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                                                fontSize: '0.76rem', fontWeight: 600,
+                                                                color: intel.evidence_strength === 'strong_direct' ? '#dc2626' : intel.evidence_strength === 'moderate_related' ? '#d97706' : intel.evidence_strength === 'weak_generic' ? '#64748b' : '#94a3b8',
+                                                                background: intel.evidence_strength === 'strong_direct' ? '#fef2f2' : intel.evidence_strength === 'moderate_related' ? '#fff7ed' : '#f8fafc',
+                                                                padding: '2px 8px', borderRadius: '4px',
+                                                                border: `1px solid ${intel.evidence_strength === 'strong_direct' ? '#fecaca' : intel.evidence_strength === 'moderate_related' ? '#fed7aa' : '#e2e8f0'}`,
+                                                            }}>
+                                                                {intel.evidence_strength === 'strong_direct' ? 'Strong — direct number-specific evidence'
+                                                                    : intel.evidence_strength === 'moderate_related' ? 'Moderate — related number/prefix evidence'
+                                                                    : intel.evidence_strength === 'weak_generic' ? 'Weak — generic advice only'
+                                                                    : 'No external evidence'}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Spoofing Assessment */}
+                                                    {intel.spoofing_assessment && intel.spoofing_assessment !== 'not_applicable' && (
+                                                        <div style={{
+                                                            background: intel.spoofing_assessment === 'possible_spoofing' ? '#fffbeb' : '#f8fafc',
+                                                            borderRadius: '6px', padding: '0.5rem 0.65rem',
+                                                            border: `1px solid ${intel.spoofing_assessment === 'possible_spoofing' ? '#fde68a' : '#e2e8f0'}`,
+                                                            marginTop: '0.1rem',
+                                                        }}>
+                                                            <span style={{ fontSize: '0.72rem', color: intel.spoofing_assessment === 'possible_spoofing' ? '#92400e' : '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                                                                {intel.spoofing_assessment === 'possible_spoofing' ? '⚠ Possible Spoofing / Impersonation'
+                                                                    : intel.spoofing_assessment === 'likely_legitimate' ? 'Number appears legitimate'
+                                                                    : 'Spoofing unlikely'}
+                                                            </span>
+                                                            {intel.spoofing_assessment === 'possible_spoofing' && (
+                                                                <div style={{ fontSize: '0.76rem', color: '#92400e', marginTop: '0.25rem', lineHeight: 1.4 }}>
+                                                                    This number may belong to a legitimate institution. The reported incident could involve caller ID spoofing or impersonation. Verify only through official contact channels.
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Number Risk Assessment */}
+                                                    {intel.number_risk_assessment && (
+                                                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem' }}>
+                                                            <span style={{ color: '#64748b', minWidth: '120px' }}>Number profile:</span>
+                                                            <span style={{ color: '#475569', lineHeight: 1.4 }}>{intel.number_risk_assessment}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* External lookup data */}
+                                                    {extLookup && (
+                                                        <div style={{ background: '#f8fafc', borderRadius: '6px', padding: '0.5rem 0.65rem', border: '1px solid #e2e8f0', marginTop: '0.1rem' }}>
+                                                            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>External Lookup Data</span>
+                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.2rem 1rem', marginTop: '0.3rem', fontSize: '0.79rem' }}>
+                                                                {extLookup.fraud_score != null && (
+                                                                    <div><span style={{ color: '#64748b' }}>Fraud score: </span><span style={{ fontWeight: 600, color: extLookup.fraud_score >= 75 ? '#dc2626' : extLookup.fraud_score >= 50 ? '#d97706' : '#16a34a' }}>{extLookup.fraud_score}/100</span></div>
+                                                                )}
+                                                                {extLookup.line_type && (
+                                                                    <div><span style={{ color: '#64748b' }}>Line type: </span><span style={{ color: '#1e293b' }}>{extLookup.line_type}</span></div>
+                                                                )}
+                                                                {extLookup.carrier && (
+                                                                    <div><span style={{ color: '#64748b' }}>Carrier: </span><span style={{ color: '#1e293b' }}>{extLookup.carrier}</span></div>
+                                                                )}
+                                                                {extLookup.country && (
+                                                                    <div><span style={{ color: '#64748b' }}>Country: </span><span style={{ color: '#1e293b' }}>{extLookup.country}</span></div>
+                                                                )}
+                                                                {extLookup.voip != null && (
+                                                                    <div><span style={{ color: '#64748b' }}>VOIP: </span><span style={{ color: extLookup.voip ? '#d97706' : '#1e293b', fontWeight: extLookup.voip ? 600 : 400 }}>{extLookup.voip ? 'Yes' : 'No'}</span></div>
+                                                                )}
+                                                                {extLookup.recent_abuse != null && (
+                                                                    <div><span style={{ color: '#64748b' }}>Recent abuse: </span><span style={{ color: extLookup.recent_abuse ? '#dc2626' : '#1e293b', fontWeight: extLookup.recent_abuse ? 600 : 400 }}>{extLookup.recent_abuse ? 'Yes' : 'No'}</span></div>
+                                                                )}
+                                                                {extLookup.active != null && (
+                                                                    <div><span style={{ color: '#64748b' }}>Active: </span><span style={{ color: '#1e293b' }}>{extLookup.active ? 'Yes' : 'No'}</span></div>
+                                                                )}
+                                                                {extLookup.spammer != null && extLookup.spammer && (
+                                                                    <div><span style={{ color: '#64748b' }}>Spammer: </span><span style={{ color: '#dc2626', fontWeight: 600 }}>Yes</span></div>
+                                                                )}
+                                                                {extLookup.prepaid != null && (
+                                                                    <div><span style={{ color: '#64748b' }}>Prepaid: </span><span style={{ color: '#1e293b' }}>{extLookup.prepaid ? 'Yes' : 'No'}</span></div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Public complaint matches */}
+                                                    {intel.complaint_sources && intel.complaint_sources.overall_status !== 'unavailable' && (
+                                                        <div style={{ background: '#f8fafc', borderRadius: '6px', padding: '0.5rem 0.65rem', border: '1px solid #e2e8f0', marginTop: '0.1rem' }}>
+                                                            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Public Complaint Matches</span>
+                                                            <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem', alignItems: 'center', marginTop: '0.3rem' }}>
+                                                                <span style={{ color: '#64748b' }}>Status:</span>
+                                                                <span style={{
+                                                                    display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                                                    fontSize: '0.76rem', fontWeight: 600,
+                                                                    color: intel.complaint_sources.overall_status === 'match_found' ? '#dc2626' : '#16a34a',
+                                                                    background: intel.complaint_sources.overall_status === 'match_found' ? '#fef2f2' : '#f0fdf4',
+                                                                    padding: '2px 8px', borderRadius: '4px',
+                                                                    border: `1px solid ${intel.complaint_sources.overall_status === 'match_found' ? '#fecaca' : '#bbf7d0'}`,
+                                                                }}>
+                                                                    {intel.complaint_sources.overall_status === 'match_found' ? 'Complaint reports found' : 'No complaint reports found'}
+                                                                </span>
+                                                            </div>
+                                                            {Array.isArray(intel.complaint_sources.results) && intel.complaint_sources.results.length > 0 && (
+                                                                <div style={{ marginTop: '0.3rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                                                    {intel.complaint_sources.results.map((cr: any, ci: number) => (
+                                                                        cr.status !== 'unavailable' && (
+                                                                            <div key={ci} style={{ display: 'flex', gap: '0.5rem', fontSize: '0.79rem', alignItems: 'center' }}>
+                                                                                <span style={{
+                                                                                    width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
+                                                                                    background: cr.status === 'match_found' ? '#dc2626' : '#16a34a',
+                                                                                }} />
+                                                                                <span style={{ color: '#334155' }}>
+                                                                                    {cr.summary || `${cr.source}: ${cr.status === 'match_found' ? 'Match found' : 'No match'}`}
+                                                                                </span>
+                                                                            </div>
+                                                                        )
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Source findings summary */}
+                                                    {intel.source_findings_summary && (
+                                                        <div>
+                                                            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Source-Backed Findings</span>
+                                                            <div style={{ fontSize: '0.82rem', color: '#334155', background: '#f8fafc', borderRadius: '6px', padding: '0.5rem 0.65rem', borderLeft: '3px solid #C9A84C', marginTop: '0.2rem', lineHeight: 1.5 }}>
+                                                                {intel.source_findings_summary}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* AI assessment */}
+                                                    {(intel.ai_assessment || intel.intelligence_summary) && (
+                                                        <div>
+                                                            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>AI Assessment</span>
+                                                            <div style={{ fontSize: '0.82rem', color: '#334155', background: '#fefce8', borderRadius: '6px', padding: '0.5rem 0.65rem', borderLeft: '3px solid #eab308', marginTop: '0.2rem', lineHeight: 1.5 }}>
+                                                                {intel.ai_assessment || intel.intelligence_summary}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Pattern match */}
+                                                    {intel.pattern_match && intel.pattern_match !== 'N/A' && (
+                                                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem' }}>
+                                                            <span style={{ color: '#64748b', minWidth: '120px' }}>Pattern match:</span>
+                                                            <span style={{ color: '#1e293b' }}>{intel.pattern_match}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Risk indicators */}
+                                                    {Array.isArray(intel.risk_indicators) && intel.risk_indicators.length > 0 && (
+                                                        <div>
+                                                            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Risk indicators:</span>
+                                                            <ul className="aitriage-bullets" style={{ marginTop: '0.15rem' }}>
+                                                                {intel.risk_indicators.map((r: string, i: number) => <li key={i}>{r}</li>)}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Recommended actions */}
+                                                    {Array.isArray(intel.recommended_actions) && intel.recommended_actions.length > 0 && (
+                                                        <div>
+                                                            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Recommended actions:</span>
+                                                            <ul className="aitriage-bullets" style={{ marginTop: '0.15rem' }}>
+                                                                {intel.recommended_actions.map((a: string, i: number) => <li key={i}>{a}</li>)}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Limitations */}
+                                                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.15rem', lineHeight: 1.4, fontStyle: 'italic' }}>
+                                                        {intel.limitations || 'This is indicative intelligence, not legal proof. External source checks are limited to configured services.'}
+                                                    </div>
+
+                                                    {/* Checked timestamp */}
+                                                    {intel.checked_at && (
+                                                        <span style={{ fontSize: '0.7rem', color: '#cbd5e1' }}>Checked: {fmtDateTime(intel.checked_at)}</span>
+                                                    )}
+
+                                                    {/* Re-run button for admins */}
+                                                    {canReview && phoneNumber && (
+                                                        <button
+                                                            type="button"
+                                                            className="casedetail-btn casedetail-btn-action"
+                                                            style={{ width: '100%', justifyContent: 'center', fontSize: '0.78rem', marginTop: '0.25rem', opacity: 0.8 }}
+                                                            onClick={handleRunNumberIntel}
+                                                            disabled={numberIntelLoading}
+                                                        >
+                                                            {numberIntelLoading ? <Loader2 size={13} className="dsf-spinner" /> : <Search size={13} />}
+                                                            {numberIntelLoading ? 'Running…' : 'Re-run Number Intelligence'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {numberIntelMsg && (
+                                                <span style={{ display: 'block', fontSize: '0.75rem', marginTop: '0.4rem', color: numberIntelMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>
+                                                    {numberIntelMsg}
+                                                </span>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* Already reviewed indicator */}
+                                {aiTriage.reviewed_at && (
+                                    <div className="aitriage-reviewed-banner">
+                                        <CheckCircle2 size={13} />
+                                        Reviewed{aiTriage.accepted ? ' & Accepted' : ''} on {fmtDateTime(aiTriage.reviewed_at)}
+                                    </div>
+                                )}
+
+                                {/* Manager/Admin review controls */}
+                                {canReview && (
+                                    <div className="aitriage-review-section">
+                                        <div className="aitriage-review-divider" />
+
+                                        {!aiTriage.accepted && (
+                                            <button
+                                                type="button"
+                                                className="casedetail-btn casedetail-btn-save"
+                                                style={{ width: '100%', justifyContent: 'center', marginBottom: '0.75rem' }}
+                                                onClick={handleAcceptAi}
+                                                disabled={aiAccepting || aiSaving}
+                                            >
+                                                {aiAccepting ? <Loader2 size={15} className="dsf-spinner" /> : <CheckCircle2 size={15} />}
+                                                {aiAccepting ? 'Accepting…' : 'Accept AI Suggestions'}
+                                            </button>
+                                        )}
+
+                                        <div className="aitriage-override-form">
+                                            <span className="aitriage-label" style={{ marginBottom: '0.25rem' }}>Override / Final Assessment</span>
+                                            <div className="casedetail-form-field">
+                                                <label className="casedetail-form-label">Risk Level</label>
+                                                <select className="dsf-input" value={aiHumanRisk} onChange={(e) => setAiHumanRisk(e.target.value)}>
+                                                    <option value="">— Select —</option>
+                                                    {RISK_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="casedetail-form-field">
+                                                <label className="casedetail-form-label">Category</label>
+                                                <select className="dsf-input" value={aiHumanCategory} onChange={(e) => setAiHumanCategory(e.target.value)}>
+                                                    <option value="">— Select —</option>
+                                                    {CATEGORY_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="casedetail-form-field">
+                                                <label className="casedetail-form-label">Urgency</label>
+                                                <select className="dsf-input" value={aiHumanUrgency} onChange={(e) => setAiHumanUrgency(e.target.value)}>
+                                                    <option value="">— Select —</option>
+                                                    {RISK_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="casedetail-form-field">
+                                                <label className="casedetail-form-label">Notes</label>
+                                                <textarea
+                                                    className="dsf-textarea"
+                                                    rows={2}
+                                                    value={aiHumanNotes}
+                                                    onChange={(e) => setAiHumanNotes(e.target.value)}
+                                                    placeholder="Override notes…"
+                                                    style={{ minHeight: '60px' }}
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className="casedetail-btn casedetail-btn-action"
+                                                style={{ width: '100%', justifyContent: 'center' }}
+                                                onClick={handleSaveAiReview}
+                                                disabled={aiSaving || aiAccepting}
+                                            >
+                                                {aiSaving ? <Loader2 size={15} className="dsf-spinner" /> : <Shield size={15} />}
+                                                {aiSaving ? 'Saving…' : 'Save Review'}
+                                            </button>
+                                        </div>
+
+                                        {aiMsg && (
+                                            <span style={{ display: 'block', fontSize: '0.75rem', marginTop: '0.5rem', color: aiMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>
+                                                {aiMsg}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
 
                     {/* Review Panel */}
                     {canReview ? (

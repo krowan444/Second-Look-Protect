@@ -23,9 +23,11 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
     };
 
-    // ── Auth: cron-secret OR JWT super_admin ──────────────────────
+    // ── Auth: cron-secret OR JWT (super_admin / org_admin) ─────────
     let authedViaCron = false;
     let jwtToken = '';
+    let callerRole = '';
+    let callerOrgId = '';
 
     const cronSecret = req.headers['x-cron-secret'];
     if (cronSecret && CRON_SECRET && cronSecret === CRON_SECRET) {
@@ -51,17 +53,26 @@ export default async function handler(req, res) {
             return res.status(401).json({ ok: false, error: 'Unauthorized' });
         }
 
-        // Check super_admin role
+        // Fetch caller profile (role + organisation_id)
         const profileRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role&limit=1`,
+            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role,organisation_id&limit=1`,
             { headers: sbHeaders }
         );
         if (!profileRes.ok) {
             return res.status(401).json({ ok: false, error: 'Unauthorized' });
         }
         const profiles = await profileRes.json();
-        if (!profiles?.[0] || profiles[0].role !== 'super_admin') {
-            return res.status(403).json({ ok: false, error: 'Forbidden: super_admin only' });
+        const profile = profiles?.[0];
+        if (!profile) {
+            return res.status(403).json({ ok: false, error: 'Forbidden' });
+        }
+
+        callerRole = profile.role || '';
+        callerOrgId = profile.organisation_id || '';
+
+        // Allow super_admin (any org) or org_admin (own org only)
+        if (callerRole !== 'super_admin' && callerRole !== 'org_admin') {
+            return res.status(403).json({ ok: false, error: 'Forbidden: admin role required' });
         }
     }
 
@@ -71,10 +82,15 @@ export default async function handler(req, res) {
         return res.status(400).json({ ok: false, error: 'Missing required fields: organisation_id, snapshot_month' });
     }
 
+    // org_admin: enforce own-org scope server-side
+    if (!authedViaCron && callerRole === 'org_admin' && callerOrgId !== organisation_id) {
+        return res.status(403).json({ ok: false, error: 'Forbidden: org_admin can only send inspection packs for their own organisation' });
+    }
+
     try {
-        // 1) Fetch organisation details (name + recipients)
+        // 1) Fetch organisation name
         const orgRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/organisations?id=eq.${organisation_id}&select=name,inspection_pack_recipients,inspection_pack_cc&limit=1`,
+            `${SUPABASE_URL}/rest/v1/organisations?id=eq.${organisation_id}&select=name&limit=1`,
             { headers: sbHeaders }
         );
         if (!orgRes.ok) throw new Error(`Failed to fetch organisation: ${orgRes.status}`);
@@ -85,11 +101,43 @@ export default async function handler(req, res) {
         }
 
         const orgName = org.name ?? 'Unknown organisation';
-        const recipients = Array.isArray(org.inspection_pack_recipients) ? org.inspection_pack_recipients.filter(Boolean) : [];
-        const cc = Array.isArray(org.inspection_pack_cc) ? org.inspection_pack_cc.filter(Boolean) : [];
+
+        // 1b) Fetch recipients from organisation_settings (inspection_pack_recipients → report_recipients fallback)
+        console.log('[send-inspection-pack] Querying organisation_settings for org:', organisation_id);
+        const settingsRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/organisation_settings?organisation_id=eq.${organisation_id}&select=*&limit=1`,
+            { headers: sbHeaders }
+        );
+        if (!settingsRes.ok) {
+            const errBody = await settingsRes.text().catch(() => '');
+            console.error('[send-inspection-pack] Settings query failed:', settingsRes.status, errBody);
+            return res.status(500).json({ ok: false, error: `Failed to load organisation settings: ${settingsRes.status}` });
+        }
+        const settingsRows = await settingsRes.json();
+        const settings = settingsRows?.[0] ?? {};
+        console.log('[send-inspection-pack] Settings row found:', !!settingsRows?.[0], 'inspection_pack_recipients:', settings.inspection_pack_recipients, 'report_recipients:', settings.report_recipients);
+
+        // Fallback chain: inspection_pack_recipients → report_recipients → org admin emails
+        let recipients = Array.isArray(settings.inspection_pack_recipients) ? settings.inspection_pack_recipients.filter(Boolean) : [];
+        if (recipients.length === 0) {
+            recipients = Array.isArray(settings.report_recipients) ? settings.report_recipients.filter(Boolean) : [];
+        }
+        if (recipients.length === 0) {
+            // Final fallback: org_admin profile emails
+            const adminRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&role=eq.org_admin&is_active=eq.true&select=email&limit=10`,
+                { headers: sbHeaders }
+            );
+            if (adminRes.ok) {
+                const adminRows = await adminRes.json();
+                recipients = (adminRows || []).map(r => r.email).filter(Boolean);
+            }
+        }
+        const cc = Array.isArray(settings.report_cc) ? settings.report_cc.filter(Boolean) : [];
+        console.log('[send-inspection-pack] Resolved recipients:', recipients, 'cc:', cc);
 
         if (recipients.length === 0) {
-            return res.status(400).json({ ok: false, error: 'No inspection_pack_recipients configured for this organisation' });
+            return res.status(400).json({ ok: false, error: 'No inspection pack recipients configured. Please add recipients in Settings → Inspection Pack Recipients or Report Recipients.' });
         }
 
         // 2) Generate PDF by calling the existing endpoint internally
@@ -105,6 +153,7 @@ export default async function handler(req, res) {
         // For cron auth, we need a valid JWT. Use service role key as Bearer
         // (the PDF endpoint validates via Supabase auth — service role key works as a valid token).
         const pdfAuthToken = authedViaCron ? SERVICE_KEY : jwtToken;
+        console.log('[send-inspection-pack] PDF call — url:', pdfUrl, 'authType:', authedViaCron ? 'service-role' : 'user-jwt', 'tokenPresent:', !!pdfAuthToken);
 
         const pdfRes = await fetch(pdfUrl, {
             headers: { Authorization: `Bearer ${pdfAuthToken}` },
@@ -112,8 +161,10 @@ export default async function handler(req, res) {
 
         if (!pdfRes.ok) {
             const errBody = await pdfRes.text();
+            console.error('[send-inspection-pack] PDF generation failed — status:', pdfRes.status, 'body:', errBody);
             throw new Error(`PDF generation failed (${pdfRes.status}): ${errBody}`);
         }
+        console.log('[send-inspection-pack] PDF generated successfully, status:', pdfRes.status);
 
         const pdfArrayBuffer = await pdfRes.arrayBuffer();
         const pdfBase64 = Buffer.from(pdfArrayBuffer).toString('base64');
@@ -177,6 +228,29 @@ export default async function handler(req, res) {
             status: 'sent',
             provider_message_id: providerMessageId,
         });
+
+        // 5) Email log entries
+        for (const recipientEmail of recipients) {
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/email_logs`, {
+                    method: 'POST',
+                    headers: { ...sbHeaders, Prefer: 'return=minimal' },
+                    body: JSON.stringify({
+                        organisation_id,
+                        event_type: 'inspection_pack_sent',
+                        recipient_email: recipientEmail,
+                        recipient_role: 'inspection_pack_recipient',
+                        subject: emailPayload.subject,
+                        status: 'sent',
+                        provider_message_id: providerMessageId,
+                        meta: { snapshot_month },
+                        sent_at: new Date().toISOString(),
+                    }),
+                });
+            } catch {
+                // Non-blocking
+            }
+        }
 
         return res.status(200).json({
             ok: true,

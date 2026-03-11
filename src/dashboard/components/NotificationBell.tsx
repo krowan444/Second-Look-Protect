@@ -20,6 +20,7 @@ export function NotificationBell({ userId, onNavigate }: NotificationBellProps) 
     const [open, setOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [hoveredId, setHoveredId] = useState<string | null>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     /* ── Fetch notifications ─────────────────────────────────────────────── */
@@ -231,8 +232,8 @@ export function NotificationBell({ userId, onNavigate }: NotificationBellProps) 
                                     transition: 'background-color 0.12s',
                                     fontSize: '0.82rem',
                                 }}
-                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
-                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = notif.read ? '#fff' : '#fffbeb')}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; setHoveredId(notif.id); }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = notif.read ? '#fff' : '#fffbeb'; setHoveredId(null); }}
                             >
                                 {/* Unread dot */}
                                 <div style={{
@@ -249,8 +250,9 @@ export function NotificationBell({ userId, onNavigate }: NotificationBellProps) 
                                         fontWeight: notif.read ? 400 : 500,
                                         lineHeight: 1.4,
                                         overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
+                                        textOverflow: hoveredId === notif.id ? 'clip' : 'ellipsis',
+                                        whiteSpace: hoveredId === notif.id ? 'normal' : 'nowrap',
+                                        transition: 'all 0.15s ease',
                                     }}>
                                         {notif.message}
                                     </div>

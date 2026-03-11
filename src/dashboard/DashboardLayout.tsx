@@ -55,8 +55,11 @@ export function DashboardLayout({
           setAllOrgs(data);
 
           const stored = localStorage.getItem('slp_active_org_id');
+          const viewingAs = localStorage.getItem('slp_viewing_as_org_id');
+          console.log('[DashboardLayout] Mount — slp_active_org_id:', stored, 'slp_viewing_as_org_id:', viewingAs, 'activeOrgId state:', stored || '');
           if (stored && !data.some((o) => o.id === stored)) {
             localStorage.removeItem('slp_active_org_id');
+            localStorage.removeItem('slp_viewing_as_org_id');
             setActiveOrgId('');
           }
         }
@@ -72,12 +75,16 @@ export function DashboardLayout({
       localStorage.removeItem('slp_active_org_name');
       localStorage.removeItem('slp_viewing_as_org_id');
       localStorage.removeItem('slp_viewing_as');
+      console.log('[DashboardLayout] Org switch → Global (all keys cleared)');
       window.location.href = '/dashboard/platform';
       return;
     }
 
     setActiveOrgId(id);
+    // Write both keys so all pages resolve the same org consistently
     localStorage.setItem('slp_active_org_id', id);
+    localStorage.setItem('slp_viewing_as_org_id', id);
+    console.log('[DashboardLayout] Org switch → id:', id, '(wrote slp_active_org_id + slp_viewing_as_org_id)');
     window.location.reload();
   }
 
