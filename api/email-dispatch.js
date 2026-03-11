@@ -365,6 +365,101 @@ export default async function handler(req, res) {
             });
         }
 
+        // ── 11) Personal user-targeted emails for admin_case_created ─────────
+        // After the admin operational alert, send individual emails to eligible
+        // users based on their personal notification preferences.
+        // Each user is checked independently — one user opting out does not
+        // affect any other user.
+        if (event_type === 'admin_case_created') {
+            try {
+                // Fetch all active users in this org (excluding the case submitter)
+                let eligibleUrl = `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&is_active=eq.true&select=id,email&limit=200`;
+                if (actor_id) {
+                    eligibleUrl += `&id=neq.${actor_id}`;
+                }
+                const eligibleRes = await fetch(eligibleUrl, { headers: sbHeaders });
+                const eligibleUsers = eligibleRes.ok ? await eligibleRes.json() : [];
+
+                // Also exclude any emails that were already sent via the admin alert path
+                const adminAlertEmails = new Set(recipients.map(e => e.toLowerCase()));
+
+                for (const user of eligibleUsers) {
+                    if (!user.email) continue;
+                    if (adminAlertEmails.has(user.email.toLowerCase())) continue;
+
+                    // Check this user's personal email preferences
+                    const userPrefOk = await checkUserEmailPref(SUPABASE_URL, sbHeaders, user.id, event_type);
+                    if (!userPrefOk) {
+                        await logEmail(SUPABASE_URL, sbHeaders, {
+                            organisation_id,
+                            case_id: case_id || null,
+                            event_type: 'personal_case_created',
+                            recipient_email: user.email,
+                            recipient_role: 'user',
+                            subject,
+                            status: 'skipped',
+                            meta: { reason: 'skipped_user_disabled', user_id: user.id },
+                        });
+                        continue;
+                    }
+
+                    // Send individual email to this user
+                    try {
+                        const userEmailRes = await fetch('https://api.resend.com/emails', {
+                            method: 'POST',
+                            headers: {
+                                Authorization: `Bearer ${RESEND_API_KEY}`,
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ from: EMAIL_FROM, to: [user.email], subject, html }),
+                        });
+                        const userEmailData = await userEmailRes.json();
+
+                        if (userEmailRes.ok) {
+                            await logEmail(SUPABASE_URL, sbHeaders, {
+                                organisation_id,
+                                case_id: case_id || null,
+                                event_type: 'personal_case_created',
+                                recipient_email: user.email,
+                                recipient_role: 'user',
+                                subject,
+                                status: 'sent',
+                                provider_message_id: userEmailData?.id || null,
+                                meta: { user_id: user.id },
+                            });
+                        } else {
+                            await logEmail(SUPABASE_URL, sbHeaders, {
+                                organisation_id,
+                                case_id: case_id || null,
+                                event_type: 'personal_case_created',
+                                recipient_email: user.email,
+                                recipient_role: 'user',
+                                subject,
+                                status: 'failed',
+                                error_message: userEmailData?.message || `Resend error ${userEmailRes.status}`,
+                                meta: { user_id: user.id },
+                            });
+                        }
+                    } catch (sendErr) {
+                        await logEmail(SUPABASE_URL, sbHeaders, {
+                            organisation_id,
+                            case_id: case_id || null,
+                            event_type: 'personal_case_created',
+                            recipient_email: user.email,
+                            recipient_role: 'user',
+                            subject,
+                            status: 'failed',
+                            error_message: sendErr.message || 'Send error',
+                            meta: { user_id: user.id },
+                        });
+                    }
+                }
+            } catch (personalErr) {
+                // Personal email phase is non-blocking — log and continue
+                console.error('[email-dispatch] Personal user email phase error:', personalErr.message);
+            }
+        }
+
         return res.status(200).json({
             ok: true,
             sent: true,
