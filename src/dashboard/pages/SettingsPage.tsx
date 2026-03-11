@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Settings, Loader2, AlertTriangle, CheckCircle2, Save,
-    Lock, Mail, Bell, Globe, Clock, ShieldAlert, Zap, Calendar, Send, Building2,
+    Lock, Mail, Bell, Globe, Clock, ShieldAlert, Zap, Calendar, Send, Building2, User,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 import type { UserRole } from '../types';
@@ -53,8 +53,21 @@ export function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<UserRole | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
     const [orgId, setOrgId] = useState<string | null>(null);
     const [orgName, setOrgName] = useState<string | null>(null);
+
+    // Personal notification preferences
+    const [personalInapp, setPersonalInapp] = useState(true);
+    const [personalEmail, setPersonalEmail] = useState(true);
+    const [personalNewCase, setPersonalNewCase] = useState(true);
+    const [personalCaseUpdated, setPersonalCaseUpdated] = useState(true);
+    const [personalReviewDue, setPersonalReviewDue] = useState(true);
+    const [personalEscalation, setPersonalEscalation] = useState(true);
+    const [personalMonthlySummary, setPersonalMonthlySummary] = useState(true);
+    const [personalSaving, setPersonalSaving] = useState(false);
+    const [personalSaveError, setPersonalSaveError] = useState<string | null>(null);
+    const [personalSaveSuccess, setPersonalSaveSuccess] = useState(false);
 
     // Settings fields
     const [reportRecipients, setReportRecipients] = useState('');
@@ -129,17 +142,41 @@ export function SettingsPage() {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session?.user) { setError('Not authenticated'); setLoading(false); return; }
 
+                const currentUserId = session.user.id;
+                if (!cancelled) setUserId(currentUserId);
+
                 // Get profile
                 const { data: profile, error: profErr } = await supabase
                     .from('profiles')
                     .select('organisation_id, role')
-                    .eq('id', session.user.id)
+                    .eq('id', currentUserId)
                     .single();
 
                 if (profErr) {
                     setError('Could not load profile.');
                     setLoading(false);
                     return;
+                }
+
+                // Load personal notification preferences (for ALL users)
+                try {
+                    const { data: personalPrefs } = await supabase
+                        .from('user_notification_preferences')
+                        .select('*')
+                        .eq('user_id', currentUserId)
+                        .maybeSingle();
+
+                    if (!cancelled && personalPrefs) {
+                        setPersonalInapp(personalPrefs.inapp_enabled ?? true);
+                        setPersonalEmail(personalPrefs.email_enabled ?? true);
+                        setPersonalNewCase(personalPrefs.pref_new_case_submitted ?? true);
+                        setPersonalCaseUpdated(personalPrefs.pref_case_updated ?? true);
+                        setPersonalReviewDue(personalPrefs.pref_review_due ?? true);
+                        setPersonalEscalation(personalPrefs.pref_escalation_notice ?? true);
+                        setPersonalMonthlySummary(personalPrefs.pref_monthly_summary ?? true);
+                    }
+                } catch {
+                    // Personal prefs are best-effort — don't block page load
                 }
 
                 // Resolve org: super_admin uses the same key as Reports page
@@ -152,8 +189,11 @@ export function SettingsPage() {
                 }
 
                 if (!resolvedOrgId) {
-                    setError('No organisation selected. Use the \u201cViewing as\u201d selector to choose one.');
-                    setLoading(false);
+                    // Still allow page to load for personal prefs
+                    if (!cancelled) {
+                        setUserRole(profile.role as UserRole);
+                        setLoading(false);
+                    }
                     return;
                 }
 
@@ -275,7 +315,42 @@ export function SettingsPage() {
         return () => { cancelled = true; };
     }, []);
 
-    /* ── Save handler ──────────────────────────────────────────────────────── */
+    /* ── Save personal notification preferences ──────────────────────────── */
+    async function handleSavePersonal() {
+        if (!userId) return;
+        setPersonalSaving(true);
+        setPersonalSaveError(null);
+        setPersonalSaveSuccess(false);
+
+        try {
+            const supabase = getSupabase();
+
+            const { error: upsertErr } = await supabase
+                .from('user_notification_preferences')
+                .upsert({
+                    user_id: userId,
+                    inapp_enabled: personalInapp,
+                    email_enabled: personalEmail,
+                    pref_new_case_submitted: personalNewCase,
+                    pref_case_updated: personalCaseUpdated,
+                    pref_review_due: personalReviewDue,
+                    pref_escalation_notice: personalEscalation,
+                    pref_monthly_summary: personalMonthlySummary,
+                    updated_at: new Date().toISOString(),
+                }, { onConflict: 'user_id' });
+
+            if (upsertErr) throw upsertErr;
+
+            setPersonalSaveSuccess(true);
+            setTimeout(() => setPersonalSaveSuccess(false), 3000);
+        } catch (err: any) {
+            setPersonalSaveError(err?.message ?? 'Failed to save preferences');
+        } finally {
+            setPersonalSaving(false);
+        }
+    }
+
+    /* ── Save org settings handler ─────────────────────────────────────────── */
     async function handleSave() {
         if (!orgId) return;
         setSaving(true);
@@ -390,32 +465,19 @@ export function SettingsPage() {
         );
     }
 
-    // Role gate
-    if (!userRole || !ALLOWED_ROLES.includes(userRole)) {
-        return (
-            <div>
-                <div className="dashboard-page-header">
-                    <h1 className="dashboard-page-title">Settings</h1>
-                    <p className="dashboard-page-subtitle">
-                        Organisation settings and notification preferences.
-                    </p>
-                </div>
-                <div className="dashboard-settings-locked">
-                    <Lock size={24} />
-                    <p>You do not have permission to edit settings.</p>
-                    <span>Contact an organisation admin to make changes.</span>
-                </div>
-            </div>
-        );
-    }
+    // Check if user can access org settings
+    const canEditOrgSettings = userRole && ALLOWED_ROLES.includes(userRole);
 
     return (
         <div>
             <div className="dashboard-page-header">
                 <h1 className="dashboard-page-title">Settings</h1>
                 <p className="dashboard-page-subtitle">
-                    Manage notification recipients and organisation preferences.
-                    {orgName && (
+                    {canEditOrgSettings
+                        ? 'Manage your notification preferences and organisation settings.'
+                        : 'Manage your personal notification preferences.'
+                    }
+                    {canEditOrgSettings && orgName && (
                         <span style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.25rem' }}>
                             Editing: <strong style={{ color: '#64748b' }}>{orgName}</strong>
                             <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: '#cbd5e1' }}>({orgId})</span>
@@ -423,6 +485,122 @@ export function SettingsPage() {
                     )}
                 </p>
             </div>
+
+            {/* ── Personal Notification Preferences (visible to ALL users) ──── */}
+            <div className="dashboard-settings-card" style={{ marginBottom: '1.5rem' }}>
+                <div style={{ marginBottom: '0.75rem' }}>
+                    <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <User size={14} />
+                        My Notification Preferences
+                    </p>
+                    <p className="dashboard-settings-hint">
+                        Control which notifications you personally receive. Organisation-level settings may override these if an event type is disabled by your admin.
+                    </p>
+                </div>
+
+                {/* Master channel toggles */}
+                <div className="dashboard-settings-field">
+                    <label className="dashboard-settings-label">
+                        <Bell size={16} />
+                        In-App Notifications
+                    </label>
+                    <p className="dashboard-settings-hint">
+                        Receive in-app bell notifications in the dashboard.
+                    </p>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                        <input
+                            type="checkbox"
+                            checked={personalInapp}
+                            onChange={(e) => setPersonalInapp(e.target.checked)}
+                            style={{ width: 18, height: 18, accentColor: '#C9A84C' }}
+                        />
+                        Enabled
+                    </label>
+                </div>
+
+                <div className="dashboard-settings-field">
+                    <label className="dashboard-settings-label">
+                        <Mail size={16} />
+                        Email Notifications
+                    </label>
+                    <p className="dashboard-settings-hint">
+                        Receive email alerts for events you are subscribed to.
+                    </p>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                        <input
+                            type="checkbox"
+                            checked={personalEmail}
+                            onChange={(e) => setPersonalEmail(e.target.checked)}
+                            style={{ width: 18, height: 18, accentColor: '#C9A84C' }}
+                        />
+                        Enabled
+                    </label>
+                </div>
+
+                {/* Per-event toggles */}
+                <div className="dashboard-settings-field">
+                    <label className="dashboard-settings-label">
+                        <Settings size={16} />
+                        Event Preferences
+                    </label>
+                    <p className="dashboard-settings-hint">
+                        Choose which event types you want to be notified about.
+                    </p>
+                    {[
+                        { key: 'p_new_case', label: 'New case submitted', val: personalNewCase, set: setPersonalNewCase },
+                        { key: 'p_case_updated', label: 'Case updated', val: personalCaseUpdated, set: setPersonalCaseUpdated },
+                        { key: 'p_review_due', label: 'Review due / overdue', val: personalReviewDue, set: setPersonalReviewDue },
+                        { key: 'p_escalation', label: 'Escalation notices', val: personalEscalation, set: setPersonalEscalation },
+                        { key: 'p_monthly', label: 'Monthly summary', val: personalMonthlySummary, set: setPersonalMonthlySummary },
+                    ].map(item => (
+                        <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                            <input
+                                type="checkbox"
+                                checked={item.val}
+                                onChange={(e) => item.set(e.target.checked)}
+                                style={{ width: 18, height: 18, accentColor: '#C9A84C' }}
+                            />
+                            {item.label}
+                        </label>
+                    ))}
+                </div>
+
+                {/* Personal save feedback */}
+                {personalSaveError && (
+                    <div className="dsf-error">
+                        <AlertTriangle size={14} />
+                        <span>{personalSaveError}</span>
+                    </div>
+                )}
+                {personalSaveSuccess && (
+                    <div className="dashboard-settings-success">
+                        <CheckCircle2 size={14} />
+                        <span>Preferences saved successfully.</span>
+                    </div>
+                )}
+
+                {/* Personal save button */}
+                <button
+                    className="dashboard-settings-save-btn"
+                    onClick={handleSavePersonal}
+                    disabled={personalSaving}
+                >
+                    {personalSaving ? (
+                        <><Loader2 size={16} className="dsf-spinner" /> Saving…</>
+                    ) : (
+                        <><Save size={16} /> Save Preferences</>
+                    )}
+                </button>
+            </div>
+
+            {/* ── Organisation Settings (admin-only) ─────────────────────────── */}
+            {!canEditOrgSettings ? (
+                <div className="dashboard-settings-locked">
+                    <Lock size={24} />
+                    <p>Organisation settings require admin access.</p>
+                    <span>Contact an organisation admin to change organisation-wide notification and operational settings.</span>
+                </div>
+            ) : (
 
             <div className="dashboard-settings-card">
 
@@ -836,6 +1014,7 @@ export function SettingsPage() {
                     )}
                 </button>
             </div>
+            )}
         </div>
     );
 }
