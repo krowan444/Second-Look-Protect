@@ -215,6 +215,15 @@ export default async function handler(req, res) {
             if (dedupRes.ok) {
                 const dedupRows = await dedupRes.json();
                 if (Array.isArray(dedupRows) && dedupRows.length > 0) {
+                    await logEmail(SUPABASE_URL, sbHeaders, {
+                        organisation_id,
+                        case_id: case_id || null,
+                        event_type,
+                        recipient_email: recipients.join(', '),
+                        subject: config.subject,
+                        status: 'skipped',
+                        meta: { reason: 'skipped_deduped' },
+                    });
                     return res.status(200).json({ ok: true, skipped: true, reason: 'Duplicate within 1 hour' });
                 }
             }
