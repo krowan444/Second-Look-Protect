@@ -127,6 +127,43 @@ BEGIN
         END LOOP;
     END IF;
 
+    -- ── Staff: new case created ───────────────────────────────────────────
+    -- Notify other active staff in the same organisation (excluding submitter)
+    IF settings.case_created THEN
+        IF notif_msg IS NULL THEN
+            notif_msg := 'New case submitted';
+            IF NEW.submission_type IS NOT NULL AND NEW.submission_type <> '' THEN
+                notif_msg := notif_msg || ' – ' || REPLACE(NEW.submission_type, '_', ' ');
+            END IF;
+        END IF;
+
+        FOR r IN
+            SELECT id FROM profiles
+            WHERE organisation_id = NEW.organisation_id
+              AND role = 'staff'
+              AND is_active = true
+              AND id <> NEW.submitted_by
+        LOOP
+            -- Check user personal preferences
+            SELECT
+                COALESCE(unp.inapp_enabled, true) AS inapp_on,
+                COALESCE(unp.pref_new_case_submitted, true) AS event_on
+            INTO user_pref
+            FROM user_notification_preferences unp
+            WHERE unp.user_id = r.id;
+
+            IF NOT FOUND THEN
+                user_pref.inapp_on := true;
+                user_pref.event_on := true;
+            END IF;
+
+            IF user_pref.inapp_on AND user_pref.event_on THEN
+                INSERT INTO notifications (organisation_id, user_id, type, case_id, message)
+                VALUES (NEW.organisation_id, r.id, 'new_case', NEW.id, notif_msg);
+            END IF;
+        END LOOP;
+    END IF;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
