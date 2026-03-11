@@ -102,12 +102,16 @@ export default async function handler(req, res) {
         const settingsRows = await settingsRes.json();
         const settings = settingsRows?.[0] ?? {};
 
-        // 2) Check if this email event is enabled
+        // 2) Check if this email event is enabled (admin operational alert toggle)
         const isEnabled = settings[config.col] ?? false;
         if (trace) console.log('[SLP-DIAG] Settings loaded —', config.col, ':', isEnabled, '| alert_recipients:', settings.alert_recipients);
-        if (!isEnabled) {
+
+        // For admin_case_created: the admin alert toggle and the personal user path
+        // are INDEPENDENT. The admin toggle only controls the operational alert.
+        // The personal path uses notify_admin_case_created (in-app master) as its gate.
+        // So we must NOT early-return here for admin_case_created.
+        if (!isEnabled && event_type !== 'admin_case_created') {
             if (trace) console.log('[SLP-DIAG] Event disabled — skipping');
-            // Log as skipped
             await logEmail(SUPABASE_URL, sbHeaders, {
                 organisation_id,
                 case_id: case_id || null,
@@ -120,28 +124,45 @@ export default async function handler(req, res) {
             return res.status(200).json({ ok: true, skipped: true, reason: 'Event disabled in settings' });
         }
 
-        // 3) Resolve recipients
+        // 3) Resolve recipients for the admin operational alert path
         let recipients = [];
         let recipientRole = null;
+        let adminAlertSkipped = false;
 
         if (config.type === 'admin') {
-            // Use alert_recipients from settings
             recipientRole = 'admin';
-            if (Array.isArray(settings.alert_recipients)) {
-                recipients = settings.alert_recipients.filter(Boolean);
-            }
-            if (trace) console.log('[SLP-DIAG] alert_recipients from settings:', recipients);
-            // Fallback: org_admin profile emails
-            if (recipients.length === 0) {
-                if (trace) console.log('[SLP-DIAG] No alert_recipients — falling back to org_admin profiles');
-                const adminRes = await fetch(
-                    `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&role=eq.org_admin&is_active=eq.true&select=email&limit=20`,
-                    { headers: sbHeaders }
-                );
-                if (adminRes.ok) {
-                    const adminRows = await adminRes.json();
-                    recipients = (adminRows || []).map(r => r.email).filter(Boolean);
-                    if (trace) console.log('[SLP-DIAG] Fallback org_admin emails:', recipients);
+
+            if (!isEnabled) {
+                // Admin operational alert is disabled — skip it, but continue to personal path
+                if (trace) console.log('[SLP-DIAG] Admin alert disabled — skipping operational alert, continuing to personal path');
+                await logEmail(SUPABASE_URL, sbHeaders, {
+                    organisation_id,
+                    case_id: case_id || null,
+                    event_type,
+                    recipient_email: '(admin alert skipped — disabled)',
+                    subject: config.subject,
+                    status: 'skipped',
+                    meta: { reason: 'skipped_org_disabled' },
+                });
+                adminAlertSkipped = true;
+            } else {
+                // Use alert_recipients from settings
+                if (Array.isArray(settings.alert_recipients)) {
+                    recipients = settings.alert_recipients.filter(Boolean);
+                }
+                if (trace) console.log('[SLP-DIAG] alert_recipients from settings:', recipients);
+                // Fallback: org_admin profile emails
+                if (recipients.length === 0) {
+                    if (trace) console.log('[SLP-DIAG] No alert_recipients — falling back to org_admin profiles');
+                    const adminRes = await fetch(
+                        `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&role=eq.org_admin&is_active=eq.true&select=email&limit=20`,
+                        { headers: sbHeaders }
+                    );
+                    if (adminRes.ok) {
+                        const adminRows = await adminRes.json();
+                        recipients = (adminRows || []).map(r => r.email).filter(Boolean);
+                        if (trace) console.log('[SLP-DIAG] Fallback org_admin emails:', recipients);
+                    }
                 }
             }
         } else {
@@ -192,7 +213,8 @@ export default async function handler(req, res) {
             }
         }
 
-        if (recipients.length === 0) {
+        // For non-admin_case_created events: no recipients = skip
+        if (recipients.length === 0 && !adminAlertSkipped) {
             if (trace) console.log('[SLP-DIAG] No recipients found — skipping');
             await logEmail(SUPABASE_URL, sbHeaders, {
                 organisation_id,
@@ -203,11 +225,15 @@ export default async function handler(req, res) {
                 status: 'skipped',
                 meta: { reason: 'skipped_no_recipient' },
             });
-            return res.status(200).json({ ok: true, skipped: true, reason: 'No recipients found' });
+            // For admin_case_created, still continue to personal path
+            if (event_type !== 'admin_case_created') {
+                return res.status(200).json({ ok: true, skipped: true, reason: 'No recipients found' });
+            }
         }
 
         // 4) Deduplication check — same (org, event_type, case_id) within 1 hour
-        if (case_id) {
+        // Only applies to the admin operational alert, not the personal path
+        if (case_id && recipients.length > 0) {
             const dedupRes = await fetch(
                 `${SUPABASE_URL}/rest/v1/email_logs?organisation_id=eq.${organisation_id}&event_type=eq.${event_type}&case_id=eq.${case_id}&status=eq.sent&created_at=gte.${new Date(Date.now() - 3600000).toISOString()}&select=id&limit=1`,
                 { headers: sbHeaders }
@@ -224,7 +250,12 @@ export default async function handler(req, res) {
                         status: 'skipped',
                         meta: { reason: 'skipped_deduped' },
                     });
-                    return res.status(200).json({ ok: true, skipped: true, reason: 'Duplicate within 1 hour' });
+                    // For admin_case_created, dedup only skips the admin alert, not personal path
+                    if (event_type !== 'admin_case_created') {
+                        return res.status(200).json({ ok: true, skipped: true, reason: 'Duplicate within 1 hour' });
+                    }
+                    adminAlertSkipped = true;
+                    recipients = [];
                 }
             }
         }
@@ -252,170 +283,189 @@ export default async function handler(req, res) {
             dashboardUrl: `https://secondlookprotect.co.uk/dashboard`,
         });
 
-        // 7) Insert initial email_logs row (status: dispatching) — case-created only
-        let dispatchLogId = null;
-        if (trace) {
-            console.log('[SLP-DIAG] Sending via Resend to:', recipients);
-            try {
-                const initLogRes = await fetch(`${SUPABASE_URL}/rest/v1/email_logs`, {
-                    method: 'POST',
-                    headers: { ...sbHeaders, Prefer: 'return=representation' },
-                    body: JSON.stringify({
+        // 7-10) Send admin operational alert (only if not skipped)
+        let providerMessageId = null;
+        if (recipients.length > 0 && !adminAlertSkipped) {
+            // 7) Insert initial email_logs row (status: dispatching) — case-created only
+            let dispatchLogId = null;
+            if (trace) {
+                console.log('[SLP-DIAG] Sending via Resend to:', recipients);
+                try {
+                    const initLogRes = await fetch(`${SUPABASE_URL}/rest/v1/email_logs`, {
+                        method: 'POST',
+                        headers: { ...sbHeaders, Prefer: 'return=representation' },
+                        body: JSON.stringify({
+                            organisation_id,
+                            case_id: case_id || null,
+                            event_type,
+                            recipient_email: recipients.join(', '),
+                            recipient_role: recipientRole,
+                            subject,
+                            status: 'dispatching',
+                            meta: context || {},
+                        }),
+                    });
+                    if (initLogRes.ok) {
+                        const initLogRows = await initLogRes.json();
+                        dispatchLogId = initLogRows?.[0]?.id || null;
+                        console.log('[SLP-DIAG] Initial email_logs row created — id:', dispatchLogId);
+                    }
+                } catch (logErr) {
+                    console.log('[SLP-DIAG] Failed to create initial email_logs row:', logErr.message);
+                }
+            }
+
+            // 8) Send via Resend
+            const emailPayload = {
+                from: EMAIL_FROM,
+                to: recipients,
+                subject,
+                html,
+            };
+
+            const emailRes = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${RESEND_API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(emailPayload),
+            });
+
+            const emailData = await emailRes.json();
+            if (trace) console.log('[SLP-DIAG] Resend response — status:', emailRes.status, '| id:', emailData?.id, '| error:', emailData?.message || 'none');
+
+            if (!emailRes.ok) {
+                if (trace) console.log('[SLP-DIAG] Send FAILED — error:', emailData?.message || `Resend error ${emailRes.status}`);
+                if (dispatchLogId) {
+                    try {
+                        await fetch(`${SUPABASE_URL}/rest/v1/email_logs?id=eq.${dispatchLogId}`, {
+                            method: 'PATCH',
+                            headers: { ...sbHeaders, Prefer: 'return=minimal' },
+                            body: JSON.stringify({
+                                status: 'failed',
+                                error_message: emailData?.message || `Resend error ${emailRes.status}`,
+                            }),
+                        });
+                    } catch { /* best-effort update */ }
+                }
+                for (const email of recipients) {
+                    await logEmail(SUPABASE_URL, sbHeaders, {
                         organisation_id,
                         case_id: case_id || null,
                         event_type,
-                        recipient_email: recipients.join(', '),
+                        recipient_email: email,
                         recipient_role: recipientRole,
                         subject,
-                        status: 'dispatching',
+                        status: 'failed',
+                        error_message: emailData?.message || `Resend error ${emailRes.status}`,
                         meta: context || {},
-                    }),
-                });
-                if (initLogRes.ok) {
-                    const initLogRows = await initLogRes.json();
-                    dispatchLogId = initLogRows?.[0]?.id || null;
-                    console.log('[SLP-DIAG] Initial email_logs row created — id:', dispatchLogId);
-                }
-            } catch (logErr) {
-                console.log('[SLP-DIAG] Failed to create initial email_logs row:', logErr.message);
-            }
-        }
-
-        // 8) Send via Resend
-        const emailPayload = {
-            from: EMAIL_FROM,
-            to: recipients,
-            subject,
-            html,
-        };
-
-        const emailRes = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${RESEND_API_KEY}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(emailPayload),
-        });
-
-        const emailData = await emailRes.json();
-        if (trace) console.log('[SLP-DIAG] Resend response — status:', emailRes.status, '| id:', emailData?.id, '| error:', emailData?.message || 'none');
-
-        if (!emailRes.ok) {
-            if (trace) console.log('[SLP-DIAG] Send FAILED — error:', emailData?.message || `Resend error ${emailRes.status}`);
-            // Update initial log row to failed
-            if (dispatchLogId) {
-                try {
-                    await fetch(`${SUPABASE_URL}/rest/v1/email_logs?id=eq.${dispatchLogId}`, {
-                        method: 'PATCH',
-                        headers: { ...sbHeaders, Prefer: 'return=minimal' },
-                        body: JSON.stringify({
-                            status: 'failed',
-                            error_message: emailData?.message || `Resend error ${emailRes.status}`,
-                        }),
                     });
-                } catch { /* best-effort update */ }
-            }
-            // Log failure for each recipient
-            for (const email of recipients) {
-                await logEmail(SUPABASE_URL, sbHeaders, {
-                    organisation_id,
-                    case_id: case_id || null,
-                    event_type,
-                    recipient_email: email,
-                    recipient_role: recipientRole,
-                    subject,
-                    status: 'failed',
-                    error_message: emailData?.message || `Resend error ${emailRes.status}`,
-                    meta: context || {},
-                });
-            }
-            throw new Error(emailData?.message || `Resend error ${emailRes.status}`);
-        }
+                }
+                // Don't throw for admin_case_created — still run the personal path
+                if (event_type !== 'admin_case_created') {
+                    throw new Error(emailData?.message || `Resend error ${emailRes.status}`);
+                }
+            } else {
+                // 9) Update initial log row to sent
+                providerMessageId = emailData?.id || null;
+                if (trace) console.log('[SLP-DIAG] Send SUCCEEDED — provider_message_id:', providerMessageId);
+                if (dispatchLogId) {
+                    try {
+                        await fetch(`${SUPABASE_URL}/rest/v1/email_logs?id=eq.${dispatchLogId}`, {
+                            method: 'PATCH',
+                            headers: { ...sbHeaders, Prefer: 'return=minimal' },
+                            body: JSON.stringify({
+                                status: 'sent',
+                                provider_message_id: providerMessageId,
+                                sent_at: new Date().toISOString(),
+                            }),
+                        });
+                    } catch { /* best-effort update */ }
+                }
 
-        // 9) Update initial log row to sent
-        const providerMessageId = emailData?.id || null;
-        if (trace) console.log('[SLP-DIAG] Send SUCCEEDED — provider_message_id:', providerMessageId);
-        if (dispatchLogId) {
-            try {
-                await fetch(`${SUPABASE_URL}/rest/v1/email_logs?id=eq.${dispatchLogId}`, {
-                    method: 'PATCH',
-                    headers: { ...sbHeaders, Prefer: 'return=minimal' },
-                    body: JSON.stringify({
+                // 10) Log success for each recipient
+                for (const email of recipients) {
+                    await logEmail(SUPABASE_URL, sbHeaders, {
+                        organisation_id,
+                        case_id: case_id || null,
+                        event_type,
+                        recipient_email: email,
+                        recipient_role: recipientRole,
+                        subject,
                         status: 'sent',
                         provider_message_id: providerMessageId,
-                        sent_at: new Date().toISOString(),
-                    }),
-                });
-            } catch { /* best-effort update */ }
-        }
-
-        // 10) Log success for each recipient (original per-recipient logs)
-        for (const email of recipients) {
-            await logEmail(SUPABASE_URL, sbHeaders, {
-                organisation_id,
-                case_id: case_id || null,
-                event_type,
-                recipient_email: email,
-                recipient_role: recipientRole,
-                subject,
-                status: 'sent',
-                provider_message_id: providerMessageId,
-                meta: context || {},
-            });
+                        meta: context || {},
+                    });
+                }
+            }
         }
 
         // ── 11) Personal user-targeted emails for admin_case_created ─────────
-        // After the admin operational alert, send individual emails to eligible
-        // users based on their personal notification preferences.
-        // Each user is checked independently — one user opting out does not
-        // affect any other user.
+        // Runs INDEPENDENTLY of the admin operational alert above.
+        // Uses notify_admin_case_created (in-app master) as the org-level gate,
+        // NOT the email_admin_case_created toggle.
         if (event_type === 'admin_case_created') {
-            try {
-                // Fetch all active users in this org (excluding the case submitter)
-                let eligibleUrl = `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&is_active=eq.true&select=id,email&limit=200`;
-                if (actor_id) {
-                    eligibleUrl += `&id=neq.${actor_id}`;
-                }
-                const eligibleRes = await fetch(eligibleUrl, { headers: sbHeaders });
-                const eligibleUsers = eligibleRes.ok ? await eligibleRes.json() : [];
+            // Check the org-level master for the event TYPE (in-app master setting)
+            const personalMasterEnabled = settings.notify_admin_case_created ?? true;
+            console.log('[SLP-PERSONAL] Phase started — org_id:', organisation_id, '| actor_id:', actor_id, '| org_master notify_admin_case_created:', personalMasterEnabled);
 
-                // Also exclude any emails that were already sent via the admin alert path
-                const adminAlertEmails = new Set(recipients.map(e => e.toLowerCase()));
-
-                for (const user of eligibleUsers) {
-                    if (!user.email) continue;
-                    if (adminAlertEmails.has(user.email.toLowerCase())) continue;
-
-                    // Check this user's personal email preferences
-                    const userPrefOk = await checkUserEmailPref(SUPABASE_URL, sbHeaders, user.id, event_type);
-                    if (!userPrefOk) {
-                        await logEmail(SUPABASE_URL, sbHeaders, {
-                            organisation_id,
-                            case_id: case_id || null,
-                            event_type: 'personal_case_created',
-                            recipient_email: user.email,
-                            recipient_role: 'user',
-                            subject,
-                            status: 'skipped',
-                            meta: { reason: 'skipped_user_disabled', user_id: user.id },
-                        });
-                        continue;
+            if (!personalMasterEnabled) {
+                console.log('[SLP-PERSONAL] Org master notify_admin_case_created is OFF — skipping all personal emails');
+                await logEmail(SUPABASE_URL, sbHeaders, {
+                    organisation_id,
+                    case_id: case_id || null,
+                    event_type: 'personal_case_created',
+                    recipient_email: '(all personal skipped — org master disabled)',
+                    subject,
+                    status: 'skipped',
+                    meta: { reason: 'skipped_org_disabled' },
+                });
+            } else {
+                try {
+                    // Fetch all active users in this org (excluding the case submitter)
+                    let eligibleUrl = `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&is_active=eq.true&select=id,email&limit=200`;
+                    if (actor_id) {
+                        eligibleUrl += `&id=neq.${actor_id}`;
                     }
+                    const eligibleRes = await fetch(eligibleUrl, { headers: sbHeaders });
+                    const eligibleUsers = eligibleRes.ok ? await eligibleRes.json() : [];
+                    console.log('[SLP-PERSONAL] Eligible users found:', eligibleUsers.length);
 
-                    // Send individual email to this user
-                    try {
-                        const userEmailRes = await fetch('https://api.resend.com/emails', {
-                            method: 'POST',
-                            headers: {
-                                Authorization: `Bearer ${RESEND_API_KEY}`,
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ from: EMAIL_FROM, to: [user.email], subject, html }),
-                        });
-                        const userEmailData = await userEmailRes.json();
+                    // Exclude any emails that were already sent via the admin alert path
+                    const adminAlertEmails = new Set(recipients.map(e => e.toLowerCase()));
 
-                        if (userEmailRes.ok) {
+                    for (const user of eligibleUsers) {
+                        if (!user.email) {
+                            console.log('[SLP-PERSONAL] User', user.id, '— no email, skipping');
+                            continue;
+                        }
+                        if (adminAlertEmails.has(user.email.toLowerCase())) {
+                            console.log('[SLP-PERSONAL] User', user.id, '(', user.email, ') — already in admin alert, skipping');
+                            continue;
+                        }
+
+                        // Fetch this user's personal prefs directly for logging
+                        let userEmailEnabled = true;
+                        let userPrefNewCase = true;
+                        try {
+                            const upRes = await fetch(
+                                `${SUPABASE_URL}/rest/v1/user_notification_preferences?user_id=eq.${user.id}&select=email_enabled,pref_new_case_submitted&limit=1`,
+                                { headers: sbHeaders }
+                            );
+                            if (upRes.ok) {
+                                const upRows = await upRes.json();
+                                if (upRows && upRows.length > 0) {
+                                    userEmailEnabled = upRows[0].email_enabled ?? true;
+                                    userPrefNewCase = upRows[0].pref_new_case_submitted ?? true;
+                                }
+                            }
+                        } catch { /* default to true */ }
+
+                        console.log('[SLP-PERSONAL] Evaluating user:', user.id, '| email:', user.email, '| email_enabled:', userEmailEnabled, '| pref_new_case_submitted:', userPrefNewCase);
+
+                        if (!userEmailEnabled || !userPrefNewCase) {
+                            console.log('[SLP-PERSONAL] SKIP user', user.id, '— email_enabled:', userEmailEnabled, 'pref_new_case_submitted:', userPrefNewCase);
                             await logEmail(SUPABASE_URL, sbHeaders, {
                                 organisation_id,
                                 case_id: case_id || null,
@@ -423,11 +473,53 @@ export default async function handler(req, res) {
                                 recipient_email: user.email,
                                 recipient_role: 'user',
                                 subject,
-                                status: 'sent',
-                                provider_message_id: userEmailData?.id || null,
-                                meta: { user_id: user.id },
+                                status: 'skipped',
+                                meta: { reason: 'skipped_user_disabled', user_id: user.id, email_enabled: userEmailEnabled, pref_new_case_submitted: userPrefNewCase },
                             });
-                        } else {
+                            continue;
+                        }
+
+                        // Send individual email to this user
+                        try {
+                            const userEmailRes = await fetch('https://api.resend.com/emails', {
+                                method: 'POST',
+                                headers: {
+                                    Authorization: `Bearer ${RESEND_API_KEY}`,
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ from: EMAIL_FROM, to: [user.email], subject, html }),
+                            });
+                            const userEmailData = await userEmailRes.json();
+
+                            if (userEmailRes.ok) {
+                                console.log('[SLP-PERSONAL] SENT to', user.email, '— provider_id:', userEmailData?.id);
+                                await logEmail(SUPABASE_URL, sbHeaders, {
+                                    organisation_id,
+                                    case_id: case_id || null,
+                                    event_type: 'personal_case_created',
+                                    recipient_email: user.email,
+                                    recipient_role: 'user',
+                                    subject,
+                                    status: 'sent',
+                                    provider_message_id: userEmailData?.id || null,
+                                    meta: { user_id: user.id },
+                                });
+                            } else {
+                                console.log('[SLP-PERSONAL] FAILED for', user.email, '—', userEmailData?.message);
+                                await logEmail(SUPABASE_URL, sbHeaders, {
+                                    organisation_id,
+                                    case_id: case_id || null,
+                                    event_type: 'personal_case_created',
+                                    recipient_email: user.email,
+                                    recipient_role: 'user',
+                                    subject,
+                                    status: 'failed',
+                                    error_message: userEmailData?.message || `Resend error ${userEmailRes.status}`,
+                                    meta: { user_id: user.id },
+                                });
+                            }
+                        } catch (sendErr) {
+                            console.log('[SLP-PERSONAL] EXCEPTION for', user.email, '—', sendErr.message);
                             await logEmail(SUPABASE_URL, sbHeaders, {
                                 organisation_id,
                                 case_id: case_id || null,
@@ -436,27 +528,14 @@ export default async function handler(req, res) {
                                 recipient_role: 'user',
                                 subject,
                                 status: 'failed',
-                                error_message: userEmailData?.message || `Resend error ${userEmailRes.status}`,
+                                error_message: sendErr.message || 'Send error',
                                 meta: { user_id: user.id },
                             });
                         }
-                    } catch (sendErr) {
-                        await logEmail(SUPABASE_URL, sbHeaders, {
-                            organisation_id,
-                            case_id: case_id || null,
-                            event_type: 'personal_case_created',
-                            recipient_email: user.email,
-                            recipient_role: 'user',
-                            subject,
-                            status: 'failed',
-                            error_message: sendErr.message || 'Send error',
-                            meta: { user_id: user.id },
-                        });
                     }
+                } catch (personalErr) {
+                    console.error('[SLP-PERSONAL] Phase error:', personalErr.message);
                 }
-            } catch (personalErr) {
-                // Personal email phase is non-blocking — log and continue
-                console.error('[email-dispatch] Personal user email phase error:', personalErr.message);
             }
         }
 
