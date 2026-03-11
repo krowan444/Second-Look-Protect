@@ -186,12 +186,28 @@ export default async function handler(req, res) {
                 }
             }
         } else {
-            // Staff events: resolve the target staff member's email
+            // Staff events: resolve target staff member(s)
             recipientRole = 'staff';
-            let targetUserId = actor_id || null;
 
-            // For case-related staff events, look up the assigned_to or submitted_by
-            if (case_id && !targetUserId) {
+            // Events where the case has progressed/updated — notify BOTH assigned_to AND submitted_by
+            const CASE_UPDATE_EVENTS = [
+                'staff_case_moved_to_review',
+                'staff_case_closed',
+                'staff_information_requested',
+                'staff_evidence_requested',
+                'staff_evidence_added',
+            ];
+            const isUpdateEvent = CASE_UPDATE_EVENTS.includes(event_type);
+
+            // Resolve candidate user IDs
+            let candidateUserIds = [];
+
+            if (actor_id) {
+                candidateUserIds.push(actor_id);
+            }
+
+            // For case-related staff events, look up assigned_to and submitted_by
+            if (case_id) {
                 const caseRes = await fetch(
                     `${SUPABASE_URL}/rest/v1/cases?id=eq.${case_id}&select=assigned_to,submitted_by&limit=1`,
                     { headers: sbHeaders }
@@ -200,29 +216,43 @@ export default async function handler(req, res) {
                     const caseRows = await caseRes.json();
                     const c = caseRows?.[0];
                     if (c) {
-                        targetUserId = c.assigned_to || c.submitted_by;
+                        if (isUpdateEvent) {
+                            // For update events: include both assigned_to and submitted_by
+                            if (c.assigned_to) candidateUserIds.push(c.assigned_to);
+                            if (c.submitted_by) candidateUserIds.push(c.submitted_by);
+                        } else {
+                            // For staff_case_assigned: only the assigned person
+                            if (c.assigned_to) candidateUserIds.push(c.assigned_to);
+                            else if (c.submitted_by) candidateUserIds.push(c.submitted_by);
+                        }
                     }
                 }
             }
 
-            if (targetUserId) {
-                // Check user personal email preferences before resolving
-                const userPrefOk = await checkUserEmailPref(SUPABASE_URL, sbHeaders, targetUserId, event_type);
+            // Deduplicate user IDs
+            candidateUserIds = [...new Set(candidateUserIds)];
+
+            // Check each candidate's personal preferences and resolve email
+            for (const uid of candidateUserIds) {
+                const userPrefOk = await checkUserEmailPref(SUPABASE_URL, sbHeaders, uid, event_type);
                 if (!userPrefOk) {
                     await logEmail(SUPABASE_URL, sbHeaders, {
                         organisation_id,
                         case_id: case_id || null,
                         event_type,
-                        recipient_email: `(user ${targetUserId})`,
+                        recipient_email: `(user ${uid})`,
+                        recipient_role: 'staff',
                         subject: config.subject,
                         status: 'skipped',
-                        meta: { reason: 'skipped_user_disabled' },
+                        meta: { reason: 'skipped_user_disabled', user_id: uid },
                     });
-                    return res.status(200).json({ ok: true, skipped: true, reason: 'User disabled this notification' });
+                    continue;
                 }
 
-                const staffEmail = await resolveEmailFromAuth(SUPABASE_URL, SERVICE_KEY, targetUserId);
-                if (staffEmail) recipients.push(staffEmail);
+                const staffEmail = await resolveEmailFromAuth(SUPABASE_URL, SERVICE_KEY, uid);
+                if (staffEmail && !recipients.includes(staffEmail)) {
+                    recipients.push(staffEmail);
+                }
             }
         }
 
