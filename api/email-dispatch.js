@@ -63,26 +63,26 @@ export default async function handler(req, res) {
     // ── Event type → settings column mapping ─────────────────────────────
     const EVENT_CONFIG = {
         // Admin events → alert_recipients
-        admin_case_created:               { col: 'email_admin_case_created',              type: 'admin', subject: 'New Case Created',              icon: '📋' },
-        admin_case_updated:               { col: 'email_admin_case_updated',              type: 'admin', subject: 'Case Updated',                  icon: '✏️' },
-        admin_high_risk_alert:            { col: 'email_admin_high_risk_alert',           type: 'admin', subject: 'High-Risk Case Flagged',         icon: '🔴' },
-        admin_critical_case:              { col: 'email_admin_critical_case',             type: 'admin', subject: 'Critical Case Flagged',          icon: '🚨' },
-        admin_sla_breach:                 { col: 'email_admin_sla_breach',                type: 'admin', subject: 'SLA Breach Alert',               icon: '⏱️' },
-        admin_overdue_review:             { col: 'email_admin_overdue_review',            type: 'admin', subject: 'Overdue Review Alert',           icon: '⏳' },
-        admin_escalation_notice:          { col: 'email_admin_escalation_notice',         type: 'admin', subject: 'Escalation Notice',              icon: '📢' },
-        admin_new_evidence:               { col: 'email_admin_new_evidence',              type: 'admin', subject: 'New Evidence Uploaded',           icon: '📎' },
-        admin_inspection_pack_generated:  { col: 'email_admin_inspection_pack_generated', type: 'admin', subject: 'Inspection Pack Generated',      icon: '📦' },
-        admin_inspection_pack_sent:       { col: 'email_admin_inspection_pack_sent',      type: 'admin', subject: 'Inspection Pack Sent',           icon: '📨' },
-        admin_repeat_targeting:           { col: 'email_admin_repeat_targeting',          type: 'admin', subject: 'Repeat Targeting Detected',      icon: '🔁' },
-        admin_loss_threshold:             { col: 'email_admin_loss_threshold',            type: 'admin', subject: 'Loss Threshold Reached',         icon: '💰' },
-        admin_new_user:                   { col: 'email_admin_new_user',                  type: 'admin', subject: 'New User Added',                 icon: '👤' },
+        admin_case_created: { col: 'email_admin_case_created', type: 'admin', subject: 'New Case Created', icon: '📋' },
+        admin_case_updated: { col: 'email_admin_case_updated', type: 'admin', subject: 'Case Updated', icon: '✏️' },
+        admin_high_risk_alert: { col: 'email_admin_high_risk_alert', type: 'admin', subject: 'High-Risk Case Flagged', icon: '🔴' },
+        admin_critical_case: { col: 'email_admin_critical_case', type: 'admin', subject: 'Critical Case Flagged', icon: '🚨' },
+        admin_sla_breach: { col: 'email_admin_sla_breach', type: 'admin', subject: 'SLA Breach Alert', icon: '⏱️' },
+        admin_overdue_review: { col: 'email_admin_overdue_review', type: 'admin', subject: 'Overdue Review Alert', icon: '⏳' },
+        admin_escalation_notice: { col: 'email_admin_escalation_notice', type: 'admin', subject: 'Escalation Notice', icon: '📢' },
+        admin_new_evidence: { col: 'email_admin_new_evidence', type: 'admin', subject: 'New Evidence Uploaded', icon: '📎' },
+        admin_inspection_pack_generated: { col: 'email_admin_inspection_pack_generated', type: 'admin', subject: 'Inspection Pack Generated', icon: '📦' },
+        admin_inspection_pack_sent: { col: 'email_admin_inspection_pack_sent', type: 'admin', subject: 'Inspection Pack Sent', icon: '📨' },
+        admin_repeat_targeting: { col: 'email_admin_repeat_targeting', type: 'admin', subject: 'Repeat Targeting Detected', icon: '🔁' },
+        admin_loss_threshold: { col: 'email_admin_loss_threshold', type: 'admin', subject: 'Loss Threshold Reached', icon: '💰' },
+        admin_new_user: { col: 'email_admin_new_user', type: 'admin', subject: 'New User Added', icon: '👤' },
         // Staff events → assigned staff/submitter
-        staff_case_assigned:              { col: 'email_staff_case_assigned',             type: 'staff', subject: 'Case Assigned to You',           icon: '📌' },
-        staff_case_moved_to_review:       { col: 'email_staff_case_moved_to_review',      type: 'staff', subject: 'Your Case Moved to Review',     icon: '🔍' },
-        staff_case_closed:                { col: 'email_staff_case_closed',               type: 'staff', subject: 'Your Case Has Been Closed',     icon: '✅' },
-        staff_information_requested:      { col: 'email_staff_information_requested',     type: 'staff', subject: 'Information Requested',          icon: '❓' },
-        staff_evidence_requested:         { col: 'email_staff_evidence_requested',        type: 'staff', subject: 'Evidence Requested',             icon: '📋' },
-        staff_evidence_added:             { col: 'email_staff_evidence_added',            type: 'staff', subject: 'Evidence Added to Your Case',    icon: '📎' },
+        staff_case_assigned: { col: 'email_staff_case_assigned', type: 'staff', subject: 'Case Assigned to You', icon: '📌' },
+        staff_case_moved_to_review: { col: 'email_staff_case_moved_to_review', type: 'staff', subject: 'Your Case Moved to Review', icon: '🔍' },
+        staff_case_closed: { col: 'email_staff_case_closed', type: 'staff', subject: 'Your Case Has Been Closed', icon: '✅' },
+        staff_information_requested: { col: 'email_staff_information_requested', type: 'staff', subject: 'Information Requested', icon: '❓' },
+        staff_evidence_requested: { col: 'email_staff_evidence_requested', type: 'staff', subject: 'Evidence Requested', icon: '📋' },
+        staff_evidence_added: { col: 'email_staff_evidence_added', type: 'staff', subject: 'Evidence Added to Your Case', icon: '📎' },
     };
 
     const config = EVENT_CONFIG[event_type];
@@ -151,17 +151,37 @@ export default async function handler(req, res) {
                     recipients = settings.alert_recipients.filter(Boolean);
                 }
                 if (trace) console.log('[SLP-DIAG] alert_recipients from settings:', recipients);
-                // Fallback: org_admin profile emails
+                // Fallback: org_admin profile emails (resolved from auth.users)
+                // When using fallback, also filter by personal preferences per user
                 if (recipients.length === 0) {
                     if (trace) console.log('[SLP-DIAG] No alert_recipients — falling back to org_admin profiles');
                     const adminRes = await fetch(
-                        `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&role=eq.org_admin&is_active=eq.true&select=email&limit=20`,
+                        `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&role=eq.org_admin&is_active=eq.true&select=id&limit=20`,
                         { headers: sbHeaders }
                     );
                     if (adminRes.ok) {
                         const adminRows = await adminRes.json();
-                        recipients = (adminRows || []).map(r => r.email).filter(Boolean);
-                        if (trace) console.log('[SLP-DIAG] Fallback org_admin emails:', recipients);
+                        for (const row of (adminRows || [])) {
+                            // Check personal email preferences before including this admin
+                            const userPrefOk = await checkUserEmailPref(SUPABASE_URL, sbHeaders, row.id, event_type);
+                            if (!userPrefOk) {
+                                if (trace) console.log('[SLP-DIAG] Admin user', row.id, 'opted out of', event_type, '— skipping');
+                                await logEmail(SUPABASE_URL, sbHeaders, {
+                                    organisation_id,
+                                    case_id: case_id || null,
+                                    event_type,
+                                    recipient_email: `(admin ${row.id})`,
+                                    recipient_role: 'admin',
+                                    subject: config.subject,
+                                    status: 'skipped',
+                                    meta: { reason: 'skipped_user_disabled', user_id: row.id },
+                                });
+                                continue;
+                            }
+                            const email = await resolveEmailFromAuth(SUPABASE_URL, SERVICE_KEY, row.id);
+                            if (email) recipients.push(email);
+                        }
+                        if (trace) console.log('[SLP-DIAG] Fallback org_admin emails (after pref filter):', recipients);
                     }
                 }
             }
@@ -201,15 +221,8 @@ export default async function handler(req, res) {
                     return res.status(200).json({ ok: true, skipped: true, reason: 'User disabled this notification' });
                 }
 
-                const profileRes = await fetch(
-                    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${targetUserId}&select=email&limit=1`,
-                    { headers: sbHeaders }
-                );
-                if (profileRes.ok) {
-                    const profileRows = await profileRes.json();
-                    const email = profileRows?.[0]?.email;
-                    if (email) recipients.push(email);
-                }
+                const staffEmail = await resolveEmailFromAuth(SUPABASE_URL, SERVICE_KEY, targetUserId);
+                if (staffEmail) recipients.push(staffEmail);
             }
         }
 
@@ -403,15 +416,16 @@ export default async function handler(req, res) {
 
         // ── 11) Personal user-targeted emails for admin_case_created ─────────
         // Runs INDEPENDENTLY of the admin operational alert above.
-        // Uses notify_admin_case_created (in-app master) as the org-level gate,
-        // NOT the email_admin_case_created toggle.
+        // Uses email_admin_case_created as the org-level gate (the email toggle).
+        // Each user's personal preferences are also checked independently.
         if (event_type === 'admin_case_created') {
-            // Check the org-level master for the event TYPE (in-app master setting)
-            const personalMasterEnabled = settings.notify_admin_case_created ?? true;
-            console.log('[SLP-PERSONAL] Phase started — org_id:', organisation_id, '| actor_id:', actor_id, '| org_master notify_admin_case_created:', personalMasterEnabled);
+            // Check the org-level EMAIL master for case created (email_admin_case_created)
+            // This is the correct gate — the email toggle, not the in-app toggle
+            const personalMasterEnabled = settings.email_admin_case_created ?? false;
+            console.log('[SLP-PERSONAL] Phase started — org_id:', organisation_id, '| actor_id:', actor_id, '| org_master email_admin_case_created:', personalMasterEnabled);
 
             if (!personalMasterEnabled) {
-                console.log('[SLP-PERSONAL] Org master notify_admin_case_created is OFF — skipping all personal emails');
+                console.log('[SLP-PERSONAL] Org master email_admin_case_created is OFF — skipping all personal emails');
                 await logEmail(SUPABASE_URL, sbHeaders, {
                     organisation_id,
                     case_id: case_id || null,
@@ -423,25 +437,52 @@ export default async function handler(req, res) {
                 });
             } else {
                 try {
-                    // Fetch all active users in this org (excluding the case submitter)
-                    let eligibleUrl = `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&is_active=eq.true&select=id,email&limit=200`;
-                    if (actor_id) {
-                        eligibleUrl += `&id=neq.${actor_id}`;
+                    // Resolve true submitter if actor_id is missing (e.g. from SubmitCasePage.tsx)
+                    let trueSubmitterId = actor_id;
+                    if (!trueSubmitterId && case_id) {
+                        const caseRes = await fetch(`${SUPABASE_URL}/rest/v1/cases?id=eq.${case_id}&select=submitted_by&limit=1`, { headers: sbHeaders });
+                        if (caseRes.ok) {
+                            const caseRow = await caseRes.json();
+                            if (caseRow?.[0]?.submitted_by) {
+                                trueSubmitterId = caseRow[0].submitted_by;
+                                console.log('[SLP-PERSONAL] Fetched true submitter from case:', trueSubmitterId);
+                            }
+                        }
                     }
+
+                    // Fetch all active users in this org (id + role only — email is in auth.users)
+                    let eligibleUrl = `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&is_active=eq.true&select=id,role&limit=200`;
+
                     const eligibleRes = await fetch(eligibleUrl, { headers: sbHeaders });
                     const eligibleUsers = eligibleRes.ok ? await eligibleRes.json() : [];
-                    console.log('[SLP-PERSONAL] Eligible users found:', eligibleUsers.length);
+                    console.log(`[SLP-PERSONAL] Total active profiles found in org ${organisation_id}:`, eligibleUsers.length);
+
+                    // Resolve each user's email from auth.users and attach it
+                    for (const user of eligibleUsers) {
+                        user.email = await resolveEmailFromAuth(SUPABASE_URL, SERVICE_KEY, user.id);
+                    }
 
                     // Exclude any emails that were already sent via the admin alert path
                     const adminAlertEmails = new Set(recipients.map(e => e.toLowerCase()));
+                    let excludedAdminCount = 0;
+                    let finalEligibleUserIds = [];
 
                     for (const user of eligibleUsers) {
                         if (!user.email) {
-                            console.log('[SLP-PERSONAL] User', user.id, '— no email, skipping');
+                            console.log('[SLP-PERSONAL] User', user.id, '— no email in auth.users, skipping');
                             continue;
                         }
+
+                        // Exclude the true submitter
+                        if (trueSubmitterId && user.id === trueSubmitterId) {
+                            console.log('[SLP-PERSONAL] User', user.id, '(', user.email, ') — is the case submitter, skipping');
+                            continue;
+                        }
+
+                        // Exclude users already receiving the operational admin alert
                         if (adminAlertEmails.has(user.email.toLowerCase())) {
                             console.log('[SLP-PERSONAL] User', user.id, '(', user.email, ') — already in admin alert, skipping');
+                            excludedAdminCount++;
                             continue;
                         }
 
@@ -462,7 +503,7 @@ export default async function handler(req, res) {
                             }
                         } catch { /* default to true */ }
 
-                        console.log('[SLP-PERSONAL] Evaluating user:', user.id, '| email:', user.email, '| email_enabled:', userEmailEnabled, '| pref_new_case_submitted:', userPrefNewCase);
+                        console.log('[SLP-PERSONAL] Evaluating user:', user.id, '| email:', user.email, '| role:', user.role, '| email_enabled:', userEmailEnabled, '| pref_new_case_submitted:', userPrefNewCase);
 
                         if (!userEmailEnabled || !userPrefNewCase) {
                             console.log('[SLP-PERSONAL] SKIP user', user.id, '— email_enabled:', userEmailEnabled, 'pref_new_case_submitted:', userPrefNewCase);
@@ -471,13 +512,16 @@ export default async function handler(req, res) {
                                 case_id: case_id || null,
                                 event_type: 'personal_case_created',
                                 recipient_email: user.email,
-                                recipient_role: 'user',
+                                recipient_role: user.role || 'user',
                                 subject,
                                 status: 'skipped',
                                 meta: { reason: 'skipped_user_disabled', user_id: user.id, email_enabled: userEmailEnabled, pref_new_case_submitted: userPrefNewCase },
                             });
                             continue;
                         }
+
+                        // Add to final list
+                        finalEligibleUserIds.push(user.id);
 
                         // Send individual email to this user
                         try {
@@ -498,7 +542,7 @@ export default async function handler(req, res) {
                                     case_id: case_id || null,
                                     event_type: 'personal_case_created',
                                     recipient_email: user.email,
-                                    recipient_role: 'user',
+                                    recipient_role: user.role || 'user',
                                     subject,
                                     status: 'sent',
                                     provider_message_id: userEmailData?.id || null,
@@ -511,7 +555,7 @@ export default async function handler(req, res) {
                                     case_id: case_id || null,
                                     event_type: 'personal_case_created',
                                     recipient_email: user.email,
-                                    recipient_role: 'user',
+                                    recipient_role: user.role || 'user',
                                     subject,
                                     status: 'failed',
                                     error_message: userEmailData?.message || `Resend error ${userEmailRes.status}`,
@@ -525,7 +569,7 @@ export default async function handler(req, res) {
                                 case_id: case_id || null,
                                 event_type: 'personal_case_created',
                                 recipient_email: user.email,
-                                recipient_role: 'user',
+                                recipient_role: user.role || 'user',
                                 subject,
                                 status: 'failed',
                                 error_message: sendErr.message || 'Send error',
@@ -533,6 +577,16 @@ export default async function handler(req, res) {
                             });
                         }
                     }
+
+                    // Log final summary
+                    console.log(`[SLP-PERSONAL] DIAGNOSTIC SUMMARY for org ${organisation_id}:`, {
+                        actor_or_submitter_id: trueSubmitterId,
+                        total_active_profiles: eligibleUsers.length,
+                        excluded_admin_alerts: excludedAdminCount,
+                        final_eligible_user_count: finalEligibleUserIds.length,
+                        final_eligible_user_ids: finalEligibleUserIds
+                    });
+
                 } catch (personalErr) {
                     console.error('[SLP-PERSONAL] Phase error:', personalErr.message);
                 }
@@ -549,6 +603,27 @@ export default async function handler(req, res) {
         if (trace) console.log('[SLP-DIAG] EXCEPTION in handler:', err.message || err);
         console.error('[email-dispatch] Error:', err);
         return res.status(500).json({ ok: false, error: err.message || 'Unknown error' });
+    }
+}
+
+
+// ── Helper: resolve email from Supabase Auth (auth.users) ────────────────
+// profiles table does NOT have an email column; emails live in auth.users.
+async function resolveEmailFromAuth(supabaseUrl, serviceKey, userId) {
+    try {
+        const res = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
+            headers: {
+                apikey: serviceKey,
+                Authorization: `Bearer ${serviceKey}`,
+            },
+        });
+        if (res.ok) {
+            const data = await res.json();
+            return data?.email || null;
+        }
+        return null;
+    } catch {
+        return null;
     }
 }
 

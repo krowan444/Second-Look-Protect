@@ -491,7 +491,7 @@ export function SettingsPage() {
                 <div style={{ marginBottom: '0.75rem' }}>
                     <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <User size={14} />
-                        My Notification Preferences
+                        My Email Preferences
                     </p>
                     <p className="dashboard-settings-hint">
                         Control which notifications you personally receive. Organisation-level settings may override these if an event type is disabled by your admin.
@@ -602,418 +602,427 @@ export function SettingsPage() {
                 </div>
             ) : (
 
-            <div className="dashboard-settings-card">
+                <div className="dashboard-settings-card">
+                    <div style={{ marginBottom: '0.75rem' }}>
+                        <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <Building2 size={14} />
+                            Organisation Email Controls
+                        </p>
+                        <p className="dashboard-settings-hint">
+                            Manage organisation-wide notification settings, recipients, and operational controls. These settings apply to all members of this organisation.
+                        </p>
+                    </div>
 
-                {/* Timezone */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Globe size={16} />
-                        Timezone
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        Used for report date boundaries and display.
-                    </p>
-                    <select
-                        className="dashboard-settings-select"
-                        value={timezone}
-                        onChange={(e) => setTimezone(e.target.value)}
-                    >
-                        {TIMEZONE_OPTIONS.map(tz => (
-                            <option key={tz} value={tz}>{tz}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Report Recipients */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Mail size={16} />
-                        Report Recipients
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        These people receive the monthly safeguarding report by email on the scheduled report day. One email per line.
-                    </p>
-                    <textarea
-                        className="dashboard-settings-textarea"
-                        rows={4}
-                        value={reportRecipients}
-                        onChange={(e) => setReportRecipients(e.target.value)}
-                        placeholder="admin@example.com&#10;manager@example.com"
-                    />
-                </div>
-
-                {/* Inspection Pack Recipients */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Send size={16} />
-                        Inspection Pack Recipients
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        These people receive inspection pack PDFs when sent manually or auto-sent on schedule. Falls back to report recipients if empty. One email per line.
-                    </p>
-                    <textarea
-                        className="dashboard-settings-textarea"
-                        rows={4}
-                        value={inspectionPackRecipients}
-                        onChange={(e) => setInspectionPackRecipients(e.target.value)}
-                        placeholder="inspector@example.com&#10;compliance@example.com"
-                    />
-                </div>
-
-                {/* Alert Recipients */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Bell size={16} />
-                        Alert Recipients
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        These people receive immediate email alerts for admin events such as new cases, high-risk flags, SLA breaches, and more. One email per line.
-                    </p>
-                    <textarea
-                        className="dashboard-settings-textarea"
-                        rows={4}
-                        value={alertRecipients}
-                        onChange={(e) => setAlertRecipients(e.target.value)}
-                        placeholder="safeguarding@example.com&#10;lead@example.com"
-                    />
-                </div>
-
-                {/* ── Group Affiliation ────────────────────────────────────── */}
-                {groupName && (
+                    {/* Timezone */}
                     <div className="dashboard-settings-field">
                         <label className="dashboard-settings-label">
-                            <Building2 size={16} />
-                            Organisation Group
+                            <Globe size={16} />
+                            Timezone
                         </label>
-                        <p style={{ fontSize: '0.88rem', color: '#1e293b', fontWeight: 500, margin: '0.25rem 0 0' }}>
-                            {groupName}
+                        <p className="dashboard-settings-hint">
+                            Used for report date boundaries and display.
                         </p>
-                        <p className="dashboard-settings-hint" style={{ marginTop: '0.25rem' }}>
-                            This organisation is part of a multi-site group.
-                        </p>
+                        <select
+                            className="dashboard-settings-select"
+                            value={timezone}
+                            onChange={(e) => setTimezone(e.target.value)}
+                        >
+                            {TIMEZONE_OPTIONS.map(tz => (
+                                <option key={tz} value={tz}>{tz}</option>
+                            ))}
+                        </select>
                     </div>
-                )}
 
-                {/* ── Operational Settings ─────────────────────────────────── */}
-                <div style={{ borderTop: '1px solid #e2e8f0', margin: '1rem 0', paddingTop: '1rem' }}>
-                    <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
-                        Operational Settings
-                    </p>
-                </div>
-
-                {/* Auto-send Inspection Pack */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Send size={16} />
-                        Auto-send Inspection Pack
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        Automatically email the inspection pack PDF to inspection pack recipients when the monthly snapshot is locked.
-                    </p>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                        <input
-                            type="checkbox"
-                            checked={autoSendInspection}
-                            onChange={(e) => setAutoSendInspection(e.target.checked)}
-                            style={{ width: 18, height: 18, accentColor: '#C9A84C' }}
+                    {/* Report Recipients */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Mail size={16} />
+                            Report Recipients
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            These people receive the monthly safeguarding report by email on the scheduled report day. One email per line.
+                        </p>
+                        <textarea
+                            className="dashboard-settings-textarea"
+                            rows={4}
+                            value={reportRecipients}
+                            onChange={(e) => setReportRecipients(e.target.value)}
+                            placeholder="admin@example.com&#10;manager@example.com"
                         />
-                        Enabled
-                    </label>
-                </div>
-
-                {/* Escalation Hours */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Clock size={16} />
-                        Escalation Hours
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        Hours before an unreviewed case is automatically escalated.
-                    </p>
-                    <input
-                        type="number"
-                        min={1}
-                        max={720}
-                        className="dashboard-settings-select"
-                        style={{ maxWidth: '120px' }}
-                        value={escalationHours}
-                        onChange={(e) => setEscalationHours(e.target.value === '' ? '' : Number(e.target.value))}
-                    />
-                </div>
-
-                {/* High Risk Threshold */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <ShieldAlert size={16} />
-                        High Risk Threshold
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        Number of high-risk cases in a rolling window that triggers an executive alert.
-                    </p>
-                    <input
-                        type="number"
-                        min={1}
-                        max={100}
-                        className="dashboard-settings-select"
-                        style={{ maxWidth: '120px' }}
-                        value={highRiskThreshold}
-                        onChange={(e) => setHighRiskThreshold(e.target.value === '' ? '' : Number(e.target.value))}
-                    />
-                </div>
-
-                {/* Loss Alert Threshold */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Zap size={16} />
-                        Loss Alert Threshold
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        Number of financial-loss cases that triggers a loss alert.
-                    </p>
-                    <input
-                        type="number"
-                        min={1}
-                        max={100}
-                        className="dashboard-settings-select"
-                        style={{ maxWidth: '120px' }}
-                        value={lossAlertThreshold}
-                        onChange={(e) => setLossAlertThreshold(e.target.value === '' ? '' : Number(e.target.value))}
-                    />
-                </div>
-
-                {/* Monthly Report Day */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Calendar size={16} />
-                        Monthly Report Day
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        Day of the month when the safeguarding report is generated and sent (1–28).
-                    </p>
-                    <input
-                        type="number"
-                        min={1}
-                        max={28}
-                        className="dashboard-settings-select"
-                        style={{ maxWidth: '120px' }}
-                        value={monthlyReportDay}
-                        onChange={(e) => setMonthlyReportDay(e.target.value === '' ? '' : Number(e.target.value))}
-                    />
-                </div>
-
-                {/* Report Send Time */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Clock size={16} />
-                        Report Send Time
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        Preferred time of day for scheduled monthly report emails. Reports sent manually use the current time.
-                    </p>
-                    <input
-                        type="time"
-                        className="dashboard-settings-select"
-                        style={{ maxWidth: '140px' }}
-                        value={reportSendTime}
-                        onChange={(e) => setReportSendTime(e.target.value)}
-                    />
-                </div>
-
-                {/* Inspection Pack Send Time */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Clock size={16} />
-                        Inspection Pack Send Time
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        Preferred time of day for auto-sent inspection packs. Manual sends use the current time.
-                    </p>
-                    <input
-                        type="time"
-                        className="dashboard-settings-select"
-                        style={{ maxWidth: '140px' }}
-                        value={inspectionPackSendTime}
-                        onChange={(e) => setInspectionPackSendTime(e.target.value)}
-                    />
-                </div>
-
-                {/* ── Notification Preferences ──────────────────────────── */}
-                <div style={{ borderTop: '1px solid #e2e8f0', margin: '1rem 0', paddingTop: '1rem' }}>
-                    <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
-                        Notification Preferences
-                    </p>
-                </div>
-
-                {/* Admin Notifications */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Bell size={16} />
-                        Admin Notifications
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        In-app bell notifications sent to organisation admins when these events occur.
-                    </p>
-                    {[
-                        { key: 'case_created', label: 'New case created', val: notifyAdminCaseCreated, set: setNotifyAdminCaseCreated },
-                        { key: 'high_risk', label: 'High-risk case flagged', val: notifyAdminHighRisk, set: setNotifyAdminHighRisk },
-                        { key: 'critical', label: 'Critical case flagged', val: notifyAdminCritical, set: setNotifyAdminCritical },
-                        { key: 'sla_breach', label: 'SLA breach', val: notifyAdminSlaBreach, set: setNotifyAdminSlaBreach },
-                        { key: 'new_evidence', label: 'New evidence uploaded', val: notifyAdminNewEvidence, set: setNotifyAdminNewEvidence },
-                        { key: 'insp_generated', label: 'Inspection pack generated', val: notifyAdminInspectionGenerated, set: setNotifyAdminInspectionGenerated },
-                        { key: 'insp_sent', label: 'Inspection pack sent', val: notifyAdminInspectionSent, set: setNotifyAdminInspectionSent },
-                        { key: 'repeat_targeting', label: 'Repeat targeting detected', val: notifyAdminRepeatTargeting, set: setNotifyAdminRepeatTargeting },
-                        { key: 'loss_threshold', label: 'Loss threshold reached', val: notifyAdminLossThreshold, set: setNotifyAdminLossThreshold },
-                        { key: 'new_user', label: 'New user added', val: notifyAdminNewUser, set: setNotifyAdminNewUser },
-                    ].map(item => (
-                        <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
-                            <input
-                                type="checkbox"
-                                checked={item.val}
-                                onChange={(e) => item.set(e.target.checked)}
-                                style={{ width: 18, height: 18, accentColor: '#C9A84C' }}
-                            />
-                            {item.label}
-                        </label>
-                    ))}
-                </div>
-
-                {/* Staff Notifications */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Bell size={16} />
-                        Staff Notifications
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        In-app bell notifications sent to the assigned staff member or case submitter when these events occur.
-                    </p>
-                    {[
-                        { key: 'case_assigned', label: 'Case assigned to me', val: notifyStaffCaseAssigned, set: setNotifyStaffCaseAssigned },
-                        { key: 'case_in_review', label: 'Case moved to review', val: notifyStaffCaseInReview, set: setNotifyStaffCaseInReview },
-                        { key: 'case_closed', label: 'Case closed', val: notifyStaffCaseClosed, set: setNotifyStaffCaseClosed },
-                        { key: 'info_requested', label: 'Information requested', val: notifyStaffInfoRequested, set: setNotifyStaffInfoRequested },
-                        { key: 'evidence_requested', label: 'Evidence requested', val: notifyStaffEvidenceRequested, set: setNotifyStaffEvidenceRequested },
-                        { key: 'evidence_added', label: 'Evidence added to case', val: notifyStaffEvidenceAdded, set: setNotifyStaffEvidenceAdded },
-                    ].map(item => (
-                        <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
-                            <input
-                                type="checkbox"
-                                checked={item.val}
-                                onChange={(e) => item.set(e.target.checked)}
-                                style={{ width: 18, height: 18, accentColor: '#C9A84C' }}
-                            />
-                            {item.label}
-                        </label>
-                    ))}
-                </div>
-
-                {/* ── Email Notification Preferences ──────────────────────── */}
-                <div style={{ borderTop: '1px solid #e2e8f0', margin: '1rem 0', paddingTop: '1rem' }}>
-                    <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
-                        Email Notification Preferences
-                    </p>
-                    <p className="dashboard-settings-hint" style={{ marginBottom: '0.75rem' }}>
-                        Control which events send real email notifications (via alerts@secondlookprotect.co.uk). These are separate from in-app bell notifications above. Each enabled event sends immediately when triggered.
-                    </p>
-                </div>
-
-                {/* Admin Email Notifications */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Mail size={16} />
-                        Admin Email Alerts
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        When enabled, these events send an immediate email to all Alert Recipients above. Each email is logged and deduplicated.
-                    </p>
-                    {[
-                        { key: 'e_case_created', label: 'New case created', val: emailAdminCaseCreated, set: setEmailAdminCaseCreated },
-                        { key: 'e_case_updated', label: 'Case updated', val: emailAdminCaseUpdated, set: setEmailAdminCaseUpdated },
-                        { key: 'e_high_risk_alert', label: 'High-risk case flagged', val: emailAdminHighRiskAlert, set: setEmailAdminHighRiskAlert },
-                        { key: 'e_critical', label: 'Critical case flagged', val: emailAdminCritical, set: setEmailAdminCritical },
-                        { key: 'e_sla_breach', label: 'SLA breach', val: emailAdminSlaBreach, set: setEmailAdminSlaBreach },
-                        { key: 'e_overdue_review', label: 'Overdue review', val: emailAdminOverdueReview, set: setEmailAdminOverdueReview },
-                        { key: 'e_escalation_notice', label: 'Escalation notice', val: emailAdminEscalationNotice, set: setEmailAdminEscalationNotice },
-                        { key: 'e_new_evidence', label: 'New evidence uploaded', val: emailAdminNewEvidence, set: setEmailAdminNewEvidence },
-                        { key: 'e_insp_generated', label: 'Inspection pack generated', val: emailAdminInspectionGenerated, set: setEmailAdminInspectionGenerated },
-                        { key: 'e_insp_sent', label: 'Inspection pack sent', val: emailAdminInspectionSent, set: setEmailAdminInspectionSent },
-                        { key: 'e_repeat_targeting', label: 'Repeat targeting detected', val: emailAdminRepeatTargeting, set: setEmailAdminRepeatTargeting },
-                        { key: 'e_loss_threshold', label: 'Loss threshold reached', val: emailAdminLossThreshold, set: setEmailAdminLossThreshold },
-                        { key: 'e_new_user', label: 'New user added', val: emailAdminNewUser, set: setEmailAdminNewUser },
-                    ].map(item => (
-                        <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
-                            <input
-                                type="checkbox"
-                                checked={item.val}
-                                onChange={(e) => item.set(e.target.checked)}
-                                style={{ width: 18, height: 18, accentColor: '#0f766e' }}
-                            />
-                            {item.label}
-                        </label>
-                    ))}
-                </div>
-
-                {/* Staff Email Notifications */}
-                <div className="dashboard-settings-field">
-                    <label className="dashboard-settings-label">
-                        <Mail size={16} />
-                        Staff Email Alerts
-                    </label>
-                    <p className="dashboard-settings-hint">
-                        When enabled, these events send an immediate email to the assigned staff member or carer. Each email is logged and deduplicated.
-                    </p>
-                    {[
-                        { key: 'e_case_assigned', label: 'Case assigned to me', val: emailStaffCaseAssigned, set: setEmailStaffCaseAssigned },
-                        { key: 'e_case_moved_to_review', label: 'Case moved to review', val: emailStaffCaseMovedToReview, set: setEmailStaffCaseMovedToReview },
-                        { key: 'e_case_closed', label: 'Case closed', val: emailStaffCaseClosed, set: setEmailStaffCaseClosed },
-                        { key: 'e_information_requested', label: 'Information requested', val: emailStaffInformationRequested, set: setEmailStaffInformationRequested },
-                        { key: 'e_evidence_requested', label: 'Evidence requested', val: emailStaffEvidenceRequested, set: setEmailStaffEvidenceRequested },
-                        { key: 'e_evidence_added', label: 'Evidence added to case', val: emailStaffEvidenceAdded, set: setEmailStaffEvidenceAdded },
-                    ].map(item => (
-                        <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
-                            <input
-                                type="checkbox"
-                                checked={item.val}
-                                onChange={(e) => item.set(e.target.checked)}
-                                style={{ width: 18, height: 18, accentColor: '#0f766e' }}
-                            />
-                            {item.label}
-                        </label>
-                    ))}
-                </div>
-
-                {/* Feedback */}
-                {saveError && (
-                    <div className="dsf-error">
-                        <AlertTriangle size={14} />
-                        <span>{saveError}</span>
                     </div>
-                )}
-                {saveSuccess && (
-                    <div className="dashboard-settings-success">
-                        <CheckCircle2 size={14} />
-                        <span>Settings saved successfully.</span>
-                    </div>
-                )}
 
-                {/* Save button */}
-                <button
-                    className="dashboard-settings-save-btn"
-                    onClick={handleSave}
-                    disabled={saving}
-                >
-                    {saving ? (
-                        <>
-                            <Loader2 size={16} className="dsf-spinner" />
-                            Saving…
-                        </>
-                    ) : (
-                        <>
-                            <Save size={16} />
-                            Save Settings
-                        </>
+                    {/* Inspection Pack Recipients */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Send size={16} />
+                            Inspection Pack Recipients
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            These people receive inspection pack PDFs when sent manually or auto-sent on schedule. Falls back to report recipients if empty. One email per line.
+                        </p>
+                        <textarea
+                            className="dashboard-settings-textarea"
+                            rows={4}
+                            value={inspectionPackRecipients}
+                            onChange={(e) => setInspectionPackRecipients(e.target.value)}
+                            placeholder="inspector@example.com&#10;compliance@example.com"
+                        />
+                    </div>
+
+                    {/* Alert Recipients */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Bell size={16} />
+                            Alert Recipients
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            These people receive immediate email alerts for admin events such as new cases, high-risk flags, SLA breaches, and more. One email per line.
+                        </p>
+                        <textarea
+                            className="dashboard-settings-textarea"
+                            rows={4}
+                            value={alertRecipients}
+                            onChange={(e) => setAlertRecipients(e.target.value)}
+                            placeholder="safeguarding@example.com&#10;lead@example.com"
+                        />
+                    </div>
+
+                    {/* ── Group Affiliation ────────────────────────────────────── */}
+                    {groupName && (
+                        <div className="dashboard-settings-field">
+                            <label className="dashboard-settings-label">
+                                <Building2 size={16} />
+                                Organisation Group
+                            </label>
+                            <p style={{ fontSize: '0.88rem', color: '#1e293b', fontWeight: 500, margin: '0.25rem 0 0' }}>
+                                {groupName}
+                            </p>
+                            <p className="dashboard-settings-hint" style={{ marginTop: '0.25rem' }}>
+                                This organisation is part of a multi-site group.
+                            </p>
+                        </div>
                     )}
-                </button>
-            </div>
+
+                    {/* ── Operational Settings ─────────────────────────────────── */}
+                    <div style={{ borderTop: '1px solid #e2e8f0', margin: '1rem 0', paddingTop: '1rem' }}>
+                        <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
+                            Operational Settings
+                        </p>
+                    </div>
+
+                    {/* Auto-send Inspection Pack */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Send size={16} />
+                            Auto-send Inspection Pack
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            Automatically email the inspection pack PDF to inspection pack recipients when the monthly snapshot is locked.
+                        </p>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                            <input
+                                type="checkbox"
+                                checked={autoSendInspection}
+                                onChange={(e) => setAutoSendInspection(e.target.checked)}
+                                style={{ width: 18, height: 18, accentColor: '#C9A84C' }}
+                            />
+                            Enabled
+                        </label>
+                    </div>
+
+                    {/* Escalation Hours */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Clock size={16} />
+                            Escalation Hours
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            Hours before an unreviewed case is automatically escalated.
+                        </p>
+                        <input
+                            type="number"
+                            min={1}
+                            max={720}
+                            className="dashboard-settings-select"
+                            style={{ maxWidth: '120px' }}
+                            value={escalationHours}
+                            onChange={(e) => setEscalationHours(e.target.value === '' ? '' : Number(e.target.value))}
+                        />
+                    </div>
+
+                    {/* High Risk Threshold */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <ShieldAlert size={16} />
+                            High Risk Threshold
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            Number of high-risk cases in a rolling window that triggers an executive alert.
+                        </p>
+                        <input
+                            type="number"
+                            min={1}
+                            max={100}
+                            className="dashboard-settings-select"
+                            style={{ maxWidth: '120px' }}
+                            value={highRiskThreshold}
+                            onChange={(e) => setHighRiskThreshold(e.target.value === '' ? '' : Number(e.target.value))}
+                        />
+                    </div>
+
+                    {/* Loss Alert Threshold */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Zap size={16} />
+                            Loss Alert Threshold
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            Number of financial-loss cases that triggers a loss alert.
+                        </p>
+                        <input
+                            type="number"
+                            min={1}
+                            max={100}
+                            className="dashboard-settings-select"
+                            style={{ maxWidth: '120px' }}
+                            value={lossAlertThreshold}
+                            onChange={(e) => setLossAlertThreshold(e.target.value === '' ? '' : Number(e.target.value))}
+                        />
+                    </div>
+
+                    {/* Monthly Report Day */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Calendar size={16} />
+                            Monthly Report Day
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            Day of the month when the safeguarding report is generated and sent (1–28).
+                        </p>
+                        <input
+                            type="number"
+                            min={1}
+                            max={28}
+                            className="dashboard-settings-select"
+                            style={{ maxWidth: '120px' }}
+                            value={monthlyReportDay}
+                            onChange={(e) => setMonthlyReportDay(e.target.value === '' ? '' : Number(e.target.value))}
+                        />
+                    </div>
+
+                    {/* Report Send Time */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Clock size={16} />
+                            Report Send Time
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            Preferred time of day for scheduled monthly report emails. Reports sent manually use the current time.
+                        </p>
+                        <input
+                            type="time"
+                            className="dashboard-settings-select"
+                            style={{ maxWidth: '140px' }}
+                            value={reportSendTime}
+                            onChange={(e) => setReportSendTime(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Inspection Pack Send Time */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Clock size={16} />
+                            Inspection Pack Send Time
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            Preferred time of day for auto-sent inspection packs. Manual sends use the current time.
+                        </p>
+                        <input
+                            type="time"
+                            className="dashboard-settings-select"
+                            style={{ maxWidth: '140px' }}
+                            value={inspectionPackSendTime}
+                            onChange={(e) => setInspectionPackSendTime(e.target.value)}
+                        />
+                    </div>
+
+                    {/* ── Notification Preferences ──────────────────────────── */}
+                    <div style={{ borderTop: '1px solid #e2e8f0', margin: '1rem 0', paddingTop: '1rem' }}>
+                        <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
+                            Notification Preferences
+                        </p>
+                    </div>
+
+                    {/* Admin Notifications */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Bell size={16} />
+                            Admin Notifications
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            In-app bell notifications sent to organisation admins when these events occur.
+                        </p>
+                        {[
+                            { key: 'case_created', label: 'New case created', val: notifyAdminCaseCreated, set: setNotifyAdminCaseCreated },
+                            { key: 'high_risk', label: 'High-risk case flagged', val: notifyAdminHighRisk, set: setNotifyAdminHighRisk },
+                            { key: 'critical', label: 'Critical case flagged', val: notifyAdminCritical, set: setNotifyAdminCritical },
+                            { key: 'sla_breach', label: 'SLA breach', val: notifyAdminSlaBreach, set: setNotifyAdminSlaBreach },
+                            { key: 'new_evidence', label: 'New evidence uploaded', val: notifyAdminNewEvidence, set: setNotifyAdminNewEvidence },
+                            { key: 'insp_generated', label: 'Inspection pack generated', val: notifyAdminInspectionGenerated, set: setNotifyAdminInspectionGenerated },
+                            { key: 'insp_sent', label: 'Inspection pack sent', val: notifyAdminInspectionSent, set: setNotifyAdminInspectionSent },
+                            { key: 'repeat_targeting', label: 'Repeat targeting detected', val: notifyAdminRepeatTargeting, set: setNotifyAdminRepeatTargeting },
+                            { key: 'loss_threshold', label: 'Loss threshold reached', val: notifyAdminLossThreshold, set: setNotifyAdminLossThreshold },
+                            { key: 'new_user', label: 'New user added', val: notifyAdminNewUser, set: setNotifyAdminNewUser },
+                        ].map(item => (
+                            <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={item.val}
+                                    onChange={(e) => item.set(e.target.checked)}
+                                    style={{ width: 18, height: 18, accentColor: '#C9A84C' }}
+                                />
+                                {item.label}
+                            </label>
+                        ))}
+                    </div>
+
+                    {/* Staff Notifications */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Bell size={16} />
+                            Staff Notifications
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            In-app bell notifications sent to the assigned staff member or case submitter when these events occur.
+                        </p>
+                        {[
+                            { key: 'case_assigned', label: 'Case assigned to me', val: notifyStaffCaseAssigned, set: setNotifyStaffCaseAssigned },
+                            { key: 'case_in_review', label: 'Case moved to review', val: notifyStaffCaseInReview, set: setNotifyStaffCaseInReview },
+                            { key: 'case_closed', label: 'Case closed', val: notifyStaffCaseClosed, set: setNotifyStaffCaseClosed },
+                            { key: 'info_requested', label: 'Information requested', val: notifyStaffInfoRequested, set: setNotifyStaffInfoRequested },
+                            { key: 'evidence_requested', label: 'Evidence requested', val: notifyStaffEvidenceRequested, set: setNotifyStaffEvidenceRequested },
+                            { key: 'evidence_added', label: 'Evidence added to case', val: notifyStaffEvidenceAdded, set: setNotifyStaffEvidenceAdded },
+                        ].map(item => (
+                            <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={item.val}
+                                    onChange={(e) => item.set(e.target.checked)}
+                                    style={{ width: 18, height: 18, accentColor: '#C9A84C' }}
+                                />
+                                {item.label}
+                            </label>
+                        ))}
+                    </div>
+
+                    {/* ── Email Notification Preferences ──────────────────────── */}
+                    <div style={{ borderTop: '1px solid #e2e8f0', margin: '1rem 0', paddingTop: '1rem' }}>
+                        <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
+                            Email Notification Preferences
+                        </p>
+                        <p className="dashboard-settings-hint" style={{ marginBottom: '0.75rem' }}>
+                            Control which events send real email notifications (via alerts@secondlookprotect.co.uk). These are separate from in-app bell notifications above. Each enabled event sends immediately when triggered.
+                        </p>
+                    </div>
+
+                    {/* Admin Email Notifications */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Mail size={16} />
+                            Admin Email Alerts
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            When enabled, these events send an immediate email to all Alert Recipients above. Each email is logged and deduplicated.
+                        </p>
+                        {[
+                            { key: 'e_case_created', label: 'New case created', val: emailAdminCaseCreated, set: setEmailAdminCaseCreated },
+                            { key: 'e_case_updated', label: 'Case updated', val: emailAdminCaseUpdated, set: setEmailAdminCaseUpdated },
+                            { key: 'e_high_risk_alert', label: 'High-risk case flagged', val: emailAdminHighRiskAlert, set: setEmailAdminHighRiskAlert },
+                            { key: 'e_critical', label: 'Critical case flagged', val: emailAdminCritical, set: setEmailAdminCritical },
+                            { key: 'e_sla_breach', label: 'SLA breach', val: emailAdminSlaBreach, set: setEmailAdminSlaBreach },
+                            { key: 'e_overdue_review', label: 'Overdue review', val: emailAdminOverdueReview, set: setEmailAdminOverdueReview },
+                            { key: 'e_escalation_notice', label: 'Escalation notice', val: emailAdminEscalationNotice, set: setEmailAdminEscalationNotice },
+                            { key: 'e_new_evidence', label: 'New evidence uploaded', val: emailAdminNewEvidence, set: setEmailAdminNewEvidence },
+                            { key: 'e_insp_generated', label: 'Inspection pack generated', val: emailAdminInspectionGenerated, set: setEmailAdminInspectionGenerated },
+                            { key: 'e_insp_sent', label: 'Inspection pack sent', val: emailAdminInspectionSent, set: setEmailAdminInspectionSent },
+                            { key: 'e_repeat_targeting', label: 'Repeat targeting detected', val: emailAdminRepeatTargeting, set: setEmailAdminRepeatTargeting },
+                            { key: 'e_loss_threshold', label: 'Loss threshold reached', val: emailAdminLossThreshold, set: setEmailAdminLossThreshold },
+                            { key: 'e_new_user', label: 'New user added', val: emailAdminNewUser, set: setEmailAdminNewUser },
+                        ].map(item => (
+                            <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={item.val}
+                                    onChange={(e) => item.set(e.target.checked)}
+                                    style={{ width: 18, height: 18, accentColor: '#0f766e' }}
+                                />
+                                {item.label}
+                            </label>
+                        ))}
+                    </div>
+
+                    {/* Staff Email Notifications */}
+                    <div className="dashboard-settings-field">
+                        <label className="dashboard-settings-label">
+                            <Mail size={16} />
+                            Staff Email Alerts
+                        </label>
+                        <p className="dashboard-settings-hint">
+                            When enabled, these events send an immediate email to the assigned staff member or carer. Each email is logged and deduplicated.
+                        </p>
+                        {[
+                            { key: 'e_case_assigned', label: 'Case assigned to me', val: emailStaffCaseAssigned, set: setEmailStaffCaseAssigned },
+                            { key: 'e_case_moved_to_review', label: 'Case moved to review', val: emailStaffCaseMovedToReview, set: setEmailStaffCaseMovedToReview },
+                            { key: 'e_case_closed', label: 'Case closed', val: emailStaffCaseClosed, set: setEmailStaffCaseClosed },
+                            { key: 'e_information_requested', label: 'Information requested', val: emailStaffInformationRequested, set: setEmailStaffInformationRequested },
+                            { key: 'e_evidence_requested', label: 'Evidence requested', val: emailStaffEvidenceRequested, set: setEmailStaffEvidenceRequested },
+                            { key: 'e_evidence_added', label: 'Evidence added to case', val: emailStaffEvidenceAdded, set: setEmailStaffEvidenceAdded },
+                        ].map(item => (
+                            <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={item.val}
+                                    onChange={(e) => item.set(e.target.checked)}
+                                    style={{ width: 18, height: 18, accentColor: '#0f766e' }}
+                                />
+                                {item.label}
+                            </label>
+                        ))}
+                    </div>
+
+                    {/* Feedback */}
+                    {saveError && (
+                        <div className="dsf-error">
+                            <AlertTriangle size={14} />
+                            <span>{saveError}</span>
+                        </div>
+                    )}
+                    {saveSuccess && (
+                        <div className="dashboard-settings-success">
+                            <CheckCircle2 size={14} />
+                            <span>Settings saved successfully.</span>
+                        </div>
+                    )}
+
+                    {/* Save button */}
+                    <button
+                        className="dashboard-settings-save-btn"
+                        onClick={handleSave}
+                        disabled={saving}
+                    >
+                        {saving ? (
+                            <>
+                                <Loader2 size={16} className="dsf-spinner" />
+                                Saving…
+                            </>
+                        ) : (
+                            <>
+                                <Save size={16} />
+                                Save Settings
+                            </>
+                        )}
+                    </button>
+                </div>
             )}
         </div>
     );
