@@ -103,9 +103,12 @@ export function SettingsPage() {
     const [notifyStaffEvidenceRequested, setNotifyStaffEvidenceRequested] = useState(true);
     const [notifyStaffEvidenceAdded, setNotifyStaffEvidenceAdded] = useState(true);
 
-    // Email notification preferences (simplified to 2 event types)
+    // Email notification preferences (admin operational alerts)
     const [emailAdminCaseCreated, setEmailAdminCaseCreated] = useState(false);
     const [emailAdminCaseUpdated, setEmailAdminCaseUpdated] = useState(false);
+    const [emailAdminNewEvidence, setEmailAdminNewEvidence] = useState(false);
+    const [emailAdminOverdueReview, setEmailAdminOverdueReview] = useState(false);
+    const [emailAdminEscalationNotice, setEmailAdminEscalationNotice] = useState(false);
 
     // Group awareness
     const [groupName, setGroupName] = useState<string | null>(null);
@@ -249,9 +252,12 @@ export function SettingsPage() {
                     setNotifyStaffEvidenceRequested(s.notify_staff_evidence_requested ?? true);
                     setNotifyStaffEvidenceAdded(s.notify_staff_evidence_added ?? true);
 
-                    // Email notification prefs (simplified to 2 event types)
+                    // Email notification prefs (admin operational alerts)
                     setEmailAdminCaseCreated(s.email_admin_case_created ?? false);
                     setEmailAdminCaseUpdated(s.email_admin_case_updated ?? false);
+                    setEmailAdminNewEvidence(s.email_admin_new_evidence ?? false);
+                    setEmailAdminOverdueReview(s.email_admin_overdue_review ?? false);
+                    setEmailAdminEscalationNotice(s.email_admin_escalation_notice ?? false);
                 }
 
                 // Fetch group name if organisation has a organisation_group_id
@@ -384,9 +390,12 @@ export function SettingsPage() {
                     notify_staff_info_requested: notifyStaffInfoRequested,
                     notify_staff_evidence_requested: notifyStaffEvidenceRequested,
                     notify_staff_evidence_added: notifyStaffEvidenceAdded,
-                    // Email notification preferences (simplified to 2 event types)
+                    // Email notification preferences (admin operational alerts)
                     email_admin_case_created: emailAdminCaseCreated,
                     email_admin_case_updated: emailAdminCaseUpdated,
+                    email_admin_new_evidence: emailAdminNewEvidence,
+                    email_admin_overdue_review: emailAdminOverdueReview,
+                    email_admin_escalation_notice: emailAdminEscalationNotice,
                 }, { onConflict: 'organisation_id' });
 
             if (upsertErr) throw upsertErr;
@@ -520,17 +529,16 @@ export function SettingsPage() {
                 <div className="dashboard-settings-field">
                     <label className="dashboard-settings-label">
                         <Settings size={16} />
-                        Event Preferences
+                        Email Updates About My Cases
                     </label>
                     <p className="dashboard-settings-hint">
-                        Choose which event types you want to be notified about.
+                        Choose which important case emails you want to receive.
                     </p>
                     {[
-                        { key: 'p_new_case', label: 'New case submitted', val: personalNewCase, set: setPersonalNewCase },
-                        { key: 'p_case_updated', label: 'Case updated', val: personalCaseUpdated, set: setPersonalCaseUpdated },
-                        { key: 'p_review_due', label: 'Review due / overdue', val: personalReviewDue, set: setPersonalReviewDue },
-                        { key: 'p_escalation', label: 'Escalation notices', val: personalEscalation, set: setPersonalEscalation },
-                        { key: 'p_monthly', label: 'Monthly summary', val: personalMonthlySummary, set: setPersonalMonthlySummary },
+                        { key: 'p_new_case', label: 'Case submitted confirmation', val: personalNewCase, set: setPersonalNewCase },
+                        { key: 'p_case_updated', label: 'Case updated by admin', val: personalCaseUpdated, set: setPersonalCaseUpdated },
+                        { key: 'p_info_requested', label: 'Information requested', val: personalReviewDue, set: setPersonalReviewDue },
+                        { key: 'p_evidence_requested', label: 'Evidence requested', val: personalEscalation, set: setPersonalEscalation },
                     ].map(item => (
                         <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
                             <input
@@ -897,51 +905,34 @@ export function SettingsPage() {
                     {/* ── Email Notification Preferences ──────────────────────── */}
                     <div style={{ borderTop: '1px solid #e2e8f0', margin: '1rem 0', paddingTop: '1rem' }}>
                         <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
-                            Email Notification Preferences
+                            Admin Email Alerts
                         </p>
                         <p className="dashboard-settings-hint" style={{ marginBottom: '0.75rem' }}>
-                            Control which real email notifications are sent. These are separate from in-app bell notifications.
+                            Choose which important operational email alerts are sent to organisation alert recipients.
                         </p>
                     </div>
 
-                    {/* Admin Email Alerts */}
                     <div className="dashboard-settings-field">
                         <label className="dashboard-settings-label">
                             <Mail size={16} />
-                            Admin Email Alerts
+                            Operational Alerts
                         </label>
-                        <p className="dashboard-settings-hint">
-                            When enabled, organisation alert recipients receive an email when a new case is submitted by a staff member or care worker.
-                        </p>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
-                            <input
-                                type="checkbox"
-                                checked={emailAdminCaseCreated}
-                                onChange={(e) => setEmailAdminCaseCreated(e.target.checked)}
-                                style={{ width: 18, height: 18, accentColor: '#0f766e' }}
-                            />
-                            New case submitted
-                        </label>
-                    </div>
-
-                    {/* Staff Email Alerts */}
-                    <div className="dashboard-settings-field">
-                        <label className="dashboard-settings-label">
-                            <Mail size={16} />
-                            Staff Email Alerts
-                        </label>
-                        <p className="dashboard-settings-hint">
-                            When enabled, the original case submitter or assigned staff member receives an email when an admin updates the case before it is closed.
-                        </p>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
-                            <input
-                                type="checkbox"
-                                checked={emailAdminCaseUpdated}
-                                onChange={(e) => setEmailAdminCaseUpdated(e.target.checked)}
-                                style={{ width: 18, height: 18, accentColor: '#0f766e' }}
-                            />
-                            Case updated by admin
-                        </label>
+                        {[
+                            { key: 'ea_case_created', label: 'New case submitted', val: emailAdminCaseCreated, set: setEmailAdminCaseCreated },
+                            { key: 'ea_new_evidence', label: 'New evidence uploaded', val: emailAdminNewEvidence, set: setEmailAdminNewEvidence },
+                            { key: 'ea_overdue_review', label: 'Overdue review', val: emailAdminOverdueReview, set: setEmailAdminOverdueReview },
+                            { key: 'ea_escalation', label: 'Escalation notice', val: emailAdminEscalationNotice, set: setEmailAdminEscalationNotice },
+                        ].map(item => (
+                            <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={item.val}
+                                    onChange={(e) => item.set(e.target.checked)}
+                                    style={{ width: 18, height: 18, accentColor: '#0f766e' }}
+                                />
+                                {item.label}
+                            </label>
+                        ))}
                     </div>
 
                     {/* Feedback */}
