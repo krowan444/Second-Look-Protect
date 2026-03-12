@@ -1,25 +1,35 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- FIX: Duplicate admin notifications for new case submission
 -- ═══════════════════════════════════════════════════════════════════════════
--- PROBLEM:
---   The old notify_on_new_case() function appends submission_type to the
---   message, creating wording like "New case submitted – general safeguarding note".
---   Combined with the base "New case submitted", admins see TWO notifications.
+-- ROOT CAUSE:
+--   The live notify_on_new_case() function in your Supabase database still
+--   has the old code that appends submission_type to the message:
 --
--- FIX:
---   Replace the function with a clean version that:
---   1) Always uses the exact wording "New case submitted" (no suffix)
---   2) Removes high-risk / critical-risk duplicate notification blocks
---   3) Adds a NOT EXISTS dedupe guard so even if somehow triggered twice,
---      only one notification row is ever created per user per case
---   4) Notifies both org_admin and staff roles (respecting personal prefs)
+--       notif_msg := 'New case submitted';
+--       IF NEW.submission_type IS NOT NULL THEN
+--           notif_msg := notif_msg || ' – ' || REPLACE(NEW.submission_type, '_', ' ');
+--       END IF;
+--
+--   For a 'general_safeguarding_note' case this produces TWO notifications:
+--       "New case submitted"             (from one path)
+--       "New case submitted – general safeguarding note"  (from the old path)
 --
 -- HOW TO APPLY:
---   Paste this entire file into Supabase SQL Editor and click Run.
+--   1. Open Supabase Dashboard → SQL Editor
+--   2. Paste this entire file
+--   3. Click Run
 -- ═══════════════════════════════════════════════════════════════════════════
 
 
--- ── Step 1: Replace the trigger function ────────────────────────────────────
+-- ── STEP 0: DIAGNOSTIC — run this FIRST to confirm the live problem ──────────
+-- This shows you the current live function body. If you see "submission_type"
+-- in the function body, that confirms the old version is still active.
+SELECT prosrc
+FROM pg_proc
+WHERE proname = 'notify_on_new_case';
+
+
+-- ── STEP 1: Replace the live trigger function ────────────────────────────────
 CREATE OR REPLACE FUNCTION notify_on_new_case()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -111,7 +121,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
--- ── Step 2: Re-attach the trigger (ensure only one trigger for this event) ──
+-- ── STEP 2: Re-attach the trigger cleanly ───────────────────────────────────
 DROP TRIGGER IF EXISTS trg_notify_on_new_case ON cases;
 CREATE TRIGGER trg_notify_on_new_case
     AFTER INSERT ON cases
@@ -119,10 +129,13 @@ CREATE TRIGGER trg_notify_on_new_case
     EXECUTE FUNCTION notify_on_new_case();
 
 
--- ── Step 3: Verify — list all INSERT triggers on the cases table ────────────
--- This should show exactly ONE row for trg_notify_on_new_case.
--- If you see any other INSERT triggers that also create notifications,
--- they are the duplicate source and should be dropped.
+-- ── STEP 3: VERIFICATION — run after to confirm the fix ─────────────────────
+-- This should show the UPDATED function body WITHOUT "submission_type" in it.
+SELECT prosrc
+FROM pg_proc
+WHERE proname = 'notify_on_new_case';
+
+-- This should show exactly ONE INSERT trigger on the cases table.
 SELECT trigger_name, event_manipulation, action_statement
 FROM information_schema.triggers
 WHERE event_object_table = 'cases'
