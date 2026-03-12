@@ -50,6 +50,7 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
 
     /* ── Incident type ─────────────────────────────────────────────────────── */
     const [incidentType, setIncidentType] = useState<IncidentType | ''>('');
+    const [typeListExpanded, setTypeListExpanded] = useState(true);
 
     /* ── Resident info ─────────────────────────────────────────────────────── */
     const [residentRef, setResidentRef] = useState('');
@@ -562,19 +563,35 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                         What happened? <span className="dsf-required">*</span>
                     </label>
                     <p className="dsf-hint">Select the type of incident you are reporting.</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', overflow: 'hidden' }}>
                         {INCIDENT_TYPES.map(t => {
                             const Icon = t.icon;
                             const active = incidentType === t.value;
+                            const isCollapsed = !typeListExpanded && incidentType !== '';
+                            // When collapsed, only show the selected item
+                            if (isCollapsed && !active) return null;
                             return (
                                 <button key={t.value} type="button"
                                     className={`dsf-type-btn${active ? ' dsf-type-btn--active' : ''}`}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.65rem 0.85rem', textAlign: 'left', justifyContent: 'flex-start' }}
-                                    onClick={() => { setIncidentType(t.value); setError(null); }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.65rem 0.85rem', textAlign: 'left', justifyContent: 'flex-start', transition: 'all 0.2s ease' }}
+                                    onClick={() => {
+                                        if (active && !typeListExpanded) {
+                                            // Click selected item when collapsed → expand
+                                            setTypeListExpanded(true);
+                                        } else {
+                                            // Select this item and collapse
+                                            setIncidentType(t.value);
+                                            setTypeListExpanded(false);
+                                            setError(null);
+                                        }
+                                    }}
                                     disabled={submitting}
                                 >
                                     <Icon size={18} />
-                                    <span>{t.label}</span>
+                                    <span style={{ flex: 1 }}>{t.label}</span>
+                                    {active && !typeListExpanded && (
+                                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 400, marginLeft: 'auto' }}>Tap to change</span>
+                                    )}
                                 </button>
                             );
                         })}
