@@ -21,6 +21,7 @@ export function NotificationBell({ userId, onNavigate }: NotificationBellProps) 
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [hoveredId, setHoveredId] = useState<string | null>(null);
+    const [clearingAll, setClearingAll] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     /* ── Fetch notifications ─────────────────────────────────────────────── */
@@ -98,6 +99,27 @@ export function NotificationBell({ userId, onNavigate }: NotificationBellProps) 
 
         if (notif.case_id) {
             onNavigate(`/dashboard/cases/${notif.case_id}`);
+        }
+    }
+
+    /* ── Clear all notifications (mark all as read) ───────────────────── */
+    async function handleClearAll() {
+        if (clearingAll || unreadCount === 0) return;
+        setClearingAll(true);
+        try {
+            const supabase = getSupabase();
+            await supabase
+                .from('notifications')
+                .update({ read: true })
+                .eq('user_id', userId)
+                .eq('read', false);
+
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            setUnreadCount(0);
+        } catch (err) {
+            console.error('[SLP] Clear-all error:', err);
+        } finally {
+            setClearingAll(false);
         }
     }
 
@@ -192,15 +214,36 @@ export function NotificationBell({ userId, onNavigate }: NotificationBellProps) 
                         }}
                     >
                         <span>Notifications</span>
-                        {unreadCount > 0 && (
-                            <span style={{
-                                fontSize: '0.7rem',
-                                color: '#64748b',
-                                fontWeight: 500,
-                            }}>
-                                {unreadCount} unread
-                            </span>
-                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            {unreadCount > 0 && (
+                                <span style={{
+                                    fontSize: '0.7rem',
+                                    color: '#64748b',
+                                    fontWeight: 500,
+                                }}>
+                                    {unreadCount} unread
+                                </span>
+                            )}
+                            {unreadCount > 0 && (
+                                <button
+                                    onClick={handleClearAll}
+                                    disabled={clearingAll}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: clearingAll ? 'default' : 'pointer',
+                                        fontSize: '0.7rem',
+                                        color: clearingAll ? '#94a3b8' : '#C9A84C',
+                                        fontWeight: 500,
+                                        padding: '2px 0',
+                                        opacity: clearingAll ? 0.6 : 1,
+                                        transition: 'opacity 0.15s',
+                                    }}
+                                >
+                                    {clearingAll ? 'Clearing…' : 'Clear all'}
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {/* List */}
