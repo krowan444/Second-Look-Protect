@@ -571,10 +571,10 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                             const hiding = isCollapsed && !active;
                             return (
                                 <div key={t.value} style={{
-                                    maxHeight: hiding ? '0px' : '60px',
+                                    maxHeight: hiding ? '0px' : '70px',
                                     opacity: hiding ? 0 : 1,
-                                    marginTop: hiding ? '0px' : '0.175rem',
-                                    marginBottom: hiding ? '0px' : '0.175rem',
+                                    marginTop: hiding ? '0px' : '0.3rem',
+                                    marginBottom: hiding ? '0px' : '0.3rem',
                                     overflow: 'hidden',
                                     transition: 'max-height 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1), margin 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
                                     pointerEvents: hiding ? 'none' : 'auto',
@@ -582,10 +582,10 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                                     <button type="button"
                                         className={`dsf-type-btn${active ? ' dsf-type-btn--active' : ''}`}
                                         style={{
-                                            display: 'flex', alignItems: 'center', gap: '0.55rem', width: '100%',
-                                            padding: active && isCollapsed ? '0.45rem 0.75rem' : '0.65rem 0.85rem',
+                                            display: 'flex', alignItems: 'center', gap: '0.65rem', width: '100%',
+                                            padding: active && isCollapsed ? '0.5rem 0.85rem' : '0.8rem 1rem',
                                             textAlign: 'left', justifyContent: 'flex-start',
-                                            fontSize: active && isCollapsed ? '0.84rem' : undefined,
+                                            fontSize: active && isCollapsed ? '0.84rem' : '0.85rem',
                                             transition: 'padding 0.55s cubic-bezier(0.4, 0, 0.2, 1), font-size 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
                                         }}
                                         onClick={() => {
