@@ -363,7 +363,7 @@
     transition: all 0.15s ease;
     flex-shrink: 0;
     white-space: nowrap;
-    max-width: 200px;
+    max-width: 320px;
     overflow: hidden;
     text-overflow: ellipsis;
 }
