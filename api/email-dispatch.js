@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     const EVENT_CONFIG = {
         // Admin events → alert_recipients
         admin_case_created: { col: 'email_admin_case_created', type: 'admin', subject: 'New Case Created', icon: '📋' },
-        admin_case_updated: { col: 'email_admin_case_updated', type: 'admin', subject: 'Case Updated', icon: '✏️' },
+        admin_case_updated: { col: 'email_admin_case_updated', type: 'staff', subject: 'Case Updated by Admin', icon: '✏️' },
         admin_high_risk_alert: { col: 'email_admin_high_risk_alert', type: 'admin', subject: 'High-Risk Case Flagged', icon: '🔴' },
         admin_critical_case: { col: 'email_admin_critical_case', type: 'admin', subject: 'Critical Case Flagged', icon: '🚨' },
         admin_sla_breach: { col: 'email_admin_sla_breach', type: 'admin', subject: 'SLA Breach Alert', icon: '⏱️' },
@@ -129,6 +129,52 @@ export default async function handler(req, res) {
         let recipientRole = null;
         let adminAlertSkipped = false;
 
+        // ── Guard: admin_case_updated special checks ─────────────────────────
+        // Only send if: updater is an admin, case is not closed, actor ≠ recipient
+        if (event_type === 'admin_case_updated' && case_id) {
+            // Check updater is an admin
+            if (actor_id) {
+                const actorRes = await fetch(
+                    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${actor_id}&select=role&limit=1`,
+                    { headers: sbHeaders }
+                );
+                if (actorRes.ok) {
+                    const actorRows = await actorRes.json();
+                    const actorRole = actorRows?.[0]?.role;
+                    if (actorRole !== 'org_admin' && actorRole !== 'super_admin') {
+                        console.log('[SLP-DIAG] admin_case_updated: actor', actor_id, 'is not admin (role:', actorRole, ') — skipping');
+                        await logEmail(SUPABASE_URL, sbHeaders, {
+                            organisation_id, case_id, event_type,
+                            recipient_email: '(skipped — updater not admin)',
+                            subject: config.subject, status: 'skipped',
+                            meta: { reason: 'skipped_not_admin_updater', actor_id, actor_role: actorRole },
+                        });
+                        return res.status(200).json({ ok: true, skipped: true, reason: 'Updater is not an admin' });
+                    }
+                }
+            }
+
+            // Check case is not closed
+            const caseStatusRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/cases?id=eq.${case_id}&select=status&limit=1`,
+                { headers: sbHeaders }
+            );
+            if (caseStatusRes.ok) {
+                const caseStatusRows = await caseStatusRes.json();
+                const caseStatus = caseStatusRows?.[0]?.status?.toLowerCase();
+                if (caseStatus === 'closed') {
+                    console.log('[SLP-DIAG] admin_case_updated: case', case_id, 'is closed — skipping staff email');
+                    await logEmail(SUPABASE_URL, sbHeaders, {
+                        organisation_id, case_id, event_type,
+                        recipient_email: '(skipped — case closed)',
+                        subject: config.subject, status: 'skipped',
+                        meta: { reason: 'skipped_case_closed' },
+                    });
+                    return res.status(200).json({ ok: true, skipped: true, reason: 'Case is closed' });
+                }
+            }
+        }
+
         if (config.type === 'admin') {
             recipientRole = 'admin';
 
@@ -191,6 +237,7 @@ export default async function handler(req, res) {
 
             // Events where the case has progressed/updated — notify BOTH assigned_to AND submitted_by
             const CASE_UPDATE_EVENTS = [
+                'admin_case_updated',
                 'staff_case_moved_to_review',
                 'staff_case_closed',
                 'staff_information_requested',
@@ -202,7 +249,8 @@ export default async function handler(req, res) {
             // Resolve candidate user IDs
             let candidateUserIds = [];
 
-            if (actor_id) {
+            // For admin_case_updated, the actor is the admin — do NOT add them as a recipient
+            if (actor_id && event_type !== 'admin_case_updated') {
                 candidateUserIds.push(actor_id);
             }
 
@@ -229,8 +277,8 @@ export default async function handler(req, res) {
                 }
             }
 
-            // Deduplicate user IDs
-            candidateUserIds = [...new Set(candidateUserIds)];
+            // Deduplicate user IDs and exclude the acting user (prevent self-notification)
+            candidateUserIds = [...new Set(candidateUserIds)].filter(uid => uid !== actor_id);
 
             // Check each candidate's personal preferences and resolve email
             for (const uid of candidateUserIds) {

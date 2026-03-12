@@ -103,26 +103,9 @@ export function SettingsPage() {
     const [notifyStaffEvidenceRequested, setNotifyStaffEvidenceRequested] = useState(true);
     const [notifyStaffEvidenceAdded, setNotifyStaffEvidenceAdded] = useState(true);
 
-    // Email notification preferences (canonical names, default false = opted-out)
+    // Email notification preferences (simplified to 2 event types)
     const [emailAdminCaseCreated, setEmailAdminCaseCreated] = useState(false);
     const [emailAdminCaseUpdated, setEmailAdminCaseUpdated] = useState(false);
-    const [emailAdminHighRiskAlert, setEmailAdminHighRiskAlert] = useState(false);
-    const [emailAdminOverdueReview, setEmailAdminOverdueReview] = useState(false);
-    const [emailAdminEscalationNotice, setEmailAdminEscalationNotice] = useState(false);
-    const [emailAdminCritical, setEmailAdminCritical] = useState(false);
-    const [emailAdminSlaBreach, setEmailAdminSlaBreach] = useState(false);
-    const [emailAdminNewEvidence, setEmailAdminNewEvidence] = useState(false);
-    const [emailAdminInspectionGenerated, setEmailAdminInspectionGenerated] = useState(false);
-    const [emailAdminInspectionSent, setEmailAdminInspectionSent] = useState(false);
-    const [emailAdminRepeatTargeting, setEmailAdminRepeatTargeting] = useState(false);
-    const [emailAdminLossThreshold, setEmailAdminLossThreshold] = useState(false);
-    const [emailAdminNewUser, setEmailAdminNewUser] = useState(false);
-    const [emailStaffCaseAssigned, setEmailStaffCaseAssigned] = useState(false);
-    const [emailStaffCaseMovedToReview, setEmailStaffCaseMovedToReview] = useState(false);
-    const [emailStaffCaseClosed, setEmailStaffCaseClosed] = useState(false);
-    const [emailStaffInformationRequested, setEmailStaffInformationRequested] = useState(false);
-    const [emailStaffEvidenceRequested, setEmailStaffEvidenceRequested] = useState(false);
-    const [emailStaffEvidenceAdded, setEmailStaffEvidenceAdded] = useState(false);
 
     // Group awareness
     const [groupName, setGroupName] = useState<string | null>(null);
@@ -266,29 +249,9 @@ export function SettingsPage() {
                     setNotifyStaffEvidenceRequested(s.notify_staff_evidence_requested ?? true);
                     setNotifyStaffEvidenceAdded(s.notify_staff_evidence_added ?? true);
 
-                    // Email notification prefs — canonical names, with deprecated alias fallback on read
+                    // Email notification prefs (simplified to 2 event types)
                     setEmailAdminCaseCreated(s.email_admin_case_created ?? false);
                     setEmailAdminCaseUpdated(s.email_admin_case_updated ?? false);
-                    // Canonical: email_admin_high_risk_alert (deprecated alias: email_admin_high_risk_case)
-                    setEmailAdminHighRiskAlert(s.email_admin_high_risk_alert ?? s.email_admin_high_risk_case ?? false);
-                    setEmailAdminOverdueReview(s.email_admin_overdue_review ?? false);
-                    setEmailAdminEscalationNotice(s.email_admin_escalation_notice ?? false);
-                    setEmailAdminCritical(s.email_admin_critical_case ?? false);
-                    setEmailAdminSlaBreach(s.email_admin_sla_breach ?? false);
-                    setEmailAdminNewEvidence(s.email_admin_new_evidence ?? false);
-                    setEmailAdminInspectionGenerated(s.email_admin_inspection_pack_generated ?? false);
-                    setEmailAdminInspectionSent(s.email_admin_inspection_pack_sent ?? false);
-                    setEmailAdminRepeatTargeting(s.email_admin_repeat_targeting ?? false);
-                    setEmailAdminLossThreshold(s.email_admin_loss_threshold ?? false);
-                    setEmailAdminNewUser(s.email_admin_new_user ?? false);
-                    setEmailStaffCaseAssigned(s.email_staff_case_assigned ?? false);
-                    // Canonical: email_staff_case_moved_to_review (deprecated alias: email_staff_case_in_review)
-                    setEmailStaffCaseMovedToReview(s.email_staff_case_moved_to_review ?? s.email_staff_case_in_review ?? false);
-                    setEmailStaffCaseClosed(s.email_staff_case_closed ?? false);
-                    // Canonical: email_staff_information_requested (deprecated alias: email_staff_info_requested)
-                    setEmailStaffInformationRequested(s.email_staff_information_requested ?? s.email_staff_info_requested ?? false);
-                    setEmailStaffEvidenceRequested(s.email_staff_evidence_requested ?? false);
-                    setEmailStaffEvidenceAdded(s.email_staff_evidence_added ?? false);
                 }
 
                 // Fetch group name if organisation has a organisation_group_id
@@ -421,26 +384,9 @@ export function SettingsPage() {
                     notify_staff_info_requested: notifyStaffInfoRequested,
                     notify_staff_evidence_requested: notifyStaffEvidenceRequested,
                     notify_staff_evidence_added: notifyStaffEvidenceAdded,
-                    // Email notification preferences — canonical names only
+                    // Email notification preferences (simplified to 2 event types)
                     email_admin_case_created: emailAdminCaseCreated,
                     email_admin_case_updated: emailAdminCaseUpdated,
-                    email_admin_high_risk_alert: emailAdminHighRiskAlert,
-                    email_admin_overdue_review: emailAdminOverdueReview,
-                    email_admin_escalation_notice: emailAdminEscalationNotice,
-                    email_admin_critical_case: emailAdminCritical,
-                    email_admin_sla_breach: emailAdminSlaBreach,
-                    email_admin_new_evidence: emailAdminNewEvidence,
-                    email_admin_inspection_pack_generated: emailAdminInspectionGenerated,
-                    email_admin_inspection_pack_sent: emailAdminInspectionSent,
-                    email_admin_repeat_targeting: emailAdminRepeatTargeting,
-                    email_admin_loss_threshold: emailAdminLossThreshold,
-                    email_admin_new_user: emailAdminNewUser,
-                    email_staff_case_assigned: emailStaffCaseAssigned,
-                    email_staff_case_moved_to_review: emailStaffCaseMovedToReview,
-                    email_staff_case_closed: emailStaffCaseClosed,
-                    email_staff_information_requested: emailStaffInformationRequested,
-                    email_staff_evidence_requested: emailStaffEvidenceRequested,
-                    email_staff_evidence_added: emailStaffEvidenceAdded,
                 }, { onConflict: 'organisation_id' });
 
             if (upsertErr) throw upsertErr;
@@ -954,73 +900,48 @@ export function SettingsPage() {
                             Email Notification Preferences
                         </p>
                         <p className="dashboard-settings-hint" style={{ marginBottom: '0.75rem' }}>
-                            Control which events send real email notifications (via alerts@secondlookprotect.co.uk). These are separate from in-app bell notifications above. Each enabled event sends immediately when triggered.
+                            Control which real email notifications are sent. These are separate from in-app bell notifications.
                         </p>
                     </div>
 
-                    {/* Admin Email Notifications */}
+                    {/* Admin Email Alerts */}
                     <div className="dashboard-settings-field">
                         <label className="dashboard-settings-label">
                             <Mail size={16} />
                             Admin Email Alerts
                         </label>
                         <p className="dashboard-settings-hint">
-                            When enabled, these events send an immediate email to all Alert Recipients above. Each email is logged and deduplicated.
+                            When enabled, organisation alert recipients receive an email when a new case is submitted by a staff member or care worker.
                         </p>
-                        {[
-                            { key: 'e_case_created', label: 'New case created', val: emailAdminCaseCreated, set: setEmailAdminCaseCreated },
-                            { key: 'e_case_updated', label: 'Case updated', val: emailAdminCaseUpdated, set: setEmailAdminCaseUpdated },
-                            { key: 'e_high_risk_alert', label: 'High-risk case flagged', val: emailAdminHighRiskAlert, set: setEmailAdminHighRiskAlert },
-                            { key: 'e_critical', label: 'Critical case flagged', val: emailAdminCritical, set: setEmailAdminCritical },
-                            { key: 'e_sla_breach', label: 'SLA breach', val: emailAdminSlaBreach, set: setEmailAdminSlaBreach },
-                            { key: 'e_overdue_review', label: 'Overdue review', val: emailAdminOverdueReview, set: setEmailAdminOverdueReview },
-                            { key: 'e_escalation_notice', label: 'Escalation notice', val: emailAdminEscalationNotice, set: setEmailAdminEscalationNotice },
-                            { key: 'e_new_evidence', label: 'New evidence uploaded', val: emailAdminNewEvidence, set: setEmailAdminNewEvidence },
-                            { key: 'e_insp_generated', label: 'Inspection pack generated', val: emailAdminInspectionGenerated, set: setEmailAdminInspectionGenerated },
-                            { key: 'e_insp_sent', label: 'Inspection pack sent', val: emailAdminInspectionSent, set: setEmailAdminInspectionSent },
-                            { key: 'e_repeat_targeting', label: 'Repeat targeting detected', val: emailAdminRepeatTargeting, set: setEmailAdminRepeatTargeting },
-                            { key: 'e_loss_threshold', label: 'Loss threshold reached', val: emailAdminLossThreshold, set: setEmailAdminLossThreshold },
-                            { key: 'e_new_user', label: 'New user added', val: emailAdminNewUser, set: setEmailAdminNewUser },
-                        ].map(item => (
-                            <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
-                                <input
-                                    type="checkbox"
-                                    checked={item.val}
-                                    onChange={(e) => item.set(e.target.checked)}
-                                    style={{ width: 18, height: 18, accentColor: '#0f766e' }}
-                                />
-                                {item.label}
-                            </label>
-                        ))}
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                            <input
+                                type="checkbox"
+                                checked={emailAdminCaseCreated}
+                                onChange={(e) => setEmailAdminCaseCreated(e.target.checked)}
+                                style={{ width: 18, height: 18, accentColor: '#0f766e' }}
+                            />
+                            New case submitted
+                        </label>
                     </div>
 
-                    {/* Staff Email Notifications */}
+                    {/* Staff Email Alerts */}
                     <div className="dashboard-settings-field">
                         <label className="dashboard-settings-label">
                             <Mail size={16} />
                             Staff Email Alerts
                         </label>
                         <p className="dashboard-settings-hint">
-                            When enabled, these events send an immediate email to the assigned staff member or carer. Each email is logged and deduplicated.
+                            When enabled, the original case submitter or assigned staff member receives an email when an admin updates the case before it is closed.
                         </p>
-                        {[
-                            { key: 'e_case_assigned', label: 'Case assigned to me', val: emailStaffCaseAssigned, set: setEmailStaffCaseAssigned },
-                            { key: 'e_case_moved_to_review', label: 'Case moved to review', val: emailStaffCaseMovedToReview, set: setEmailStaffCaseMovedToReview },
-                            { key: 'e_case_closed', label: 'Case closed', val: emailStaffCaseClosed, set: setEmailStaffCaseClosed },
-                            { key: 'e_information_requested', label: 'Information requested', val: emailStaffInformationRequested, set: setEmailStaffInformationRequested },
-                            { key: 'e_evidence_requested', label: 'Evidence requested', val: emailStaffEvidenceRequested, set: setEmailStaffEvidenceRequested },
-                            { key: 'e_evidence_added', label: 'Evidence added to case', val: emailStaffEvidenceAdded, set: setEmailStaffEvidenceAdded },
-                        ].map(item => (
-                            <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
-                                <input
-                                    type="checkbox"
-                                    checked={item.val}
-                                    onChange={(e) => item.set(e.target.checked)}
-                                    style={{ width: 18, height: 18, accentColor: '#0f766e' }}
-                                />
-                                {item.label}
-                            </label>
-                        ))}
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                            <input
+                                type="checkbox"
+                                checked={emailAdminCaseUpdated}
+                                onChange={(e) => setEmailAdminCaseUpdated(e.target.checked)}
+                                style={{ width: 18, height: 18, accentColor: '#0f766e' }}
+                            />
+                            Case updated by admin
+                        </label>
                     </div>
 
                     {/* Feedback */}
