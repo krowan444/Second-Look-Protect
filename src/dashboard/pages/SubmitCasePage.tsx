@@ -563,7 +563,7 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                         What happened? <span className="dsf-required">*</span>
                     </label>
                     <p className="dsf-hint">Select the type of incident you are reporting.</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', padding: '4px' }}>
                         {INCIDENT_TYPES.map(t => {
                             const Icon = t.icon;
                             const active = incidentType === t.value;
@@ -575,7 +575,7 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                                     opacity: hiding ? 0 : 1,
                                     marginTop: hiding ? '0px' : '0.3rem',
                                     marginBottom: hiding ? '0px' : '0.3rem',
-                                    overflow: 'hidden',
+                                    overflow: hiding ? 'hidden' : 'visible',
                                     borderRadius: '14px',
                                     transition: 'max-height 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1), margin 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
                                     pointerEvents: hiding ? 'none' : 'auto',
