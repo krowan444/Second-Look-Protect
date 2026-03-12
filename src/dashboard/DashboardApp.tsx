@@ -90,7 +90,7 @@ function getPage(
           />
         );
       }
-      return <CasesPage onNavigate={navigate} />;
+      return <CasesPage onNavigate={navigate} userRole={userRole} />;
 
     case 'reports':
       return <ReportsPage />;

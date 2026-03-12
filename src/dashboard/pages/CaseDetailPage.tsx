@@ -3,7 +3,7 @@ import {
     ArrowLeft, Loader2, AlertTriangle, CheckCircle2, Lock,
     FileText, Image as ImageIcon, Clock, User, Shield, Activity,
     Send, XCircle, MessageSquare, Eye, Download, UserPlus, Bot,
-    Phone, Search,
+    Phone, Search, Trash2,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 import type { UserRole } from '../types';
@@ -236,6 +236,12 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
 
     const canReview = userRole ? REVIEW_ROLES.includes(userRole) : false;
     const isSuperAdmin = userRole === 'super_admin';
+
+    // Delete case modal state (super admin only)
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     // Escalation form state
     const [escType, setEscType] = useState('');
@@ -1035,6 +1041,37 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
+    /* ── Delete case (super admin only) ──────────────────────────────────────── */
+    async function handleDeleteCase() {
+        setDeleting(true);
+        setDeleteError(null);
+        try {
+            const supabase = getSupabase();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) throw new Error('Not authenticated');
+
+            const res = await fetch('/api/delete-case', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ case_id: caseId }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) {
+                throw new Error(data.error || 'Failed to delete case. Please try again.');
+            }
+
+            // Navigate back to the cases list after successful deletion
+            onNavigate?.('/dashboard/cases');
+        } catch (err: any) {
+            setDeleteError(err?.message ?? 'Failed to delete case. Please try again.');
+            setDeleting(false);
+        }
+    }
+
     /* ── Render ────────────────────────────────────────────────────────────── */
 
     if (loading) {
@@ -1320,6 +1357,16 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         >
                             {closing ? <Loader2 size={15} className="dsf-spinner" /> : <XCircle size={15} />}
                             {closing ? 'Closing…' : 'Close Case'}
+                        </button>
+                    )}
+                    {/* Super admin only — delete case */}
+                    {isSuperAdmin && (
+                        <button
+                            className="casedetail-btn"
+                            onClick={() => { setShowDeleteModal(true); setDeleteConfirmText(''); setDeleteError(null); }}
+                            style={{ marginLeft: 'auto', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}
+                        >
+                            <Trash2 size={15} /> Delete Case
                         </button>
                     )}
                 </div>
@@ -1671,9 +1718,9 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                     const gemStatus = gemCorr?.status || 'not_performed';
                                     const gemLabel = gemStatus === 'corroboration_found' ? 'Gemini corroboration found'
                                         : gemStatus === 'related_evidence' ? 'Gemini found related evidence'
-                                        : gemStatus === 'no_corroboration' ? 'Gemini found no number-specific corroboration'
-                                        : gemStatus === 'unavailable' ? 'Gemini unavailable'
-                                        : 'Gemini not performed';
+                                            : gemStatus === 'no_corroboration' ? 'Gemini found no number-specific corroboration'
+                                                : gemStatus === 'unavailable' ? 'Gemini unavailable'
+                                                    : 'Gemini not performed';
                                     const gemColor = gemStatus === 'corroboration_found' ? '#dc2626' : gemStatus === 'related_evidence' ? '#d97706' : gemStatus === 'no_corroboration' ? '#16a34a' : '#94a3b8';
 
                                     return (
@@ -1855,8 +1902,8 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                             }}>
                                                                 {intel.evidence_strength === 'strong_direct' ? 'Strong — direct number-specific evidence'
                                                                     : intel.evidence_strength === 'moderate_related' ? 'Moderate — related number/prefix evidence'
-                                                                    : intel.evidence_strength === 'weak_generic' ? 'Weak — generic advice only'
-                                                                    : 'No external evidence'}
+                                                                        : intel.evidence_strength === 'weak_generic' ? 'Weak — generic advice only'
+                                                                            : 'No external evidence'}
                                                             </span>
                                                         </div>
                                                     )}
@@ -1872,7 +1919,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                             <span style={{ fontSize: '0.72rem', color: intel.spoofing_assessment === 'possible_spoofing' ? '#92400e' : '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                                                                 {intel.spoofing_assessment === 'possible_spoofing' ? '⚠ Possible Spoofing / Impersonation'
                                                                     : intel.spoofing_assessment === 'likely_legitimate' ? 'Number appears legitimate'
-                                                                    : 'Spoofing unlikely'}
+                                                                        : 'Spoofing unlikely'}
                                                             </span>
                                                             {intel.spoofing_assessment === 'possible_spoofing' && (
                                                                 <div style={{ fontSize: '0.76rem', color: '#92400e', marginTop: '0.25rem', lineHeight: 1.4 }}>
@@ -2381,6 +2428,87 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                             <button
                                 className="casedetail-btn"
                                 onClick={() => { setShowActionModal(false); setActionError(null); setActionSuccess(null); }}
+                                style={{ background: '#f1f5f9', color: '#334155' }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* DELETE CASE MODAL (super admin only)                          */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {showDeleteModal && isSuperAdmin && (
+                <>
+                    <div
+                        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200 }}
+                        onClick={() => { if (!deleting) { setShowDeleteModal(false); setDeleteConfirmText(''); setDeleteError(null); } }}
+                    />
+                    <div style={{
+                        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+                        background: '#fff', borderRadius: '12px', padding: '1.75rem', width: '90%', maxWidth: '460px',
+                        zIndex: 201, boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+                            <Trash2 size={20} style={{ color: '#b91c1c', flexShrink: 0 }} />
+                            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1e293b' }}>
+                                Delete Case
+                            </h3>
+                        </div>
+
+                        <div style={{
+                            background: '#fef2f2', border: '1px solid #fecaca',
+                            borderRadius: '8px', padding: '0.85rem 1rem', marginBottom: '1rem',
+                        }}>
+                            <p style={{ margin: 0, fontSize: '0.88rem', color: '#991b1b', lineHeight: 1.5 }}>
+                                <strong>This will permanently delete this case and all associated data</strong>,
+                                including AI triage, reviews, actions, notes, and timeline entries.
+                                This action cannot be undone.
+                            </p>
+                        </div>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#475569', marginBottom: '0.35rem' }}>
+                                Type <code style={{ background: '#f1f5f9', padding: '1px 5px', borderRadius: '3px', color: '#b91c1c', fontWeight: 700 }}>DELETE</code> to confirm
+                            </label>
+                            <input
+                                type="text"
+                                className="dsf-input"
+                                value={deleteConfirmText}
+                                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                placeholder="Type DELETE here"
+                                autoFocus
+                                disabled={deleting}
+                            />
+                        </div>
+
+                        {deleteError && (
+                            <div className="dsf-error" style={{ marginBottom: '0.75rem' }}>
+                                <AlertTriangle size={14} /> <span>{deleteError}</span>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            <button
+                                className="casedetail-btn"
+                                onClick={handleDeleteCase}
+                                disabled={deleteConfirmText !== 'DELETE' || deleting}
+                                style={{
+                                    background: deleteConfirmText === 'DELETE' && !deleting ? '#b91c1c' : '#f1f5f9',
+                                    color: deleteConfirmText === 'DELETE' && !deleting ? '#fff' : '#94a3b8',
+                                    border: 'none',
+                                    cursor: deleteConfirmText === 'DELETE' && !deleting ? 'pointer' : 'not-allowed',
+                                    transition: 'all 0.15s ease',
+                                }}
+                            >
+                                {deleting ? <Loader2 size={15} className="dsf-spinner" /> : <Trash2 size={15} />}
+                                {deleting ? 'Deleting…' : 'Confirm Delete'}
+                            </button>
+                            <button
+                                className="casedetail-btn"
+                                onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); setDeleteError(null); }}
+                                disabled={deleting}
                                 style={{ background: '#f1f5f9', color: '#334155' }}
                             >
                                 Cancel

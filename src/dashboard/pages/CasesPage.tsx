@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    FolderOpen, Loader2, AlertTriangle, Search, X,
+    FolderOpen, Loader2, AlertTriangle, Search, X, Trash2,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import type { UserRole } from '../types';
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -90,17 +91,55 @@ function formatLabel(value: string | null | undefined): string {
 
 interface CasesPageProps {
     onNavigate?: (path: string) => void;
+    userRole?: UserRole;
 }
 
 /* ─── Cases Page ──────────────────────────────────────────────────────────── */
 
-export function CasesPage({ onNavigate }: CasesPageProps) {
+export function CasesPage({ onNavigate, userRole }: CasesPageProps) {
+    const isSuperAdmin = userRole === 'super_admin';
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
     const [activeFilters, setActiveFilters] = useState<Filters>(EMPTY_FILTERS);
     const [triageFilter, setTriageFilter] = useState<'all' | 'needs_review' | 'closed'>('all');
+
+    // Delete state (super admin only)
+    const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+
+    async function handleDeleteCase() {
+        if (!deleteTargetId) return;
+        setDeleting(true);
+        setDeleteError(null);
+        try {
+            const supabase = getSupabase();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) throw new Error('Not authenticated');
+            const res = await fetch('/api/delete-case', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ case_id: deleteTargetId }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to delete case.');
+            setSubmissions(prev => prev.filter(s => s.id !== deleteTargetId));
+            setDeleteTargetId(null);
+            setDeleteConfirmText('');
+        } catch (err: any) {
+            setDeleteError(err?.message ?? 'Failed to delete case. Please try again.');
+        } finally {
+            setDeleting(false);
+        }
+    }
+
 
     /* ── Triage filtering (in-memory) ──────────────────────────────────────── */
     const filteredSubmissions = submissions.filter((s) => {
@@ -398,6 +437,7 @@ export function CasesPage({ onNavigate }: CasesPageProps) {
                                         <th style={{ minWidth: '90px' }}>Evidence</th>
                                         <th style={{ minWidth: '140px' }}>Submitted By</th>
                                         <th style={{ minWidth: '130px' }}>Resident Ref</th>
+                                        {isSuperAdmin && <th style={{ minWidth: '60px', textAlign: 'center' }}>Delete</th>}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -438,6 +478,21 @@ export function CasesPage({ onNavigate }: CasesPageProps) {
                                                 <td>{evidenceCount}</td>
                                                 <td style={{ fontFamily: "'SF Mono', 'Fira Code', monospace", fontSize: '0.75rem', color: '#64748b' }}>{submittedBy}</td>
                                                 <td>{s.resident_ref ?? '—'}</td>
+                                                {isSuperAdmin && (
+                                                    <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                                                        <button
+                                                            title="Delete case"
+                                                            onClick={() => { setDeleteTargetId(s.id); setDeleteConfirmText(''); setDeleteError(null); }}
+                                                            style={{
+                                                                background: 'none', border: '1px solid #fecaca', borderRadius: '6px',
+                                                                padding: '0.25rem 0.4rem', cursor: 'pointer', color: '#b91c1c',
+                                                                display: 'inline-flex', alignItems: 'center',
+                                                            }}
+                                                        >
+                                                            <Trash2 size={13} />
+                                                        </button>
+                                                    </td>
+                                                )}
                                             </tr>
                                         );
                                     })}
@@ -447,6 +502,82 @@ export function CasesPage({ onNavigate }: CasesPageProps) {
                     )}
                 </div>
             )}
+
+            {/* Delete confirmation modal (super admin only) */}
+            {deleteTargetId && isSuperAdmin && (
+                <>
+                    <div
+                        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200 }}
+                        onClick={() => { if (!deleting) { setDeleteTargetId(null); setDeleteConfirmText(''); setDeleteError(null); } }}
+                    />
+                    <div style={{
+                        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+                        background: '#fff', borderRadius: '12px', padding: '1.75rem', width: '90%', maxWidth: '460px',
+                        zIndex: 201, boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+                            <Trash2 size={20} style={{ color: '#b91c1c', flexShrink: 0 }} />
+                            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1e293b' }}>Delete Case</h3>
+                        </div>
+                        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '0.85rem 1rem', marginBottom: '1rem' }}>
+                            <p style={{ margin: 0, fontSize: '0.88rem', color: '#991b1b', lineHeight: 1.5 }}>
+                                <strong>This will permanently delete this case and all associated data</strong>,
+                                including AI triage, reviews, actions, notes, and timeline entries.
+                                This action cannot be undone.
+                            </p>
+                        </div>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#475569', marginBottom: '0.35rem' }}>
+                                Type <code style={{ background: '#f1f5f9', padding: '1px 5px', borderRadius: '3px', color: '#b91c1c', fontWeight: 700 }}>DELETE</code> to confirm
+                            </label>
+                            <input
+                                type="text"
+                                className="dashboard-filter-input"
+                                value={deleteConfirmText}
+                                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                placeholder="Type DELETE here"
+                                autoFocus
+                                disabled={deleting}
+                            />
+                        </div>
+                        {deleteError && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#b91c1c', fontSize: '0.82rem', marginBottom: '0.75rem' }}>
+                                <AlertTriangle size={14} /> {deleteError}
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            <button
+                                onClick={handleDeleteCase}
+                                disabled={deleteConfirmText !== 'DELETE' || deleting}
+                                style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                                    padding: '0.45rem 1rem', borderRadius: '7px', fontSize: '0.84rem', fontWeight: 600,
+                                    border: 'none', cursor: deleteConfirmText === 'DELETE' && !deleting ? 'pointer' : 'not-allowed',
+                                    background: deleteConfirmText === 'DELETE' && !deleting ? '#b91c1c' : '#f1f5f9',
+                                    color: deleteConfirmText === 'DELETE' && !deleting ? '#fff' : '#94a3b8',
+                                    transition: 'all 0.15s ease',
+                                }}
+                            >
+                                {deleting ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Trash2 size={14} />}
+                                {deleting ? 'Deleting\u2026' : 'Confirm Delete'}
+                            </button>
+                            <button
+                                onClick={() => { setDeleteTargetId(null); setDeleteConfirmText(''); setDeleteError(null); }}
+                                disabled={deleting}
+                                style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                                    padding: '0.45rem 1rem', borderRadius: '7px', fontSize: '0.84rem', fontWeight: 600,
+                                    border: '1px solid #e2e8f0', cursor: 'pointer',
+                                    background: '#f1f5f9', color: '#334155',
+                                }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 }
+
