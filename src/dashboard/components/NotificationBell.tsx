@@ -38,7 +38,8 @@ export function NotificationBell({ userId, onNavigate }: NotificationBellProps) 
 
             if (error) { console.error('[SLP] Notification fetch error:', error); return; }
 
-            const items = (data ?? []) as Notification[];
+            const items = ((data ?? []) as Notification[])
+                .filter(n => !n.message?.toLowerCase().includes('safeguarding'));
             console.log('[SLP] Notifications loaded:', items.length, items);
             setNotifications(items);
             setUnreadCount(items.filter(n => !n.read).length);
