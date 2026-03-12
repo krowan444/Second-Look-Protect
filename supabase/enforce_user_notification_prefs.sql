@@ -49,8 +49,14 @@ BEGIN
             END IF;
 
             IF user_pref.inapp_on AND user_pref.event_on THEN
-                INSERT INTO notifications (organisation_id, user_id, type, case_id, message)
-                VALUES (NEW.organisation_id, r.id, 'new_case', NEW.id, notif_msg);
+                -- Dedupe guard: skip if already notified for this case
+                IF NOT EXISTS (
+                    SELECT 1 FROM notifications
+                    WHERE user_id = r.id AND case_id = NEW.id AND type = 'new_case'
+                ) THEN
+                    INSERT INTO notifications (organisation_id, user_id, type, case_id, message)
+                    VALUES (NEW.organisation_id, r.id, 'new_case', NEW.id, notif_msg);
+                END IF;
             END IF;
         END LOOP;
     END IF;
@@ -80,8 +86,13 @@ BEGIN
             END IF;
 
             IF user_pref.inapp_on AND user_pref.event_on THEN
-                INSERT INTO notifications (organisation_id, user_id, type, case_id, message)
-                VALUES (NEW.organisation_id, r.id, 'new_case', NEW.id, notif_msg);
+                IF NOT EXISTS (
+                    SELECT 1 FROM notifications
+                    WHERE user_id = r.id AND case_id = NEW.id AND type = 'new_case'
+                ) THEN
+                    INSERT INTO notifications (organisation_id, user_id, type, case_id, message)
+                    VALUES (NEW.organisation_id, r.id, 'new_case', NEW.id, notif_msg);
+                END IF;
             END IF;
         END LOOP;
     END IF;

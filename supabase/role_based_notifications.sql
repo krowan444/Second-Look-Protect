@@ -24,40 +24,30 @@ BEGIN
 END $$;
 
 
--- ── 1) Replace the INSERT trigger: new case → admin notifications ──────────
+-- ── 1) Replace the INSERT trigger: new case → admin + staff notifications ──
+-- CANONICAL VERSION: one case = one notification per eligible user.
+-- Wording is always exactly: "New case submitted"
+-- No high-risk / critical-risk duplicate variants.
 CREATE OR REPLACE FUNCTION notify_on_new_case()
 RETURNS TRIGGER AS $$
 DECLARE
     r           RECORD;
     settings    RECORD;
-    notif_msg   TEXT;
-    risk        TEXT;
+    user_pref   RECORD;
 BEGIN
-    -- Fetch organisation notification settings (all default true if missing)
+    -- Fetch organisation notification settings
     SELECT
-        COALESCE(os.notify_admin_case_created, true)       AS case_created,
-        COALESCE(os.notify_admin_high_risk_case, true)     AS high_risk,
-        COALESCE(os.notify_admin_critical_case, true)      AS critical
+        COALESCE(os.notify_admin_case_created, true) AS case_created
     INTO settings
     FROM organisation_settings os
     WHERE os.organisation_id = NEW.organisation_id;
 
-    -- If no settings row exists, default everything on
     IF NOT FOUND THEN
         settings.case_created := true;
-        settings.high_risk    := true;
-        settings.critical     := true;
     END IF;
-
-    risk := LOWER(COALESCE(NEW.risk_level, ''));
 
     -- ── Admin: new case created ────────────────────────────────────────────
     IF settings.case_created THEN
-        notif_msg := 'New case submitted';
-        IF NEW.submission_type IS NOT NULL AND NEW.submission_type <> '' THEN
-            notif_msg := notif_msg || ' – ' || REPLACE(NEW.submission_type, '_', ' ');
-        END IF;
-
         FOR r IN
             SELECT id FROM profiles
             WHERE organisation_id = NEW.organisation_id
@@ -65,42 +55,62 @@ BEGIN
               AND is_active = true
               AND id <> NEW.submitted_by
         LOOP
-            INSERT INTO notifications (organisation_id, user_id, type, case_id, message)
-            VALUES (NEW.organisation_id, r.id, 'new_case', NEW.id, notif_msg);
+            -- Check user personal preferences
+            SELECT
+                COALESCE(unp.inapp_enabled, true) AS inapp_on,
+                COALESCE(unp.pref_new_case_submitted, true) AS event_on
+            INTO user_pref
+            FROM user_notification_preferences unp
+            WHERE unp.user_id = r.id;
+
+            IF NOT FOUND THEN
+                user_pref.inapp_on := true;
+                user_pref.event_on := true;
+            END IF;
+
+            IF user_pref.inapp_on AND user_pref.event_on THEN
+                -- Dedupe guard: skip if already notified for this case
+                IF NOT EXISTS (
+                    SELECT 1 FROM notifications
+                    WHERE user_id = r.id AND case_id = NEW.id AND type = 'new_case'
+                ) THEN
+                    INSERT INTO notifications (organisation_id, user_id, type, case_id, message)
+                    VALUES (NEW.organisation_id, r.id, 'new_case', NEW.id, 'New case submitted');
+                END IF;
+            END IF;
         END LOOP;
     END IF;
 
-    -- ── Admin: high-risk case ──────────────────────────────────────────────
-    IF settings.high_risk AND risk = 'high' THEN
+    -- ── Staff: new case created ───────────────────────────────────────────
+    IF settings.case_created THEN
         FOR r IN
             SELECT id FROM profiles
             WHERE organisation_id = NEW.organisation_id
-              AND role = 'org_admin'
+              AND role = 'staff'
               AND is_active = true
               AND id <> NEW.submitted_by
         LOOP
-            INSERT INTO notifications (organisation_id, user_id, type, case_id, message)
-            VALUES (
-                NEW.organisation_id, r.id, 'high_risk_case', NEW.id,
-                'High-risk case submitted – requires urgent review'
-            );
-        END LOOP;
-    END IF;
+            SELECT
+                COALESCE(unp.inapp_enabled, true) AS inapp_on,
+                COALESCE(unp.pref_new_case_submitted, true) AS event_on
+            INTO user_pref
+            FROM user_notification_preferences unp
+            WHERE unp.user_id = r.id;
 
-    -- ── Admin: critical-risk case ──────────────────────────────────────────
-    IF settings.critical AND risk = 'critical' THEN
-        FOR r IN
-            SELECT id FROM profiles
-            WHERE organisation_id = NEW.organisation_id
-              AND role = 'org_admin'
-              AND is_active = true
-              AND id <> NEW.submitted_by
-        LOOP
-            INSERT INTO notifications (organisation_id, user_id, type, case_id, message)
-            VALUES (
-                NEW.organisation_id, r.id, 'critical_case', NEW.id,
-                'Critical-risk case submitted – immediate attention required'
-            );
+            IF NOT FOUND THEN
+                user_pref.inapp_on := true;
+                user_pref.event_on := true;
+            END IF;
+
+            IF user_pref.inapp_on AND user_pref.event_on THEN
+                IF NOT EXISTS (
+                    SELECT 1 FROM notifications
+                    WHERE user_id = r.id AND case_id = NEW.id AND type = 'new_case'
+                ) THEN
+                    INSERT INTO notifications (organisation_id, user_id, type, case_id, message)
+                    VALUES (NEW.organisation_id, r.id, 'new_case', NEW.id, 'New case submitted');
+                END IF;
+            END IF;
         END LOOP;
     END IF;
 
