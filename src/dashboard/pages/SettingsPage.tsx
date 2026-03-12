@@ -902,23 +902,23 @@ export function SettingsPage() {
                         ))}
                     </div>
 
-                    {/* ── Email Notification Preferences ──────────────────────── */}
+                    {/* ── Admin Action Emails ──────────────────────────────── */}
                     <div style={{ borderTop: '1px solid #e2e8f0', margin: '1rem 0', paddingTop: '1rem' }}>
                         <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
-                            Admin Alert Emails
+                            Admin Action Emails
                         </p>
                         <p className="dashboard-settings-hint" style={{ marginBottom: '0.25rem' }}>
-                            Choose which operational alert emails are sent to the organisation's Alert Recipients.
+                            These emails are sent to the organisation's admin alert email addresses listed above. Turn on the emails you want the admin team to receive when attention or action may be needed.
                         </p>
                         <p className="dashboard-settings-hint" style={{ marginBottom: '0.75rem', fontStyle: 'italic' }}>
-                            These are organisation-level admin alerts. They do not change your personal email preferences.
+                            These settings do not control your personal email preferences. They control organisation-level admin alert emails.
                         </p>
                     </div>
 
                     <div className="dashboard-settings-field">
                         <label className="dashboard-settings-label">
                             <Mail size={16} />
-                            Send these alerts to Alert Recipients
+                            Email the admin team when:
                         </label>
                         {[
                             { key: 'ea_case_created', label: 'New case submitted', val: emailAdminCaseCreated, set: setEmailAdminCaseCreated },
@@ -936,6 +936,9 @@ export function SettingsPage() {
                                 {item.label}
                             </label>
                         ))}
+                        <p className="dashboard-settings-hint" style={{ marginTop: '0.6rem', fontSize: '0.75rem' }}>
+                            These emails help the admin team spot new cases, missed reviews, new evidence, and escalations.
+                        </p>
                     </div>
 
                     {/* Feedback */}
