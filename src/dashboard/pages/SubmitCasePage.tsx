@@ -571,7 +571,7 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                             const hiding = isCollapsed && !active;
                             return (
                                 <div key={t.value} style={{
-                                    maxHeight: hiding ? '0px' : '70px',
+                                    maxHeight: hiding ? '0px' : '80px',
                                     opacity: hiding ? 0 : 1,
                                     marginTop: hiding ? '0px' : '0.3rem',
                                     marginBottom: hiding ? '0px' : '0.3rem',
