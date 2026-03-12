@@ -905,17 +905,20 @@ export function SettingsPage() {
                     {/* ── Email Notification Preferences ──────────────────────── */}
                     <div style={{ borderTop: '1px solid #e2e8f0', margin: '1rem 0', paddingTop: '1rem' }}>
                         <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
-                            Admin Email Alerts
+                            Admin Alert Emails
                         </p>
-                        <p className="dashboard-settings-hint" style={{ marginBottom: '0.75rem' }}>
-                            Choose which important operational email alerts are sent to organisation alert recipients.
+                        <p className="dashboard-settings-hint" style={{ marginBottom: '0.25rem' }}>
+                            Choose which operational alert emails are sent to the organisation's Alert Recipients.
+                        </p>
+                        <p className="dashboard-settings-hint" style={{ marginBottom: '0.75rem', fontStyle: 'italic' }}>
+                            These are organisation-level admin alerts. They do not change your personal email preferences.
                         </p>
                     </div>
 
                     <div className="dashboard-settings-field">
                         <label className="dashboard-settings-label">
                             <Mail size={16} />
-                            Operational Alerts
+                            Send these alerts to Alert Recipients
                         </label>
                         {[
                             { key: 'ea_case_created', label: 'New case submitted', val: emailAdminCaseCreated, set: setEmailAdminCaseCreated },
