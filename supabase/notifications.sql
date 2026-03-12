@@ -40,38 +40,7 @@ CREATE POLICY "Service can insert notifications"
     ON notifications FOR INSERT
     WITH CHECK (true);
 
--- 3) Trigger function: auto-create notifications when a case is inserted
-CREATE OR REPLACE FUNCTION notify_on_new_case()
-RETURNS TRIGGER AS $$
-DECLARE
-    r RECORD;
-    notif_title TEXT;
-BEGIN
-    -- Build a human-readable title
-    notif_title := 'New case submitted';
-    IF NEW.submission_type IS NOT NULL AND NEW.submission_type <> '' THEN
-        notif_title := notif_title || ' – ' || REPLACE(NEW.submission_type, '_', ' ');
-    END IF;
-
-    -- Insert a notification for every relevant user in the same organisation
-    -- (org_admin, safeguarding_lead, manager, staff, carer — everyone except read_only)
-    FOR r IN
-        SELECT id FROM profiles
-        WHERE organisation_id = NEW.organisation_id
-          AND id <> NEW.submitted_by
-          AND role NOT IN ('read_only')
-    LOOP
-        INSERT INTO notifications (organisation_id, user_id, type, case_id, title)
-        VALUES (NEW.organisation_id, r.id, 'new_case', NEW.id, notif_title);
-    END LOOP;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 4) Attach the trigger to the cases table
-DROP TRIGGER IF EXISTS trg_notify_on_new_case ON cases;
-CREATE TRIGGER trg_notify_on_new_case
-    AFTER INSERT ON cases
-    FOR EACH ROW
-    EXECUTE FUNCTION notify_on_new_case();
+-- 3) DEPRECATED: The notify_on_new_case() trigger function is now defined in
+--    enforce_user_notification_prefs.sql which includes personal preference checks,
+--    org settings, and deduplication. Do NOT re-run this old version.
+--    The canonical trigger source is: supabase/enforce_user_notification_prefs.sql

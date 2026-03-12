@@ -11,32 +11,22 @@ DECLARE
     r           RECORD;
     settings    RECORD;
     notif_msg   TEXT;
-    risk        TEXT;
     user_pref   RECORD;
 BEGIN
     -- Fetch organisation notification settings (all default true if missing)
     SELECT
-        COALESCE(os.notify_admin_case_created, true)       AS case_created,
-        COALESCE(os.notify_admin_high_risk_case, true)     AS high_risk,
-        COALESCE(os.notify_admin_critical_case, true)      AS critical
+        COALESCE(os.notify_admin_case_created, true)       AS case_created
     INTO settings
     FROM organisation_settings os
     WHERE os.organisation_id = NEW.organisation_id;
 
     IF NOT FOUND THEN
         settings.case_created := true;
-        settings.high_risk    := true;
-        settings.critical     := true;
     END IF;
-
-    risk := LOWER(COALESCE(NEW.risk_level, ''));
 
     -- ── Admin: new case created ────────────────────────────────────────────
     IF settings.case_created THEN
         notif_msg := 'New case submitted';
-        IF NEW.submission_type IS NOT NULL AND NEW.submission_type <> '' THEN
-            notif_msg := notif_msg || ' – ' || REPLACE(NEW.submission_type, '_', ' ');
-        END IF;
 
         FOR r IN
             SELECT id FROM profiles
@@ -65,77 +55,9 @@ BEGIN
         END LOOP;
     END IF;
 
-    -- ── Admin: high-risk case ──────────────────────────────────────────────
-    IF settings.high_risk AND risk = 'high' THEN
-        FOR r IN
-            SELECT id FROM profiles
-            WHERE organisation_id = NEW.organisation_id
-              AND role = 'org_admin'
-              AND is_active = true
-              AND id <> NEW.submitted_by
-        LOOP
-            SELECT
-                COALESCE(unp.inapp_enabled, true) AS inapp_on,
-                COALESCE(unp.pref_new_case_submitted, true) AS event_on
-            INTO user_pref
-            FROM user_notification_preferences unp
-            WHERE unp.user_id = r.id;
-
-            IF NOT FOUND THEN
-                user_pref.inapp_on := true;
-                user_pref.event_on := true;
-            END IF;
-
-            IF user_pref.inapp_on AND user_pref.event_on THEN
-                INSERT INTO notifications (organisation_id, user_id, type, case_id, message)
-                VALUES (
-                    NEW.organisation_id, r.id, 'high_risk_case', NEW.id,
-                    'High-risk case submitted – requires urgent review'
-                );
-            END IF;
-        END LOOP;
-    END IF;
-
-    -- ── Admin: critical-risk case ──────────────────────────────────────────
-    IF settings.critical AND risk = 'critical' THEN
-        FOR r IN
-            SELECT id FROM profiles
-            WHERE organisation_id = NEW.organisation_id
-              AND role = 'org_admin'
-              AND is_active = true
-              AND id <> NEW.submitted_by
-        LOOP
-            SELECT
-                COALESCE(unp.inapp_enabled, true) AS inapp_on,
-                COALESCE(unp.pref_new_case_submitted, true) AS event_on
-            INTO user_pref
-            FROM user_notification_preferences unp
-            WHERE unp.user_id = r.id;
-
-            IF NOT FOUND THEN
-                user_pref.inapp_on := true;
-                user_pref.event_on := true;
-            END IF;
-
-            IF user_pref.inapp_on AND user_pref.event_on THEN
-                INSERT INTO notifications (organisation_id, user_id, type, case_id, message)
-                VALUES (
-                    NEW.organisation_id, r.id, 'critical_case', NEW.id,
-                    'Critical-risk case submitted – immediate attention required'
-                );
-            END IF;
-        END LOOP;
-    END IF;
-
     -- ── Staff: new case created ───────────────────────────────────────────
     -- Notify other active staff in the same organisation (excluding submitter)
     IF settings.case_created THEN
-        IF notif_msg IS NULL THEN
-            notif_msg := 'New case submitted';
-            IF NEW.submission_type IS NOT NULL AND NEW.submission_type <> '' THEN
-                notif_msg := notif_msg || ' – ' || REPLACE(NEW.submission_type, '_', ' ');
-            END IF;
-        END IF;
 
         FOR r IN
             SELECT id FROM profiles
