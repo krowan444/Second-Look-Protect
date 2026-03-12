@@ -576,6 +576,7 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                                     marginTop: hiding ? '0px' : '0.3rem',
                                     marginBottom: hiding ? '0px' : '0.3rem',
                                     overflow: 'hidden',
+                                    borderRadius: '14px',
                                     transition: 'max-height 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1), margin 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
                                     pointerEvents: hiding ? 'none' : 'auto',
                                 }}>
