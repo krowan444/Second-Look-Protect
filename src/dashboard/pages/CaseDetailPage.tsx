@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import {
     ArrowLeft, Loader2, AlertTriangle, CheckCircle2, Lock,
     FileText, Image as ImageIcon, Clock, User, Shield, Activity,
@@ -8,7 +8,7 @@ import {
 import { getSupabase } from '../../lib/supabaseClient';
 import type { UserRole } from '../types';
 
-/* ─── Types ───────────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 interface CaseRow {
     id: string;
@@ -101,7 +101,7 @@ interface TimelineEntry {
     after_data?: Record<string, any> | null;
 }
 
-/* ─── Constants ───────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const REVIEW_ROLES: UserRole[] = ['org_admin', 'manager', 'safeguarding_lead', 'super_admin'];
 
@@ -119,16 +119,16 @@ const ACTION_TYPES = [
     { value: 'other', label: 'Other' },
 ];
 
-/* ─── Helpers ─────────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function fmtDateTime(iso: string | null): string {
-    if (!iso) return '—';
+    if (!iso) return 'â€”';
     try {
         return new Date(iso).toLocaleString('en-GB', {
             day: 'numeric', month: 'short', year: '2-digit',
             hour: '2-digit', minute: '2-digit',
         });
-    } catch { return '—'; }
+    } catch { return 'â€”'; }
 }
 
 function statusLabel(s: string | null): string {
@@ -176,7 +176,7 @@ function formatLabel(value: string | null | undefined): string {
     return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/* ─── Component Props ─────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Component Props â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 interface CaseDetailPageProps {
     caseId: string;
@@ -184,10 +184,10 @@ interface CaseDetailPageProps {
     userRole?: UserRole;
 }
 
-/* ─── Case Detail Page ────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Case Detail Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageProps) {
-    /* ── State ────────────────────────────────────────────────────────────── */
+    /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [caseData, setCaseData] = useState<CaseRow | null>(null);
@@ -275,7 +275,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     const [numberIntelLoading, setNumberIntelLoading] = useState(false);
     const [numberIntelMsg, setNumberIntelMsg] = useState<string | null>(null);
 
-    /* ── Build merged timeline ───────────────────────────────────────────── */
+    /* â”€â”€ Build merged timeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     function buildTimeline(c: CaseRow, acts: CaseAction[], revs: CaseReview[], timelineEvents?: any[]): TimelineEntry[] {
         const entries: TimelineEntry[] = [];
 
@@ -285,7 +285,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             timestamp: c.submitted_at,
             type: 'system',
             title: 'Case Submitted',
-            who: c.submitted_by ? c.submitted_by.slice(0, 8) + '…' : 'System',
+            who: c.submitted_by ? c.submitted_by.slice(0, 8) + 'â€¦' : 'System',
             notes: null,
         });
 
@@ -296,7 +296,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 timestamp: a.created_at,
                 type: 'action',
                 title: friendlyActionType(a.action_type),
-                who: a.actor_id ? a.actor_id.slice(0, 8) + '…' : '—',
+                who: a.actor_id ? a.actor_id.slice(0, 8) + 'â€¦' : 'â€”',
                 notes: a.action_notes,
             });
         });
@@ -308,7 +308,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 timestamp: r.created_at || r.reviewed_at,
                 type: 'review',
                 title: 'Review',
-                who: r.reviewed_by ? r.reviewed_by.slice(0, 8) + '…' : '—',
+                who: r.reviewed_by ? r.reviewed_by.slice(0, 8) + 'â€¦' : 'â€”',
                 notes: r.notes,
                 badges: { category: r.category, risk_level: r.risk_level, decision: r.decision, outcome: r.outcome },
             });
@@ -325,11 +325,11 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             switch (te.event_type) {
                 case 'status_changed':
                     title = 'Status Changed';
-                    notes = `${before.status ?? '—'} → ${after.status ?? '—'}`;
+                    notes = `${before.status ?? 'â€”'} â†’ ${after.status ?? 'â€”'}`;
                     break;
                 case 'decision_changed':
                     title = 'Decision Changed';
-                    notes = `${before.decision ?? '—'} → ${after.decision ?? '—'}`;
+                    notes = `${before.decision ?? 'â€”'} â†’ ${after.decision ?? 'â€”'}`;
                     break;
                 case 'note_added':
                     title = 'Internal Note';
@@ -337,7 +337,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                     break;
                 case 'escalation_recorded':
                     title = 'Escalation Recorded';
-                    notes = `${friendlyActionType(meta.type ?? '')}${meta.reference ? ' — Ref: ' + meta.reference : ''}${meta.notes ? '\n' + meta.notes : ''}`;
+                    notes = `${friendlyActionType(meta.type ?? '')}${meta.reference ? ' â€” Ref: ' + meta.reference : ''}${meta.notes ? '\n' + meta.notes : ''}`;
                     break;
                 default:
                     notes = meta.note ?? meta.notes ?? null;
@@ -349,7 +349,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 timestamp: te.created_at,
                 type: 'timeline_event',
                 title,
-                who: te.created_by ? te.created_by.slice(0, 8) + '…' : 'System',
+                who: te.created_by ? te.created_by.slice(0, 8) + 'â€¦' : 'System',
                 notes,
                 event_type: te.event_type,
                 meta: te.meta,
@@ -363,7 +363,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         return entries;
     }
 
-    /* ── Fetch everything ─────────────────────────────────────────────────── */
+    /* â”€â”€ Fetch everything â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -489,7 +489,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    /* ── Auto-poll while number intelligence is still running ─────────── */
+    /* â”€â”€ Auto-poll while number intelligence is still running â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     useEffect(() => {
         const pending = aiTriage?.raw_response?.number_intel_pending === true;
         if (!pending) return;
@@ -499,7 +499,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         return () => { clearInterval(interval); clearTimeout(timeout); };
     }, [aiTriage?.raw_response?.number_intel_pending, fetchData]);
 
-    /* ── Generate signed URLs for evidence files ─────────────────────────── */
+    /* â”€â”€ Generate signed URLs for evidence files â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     useEffect(() => {
         if (!caseData) return;
         const evidence: { path: string; url: string }[] = caseData.meta?.evidence ?? [];
@@ -516,7 +516,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 const items: EvidenceItem[] = await Promise.all(
                     evidence.map(async (ev) => {
                         const filename = ev.path.split('/').pop() ?? 'file';
-                        // Strip timestamp prefix for display (e.g. "1709123456789-photo.jpg" → "photo.jpg")
+                        // Strip timestamp prefix for display (e.g. "1709123456789-photo.jpg" â†’ "photo.jpg")
                         const displayName = filename.replace(/^\d+-/, '');
                         const isImage = /\.(jpg|jpeg|png|webp)$/i.test(filename);
                         try {
@@ -542,7 +542,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         return () => { cancelled = true; };
     }, [caseData]);
 
-    /* ── Notify submitter on review completion (best-effort, deduplicated) ── */
+    /* â”€â”€ Notify submitter on review completion (best-effort, deduplicated) â”€â”€ */
     async function notifySubmitter(reviewCaseId: string, reviewerUid: string) {
         try {
             if (!caseData?.submitted_by) return;
@@ -569,10 +569,10 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 message: 'A manager/admin has reviewed your case. Open to view the latest guidance and outcome.',
                 read: false,
             });
-        } catch { /* best-effort — never block the review */ }
+        } catch { /* best-effort â€” never block the review */ }
     }
 
-    /* ── Mark In Review ───────────────────────────────────────────────────── */
+    /* â”€â”€ Mark In Review â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function handleMarkInReview() {
         if (!caseData) return;
         setMarkingReview(true);
@@ -606,7 +606,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Assign Case ─────────────────────────────────────────────────────── */
+    /* â”€â”€ Assign Case â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function handleAssignCase() {
         if (!caseData) return;
         setAssigning(true);
@@ -629,7 +629,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Save Review (DUAL WRITE) ─────────────────────────────────────────── */
+    /* â”€â”€ Save Review (DUAL WRITE) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function handleSaveReview() {
         if (!caseData) return;
 
@@ -694,7 +694,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Close Case (DUAL WRITE) ──────────────────────────────────────────── */
+    /* â”€â”€ Close Case (DUAL WRITE) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function handleCloseCase() {
         if (!caseData) return;
 
@@ -754,7 +754,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Log Action (modal, append-only) ──────────────────────────────────── */
+    /* â”€â”€ Log Action (modal, append-only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function handleLogAction() {
         if (!caseData || !actionType) return;
         setActionSaving(true);
@@ -792,7 +792,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Save Compliance / Safeguarding Note ──────────────────────────────── */
+    /* â”€â”€ Save Compliance / Safeguarding Note â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function handleSaveComplianceNote() {
         if (!complianceNote.trim()) return;
         setComplianceSaving(true);
@@ -819,7 +819,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Fetch case history (status changes + audit logs) ─────────────────── */
+    /* â”€â”€ Fetch case history (status changes + audit logs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const fetchCaseHistory = useCallback(async () => {
         if (!caseId || !orgId) return;
         try {
@@ -836,7 +836,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             (statusRows ?? []).forEach((r: any) => combined.push({
                 id: `sh-${r.id}`,
                 source: 'Status Change',
-                action: `Status → ${r.new_status ?? '—'}`,
+                action: `Status â†’ ${r.new_status ?? 'â€”'}`,
                 actor_type: r.changed_by ?? null,
                 created_at: r.created_at,
             }));
@@ -864,7 +864,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
 
     useEffect(() => { if (orgId) fetchCaseHistory(); }, [orgId, fetchCaseHistory]);
 
-    /* ── Accept AI Triage ──────────────────────────────────────────────────── */
+    /* â”€â”€ Accept AI Triage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function handleAcceptAi() {
         if (!aiTriage) return;
         setAiAccepting(true);
@@ -891,7 +891,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 organisation_id: orgId,
                 actor_id: uid,
                 action_type: 'ai_review_accepted',
-                action_notes: `AI review accepted — risk: ${formatLabel(aiTriage.risk_level)}, category: ${formatLabel(aiTriage.suggested_category)}, urgency: ${formatLabel(aiTriage.suggested_urgency)}`,
+                action_notes: `AI review accepted â€” risk: ${formatLabel(aiTriage.risk_level)}, category: ${formatLabel(aiTriage.suggested_category)}, urgency: ${formatLabel(aiTriage.suggested_urgency)}`,
             });
 
             setAiMsg('AI suggestions accepted.');
@@ -904,7 +904,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Save AI Triage Human Review ──────────────────────────────────────── */
+    /* â”€â”€ Save AI Triage Human Review â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function handleSaveAiReview() {
         if (!aiTriage) return;
         setAiSaving(true);
@@ -931,7 +931,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             if (aiHumanCategory) overrideParts.push(`category: ${formatLabel(aiHumanCategory)}`);
             if (aiHumanUrgency) overrideParts.push(`urgency: ${formatLabel(aiHumanUrgency)}`);
             if (aiHumanNotes) overrideParts.push('notes added');
-            const overrideSummary = overrideParts.length > 0 ? ` — ${overrideParts.join(', ')}` : '';
+            const overrideSummary = overrideParts.length > 0 ? ` â€” ${overrideParts.join(', ')}` : '';
             await supabase.from('case_actions').insert({
                 case_id: caseId,
                 organisation_id: orgId,
@@ -950,7 +950,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Run Number Intelligence ───────────────────────────────────────────── */
+    /* â”€â”€ Run Number Intelligence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function handleRunNumberIntel() {
         if (!aiTriage || !caseData) return;
         const details = caseData.meta?.details;
@@ -983,7 +983,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Record Escalation ─────────────────────────────────────────────────── */
+    /* â”€â”€ Record Escalation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function handleRecordEscalation() {
         if (!escType || !caseData) return;
         setEscSaving(true);
@@ -1010,7 +1010,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Add Internal Note ────────────────────────────────────────────────── */
+    /* â”€â”€ Add Internal Note â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function handleAddNote() {
         if (!noteText.trim() || !caseData) return;
         setNoteSaving(true);
@@ -1035,13 +1035,13 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Render ────────────────────────────────────────────────────────────── */
+    /* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
     if (loading) {
         return (
             <div className="dashboard-overview-loading">
                 <Loader2 className="dashboard-overview-spinner-icon" />
-                <p>Loading case…</p>
+                <p>Loading caseâ€¦</p>
             </div>
         );
     }
@@ -1075,7 +1075,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         <h1 className="dashboard-page-title">Case Detail</h1>
                         <p className="dashboard-page-subtitle">
                             <span className="casedetail-id-label">ID:</span>{' '}
-                            <code className="casedetail-id-code">{caseId.slice(0, 8)}…</code>
+                            <code className="casedetail-id-code">{caseId.slice(0, 8)}â€¦</code>
                         </p>
                     </div>
                     <span className={`dashboard-status-badge status-${statusClass(caseData.status)}`} style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}>
@@ -1084,9 +1084,9 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 </div>
             </div>
 
-            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             {/* (A) CASE SUMMARY CARD                                         */}
-            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             <div className="casedetail-section" style={{ marginBottom: '1.5rem' }}>
                 <h2 className="casedetail-section-title">
                     <FileText size={16} /> Case Summary
@@ -1101,7 +1101,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                     <div className="casedetail-status-item">
                         <span className="casedetail-field-label">Risk Level</span>
                         <span className={`dashboard-risk-badge risk-${riskClass(caseData.risk_level)}`}>
-                            {caseData.risk_level ?? '—'}
+                            {caseData.risk_level ?? 'â€”'}
                         </span>
                     </div>
                     <div className="casedetail-status-item" style={{ minWidth: '220px' }}>
@@ -1149,7 +1149,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         <div className="casedetail-field-value casedetail-field-content">{caseData.description}</div>
                     </div>
                 )}
-                {/* ── Evidence / Attachments ────────────────────────────── */}
+                {/* â”€â”€ Evidence / Attachments â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 <div className="casedetail-field" style={{ marginTop: '0.75rem' }}>
                     <span className="casedetail-field-label">
                         <ImageIcon size={14} style={{ verticalAlign: 'text-bottom', marginRight: '4px' }} />
@@ -1157,7 +1157,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                     </span>
                     {evidenceLoading && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '0.5rem', color: '#64748b', fontSize: '0.82rem' }}>
-                            <Loader2 size={14} className="dsf-spinner" /> Loading attachments…
+                            <Loader2 size={14} className="dsf-spinner" /> Loading attachmentsâ€¦
                         </div>
                     )}
                     {evidenceError && (
@@ -1218,7 +1218,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         </div>
                     )}
                 </div>
-                {/* ── Suspicious Contact Details ───────────────────────── */}
+                {/* â”€â”€ Suspicious Contact Details â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 {(() => {
                     const d = caseData.meta?.details;
                     if (!d || typeof d !== 'object') return null;
@@ -1273,7 +1273,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                             <span className="casedetail-field-label">Actions Taken</span>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.25rem' }}>
                                 {items.map(i => act[i.key] === true && (
-                                    <span key={i.key} style={{ fontSize: '0.85rem', color: '#334155' }}>✓ {i.label}</span>
+                                    <span key={i.key} style={{ fontSize: '0.85rem', color: '#334155' }}>âœ“ {i.label}</span>
                                 ))}
                                 {act.police_reference && (
                                     <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '1rem' }}>Police ref: {act.police_reference}</span>
@@ -1293,7 +1293,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 })()}
             </div>
 
-            {/* ── Operational Buttons ────────────────────────────────────────── */}
+            {/* â”€â”€ Operational Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             {canReview && (
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
                     {isNew && (
@@ -1303,7 +1303,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                             disabled={markingReview}
                         >
                             {markingReview ? <Loader2 size={15} className="dsf-spinner" /> : <Eye size={15} />}
-                            {markingReview ? 'Marking…' : 'Mark In Review'}
+                            {markingReview ? 'Markingâ€¦' : 'Mark In Review'}
                         </button>
                     )}
                     <button
@@ -1319,7 +1319,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                             disabled={closing}
                         >
                             {closing ? <Loader2 size={15} className="dsf-spinner" /> : <XCircle size={15} />}
-                            {closing ? 'Closing…' : 'Close Case'}
+                            {closing ? 'Closingâ€¦' : 'Close Case'}
                         </button>
                     )}
                 </div>
@@ -1337,12 +1337,12 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 </div>
             )}
 
-            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             {/* TWO-COLUMN GRID                                               */}
-            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             <div className="casedetail-grid">
 
-                {/* ════ LEFT COLUMN ════ */}
+                {/* â•â•â•â• LEFT COLUMN â•â•â•â• */}
                 <div className="casedetail-left">
 
                     {/* (B) MERGED AUDIT TIMELINE */}
@@ -1384,7 +1384,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         )}
                     </div>
 
-                    {/* ── Internal Notes Section ───────────────────────────────── */}
+                    {/* â”€â”€ Internal Notes Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     <div className="dashboard-panel" style={{ marginTop: '1.5rem' }}>
                         <div className="dashboard-panel-header">
                             <h2 className="dashboard-panel-title">
@@ -1399,7 +1399,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                 <textarea
                                     className="dsf-textarea"
                                     rows={3}
-                                    placeholder="Type your note here…"
+                                    placeholder="Type your note hereâ€¦"
                                     value={noteText}
                                     onChange={(e) => setNoteText(e.target.value)}
                                 />
@@ -1411,7 +1411,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                         disabled={noteSaving || !noteText.trim()}
                                     >
                                         {noteSaving ? <Loader2 size={15} className="dsf-spinner" /> : <MessageSquare size={15} />}
-                                        {noteSaving ? 'Adding…' : 'Add Note'}
+                                        {noteSaving ? 'Addingâ€¦' : 'Add Note'}
                                     </button>
                                     {noteMsg && (
                                         <span style={{ fontSize: '0.75rem', color: noteMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{noteMsg}</span>
@@ -1421,7 +1421,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         )}
                     </div>
 
-                    {/* ── Escalation Section ──────────────────────────────────── */}
+                    {/* â”€â”€ Escalation Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     <div className="casedetail-section" style={{ marginTop: '1.5rem' }}>
                         <h2 className="casedetail-section-title">
                             <AlertTriangle size={16} /> Escalation
@@ -1433,7 +1433,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                 <div className="casedetail-form-field">
                                     <label className="casedetail-form-label">Escalation Type</label>
                                     <select className="dsf-input" value={escType} onChange={(e) => setEscType(e.target.value)}>
-                                        <option value="">— Select —</option>
+                                        <option value="">â€” Select â€”</option>
                                         <option value="family_notified">Family Notified</option>
                                         <option value="bank_contacted">Bank Contacted</option>
                                         <option value="police_reference">Police Reference</option>
@@ -1447,7 +1447,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                 </div>
                                 <div className="casedetail-form-field">
                                     <label className="casedetail-form-label">Notes</label>
-                                    <textarea className="dsf-textarea" rows={3} placeholder="Escalation notes…" value={escNotes} onChange={(e) => setEscNotes(e.target.value)} />
+                                    <textarea className="dsf-textarea" rows={3} placeholder="Escalation notesâ€¦" value={escNotes} onChange={(e) => setEscNotes(e.target.value)} />
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <button
@@ -1457,7 +1457,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                         disabled={escSaving || !escType}
                                     >
                                         {escSaving ? <Loader2 size={15} className="dsf-spinner" /> : <Send size={15} />}
-                                        {escSaving ? 'Saving…' : 'Record Escalation'}
+                                        {escSaving ? 'Savingâ€¦' : 'Record Escalation'}
                                     </button>
                                     {escMsg && (
                                         <span style={{ fontSize: '0.75rem', color: escMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{escMsg}</span>
@@ -1467,12 +1467,156 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         )}
                     </div>
 
+                    {/* Review Panel */}
+                    {canReview ? (
+                        <div className="casedetail-section casedetail-review-panel" style={{ marginTop: '1.5rem' }}>
+                            <h2 className="casedetail-section-title">
+                                <Shield size={16} /> Review Panel
+                            </h2>
+
+                            {isClosed && (
+                                <div className="casedetail-closed-notice">
+                                    <Lock size={14} /> This case is closed. You may still save a new review snapshot.
+                                </div>
+                            )}
+
+                            <div className="casedetail-review-form">
+                                <div className="casedetail-form-field">
+                                    <label className="casedetail-form-label">Status</label>
+                                    <select className="dsf-input" value={rStatus} onChange={(e) => setRStatus(e.target.value)}>
+                                        {STATUS_OPTIONS.map((o) => <option key={o} value={o}>{statusLabel(o)}</option>)}
+                                    </select>
+                                </div>
+                                {/* Assign To */}
+                                <div className="casedetail-form-field">
+                                    <label className="casedetail-form-label">Assign To</label>
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                        <select className="dsf-input" style={{ flex: 1 }} value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
+                                            <option value="">â€” Unassigned â€”</option>
+                                            {orgStaff.map((u) => (
+                                                <option key={u.id} value={u.id}>{u.full_name ?? u.id.slice(0, 8)}</option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            className="casedetail-btn casedetail-btn-action"
+                                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                                            disabled={assigning || assignTo === (caseData?.assigned_to ?? '')}
+                                            onClick={handleAssignCase}
+                                        >
+                                            {assigning ? <Loader2 size={13} className="dsf-spinner" /> : <UserPlus size={13} />}
+                                            {assigning ? 'Savingâ€¦' : 'Assign'}
+                                        </button>
+                                    </div>
+                                    {assignMsg && (
+                                        <span style={{ fontSize: '0.75rem', marginTop: '0.25rem', display: 'block', color: assignMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{assignMsg}</span>
+                                    )}
+                                </div>
+                                <div className="casedetail-form-field">
+                                    <label className="casedetail-form-label">Category</label>
+                                    <select className="dsf-input" value={rCategory} onChange={(e) => setRCategory(e.target.value)}>
+                                        <option value="">â€” Select â€”</option>
+                                        {CATEGORY_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+                                    </select>
+                                </div>
+                                <div className="casedetail-form-field">
+                                    <label className="casedetail-form-label">Risk Level</label>
+                                    <select className="dsf-input" value={rRisk} onChange={(e) => setRRisk(e.target.value)}>
+                                        <option value="">â€” Select â€”</option>
+                                        {RISK_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+                                    </select>
+                                </div>
+                                <div className="casedetail-form-field">
+                                    <label className="casedetail-form-label">Decision</label>
+                                    <select className="dsf-input" value={rDecision} onChange={(e) => setRDecision(e.target.value)}>
+                                        <option value="">â€” Select â€”</option>
+                                        {DECISION_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+                                    </select>
+                                </div>
+                                <div className="casedetail-form-field">
+                                    <label className="casedetail-form-label">Outcome</label>
+                                    <select className="dsf-input" value={rOutcome} onChange={(e) => setROutcome(e.target.value)}>
+                                        <option value="">â€” Select â€”</option>
+                                        {OUTCOME_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+                                    </select>
+                                </div>
+                                <div className="casedetail-form-field">
+                                    <label className="casedetail-form-label">Reviewer Notes</label>
+                                    <textarea
+                                        className="dsf-textarea"
+                                        rows={3}
+                                        value={rNotes}
+                                        onChange={(e) => setRNotes(e.target.value)}
+                                        placeholder="Add review notesâ€¦"
+                                    />
+                                </div>
+
+                                {/* Buttons */}
+                                <div className="casedetail-review-actions">
+                                    <button
+                                        className="casedetail-btn casedetail-btn-save"
+                                        onClick={handleSaveReview}
+                                        disabled={saving || closing}
+                                    >
+                                        {saving ? <Loader2 size={15} className="dsf-spinner" /> : <CheckCircle2 size={15} />}
+                                        {saving ? 'Savingâ€¦' : 'Save Review'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="casedetail-section casedetail-review-locked" style={{ marginTop: '1.5rem' }}>
+                            <h2 className="casedetail-section-title">
+                                <Lock size={16} /> Review Panel
+                            </h2>
+                            <p className="casedetail-empty">
+                                You do not have permission to review cases. Contact your administrator for access.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* (C) COMPLIANCE NOTES PANEL */}
+                    <div className="casedetail-section" style={{ marginTop: '1.25rem' }}>
+                        <h2 className="casedetail-section-title">
+                            <MessageSquare size={16} /> Compliance Notes
+                        </h2>
+                        <p style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: '0.75rem' }}>
+                            Append-only safeguarding notes. Each note is recorded as an immutable action.
+                        </p>
+                        <textarea
+                            className="dsf-textarea"
+                            rows={3}
+                            value={complianceNote}
+                            onChange={(e) => setComplianceNote(e.target.value)}
+                            placeholder="Enter compliance or safeguarding noteâ€¦"
+                        />
+                        {complianceError && (
+                            <div className="dsf-error" style={{ marginTop: '0.5rem' }}>
+                                <AlertTriangle size={14} /> <span>{complianceError}</span>
+                            </div>
+                        )}
+                        {complianceSuccess && (
+                            <div className="casedetail-success" style={{ marginTop: '0.5rem' }}>
+                                <CheckCircle2 size={14} /> <span>{complianceSuccess}</span>
+                            </div>
+                        )}
+                        <button
+                            className="casedetail-btn casedetail-btn-save"
+                            onClick={handleSaveComplianceNote}
+                            disabled={complianceSaving || !complianceNote.trim()}
+                            style={{ marginTop: '0.75rem' }}
+                        >
+                            {complianceSaving ? <Loader2 size={15} className="dsf-spinner" /> : <Send size={15} />}
+                            {complianceSaving ? 'Savingâ€¦' : 'Save Note'}
+                        </button>
+                    </div>
+
                 </div>
 
                 {/* ════ RIGHT COLUMN ════ */}
                 <div className="casedetail-right">
 
-                    {/* ── AI Triage Assist ─────────────────────────────────── */}
+                    {/* â”€â”€ AI Triage Assist â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     <div className="casedetail-section aitriage-card">
                         <h2 className="casedetail-section-title">
                             <Bot size={16} /> AI Triage Assist
@@ -1484,7 +1628,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
 
                         {aiTriageLoading && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.82rem', padding: '0.5rem 0' }}>
-                                <Loader2 size={14} className="dsf-spinner" /> Loading AI triage…
+                                <Loader2 size={14} className="dsf-spinner" /> Loading AI triageâ€¦
                             </div>
                         )}
 
@@ -1594,7 +1738,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                         />
                                                     </div>
                                                     <span className="aitriage-confidence-text">
-                                                        {pct}% — {calibratedLabel || 'Unknown'}
+                                                        {pct}% â€” {calibratedLabel || 'Unknown'}
                                                     </span>
                                                 </div>
                                                 {calibratedExplanation && (
@@ -1622,7 +1766,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                         />
                                                     </div>
                                                     <span className="aitriage-confidence-text">
-                                                        {Math.round(aiTriage.confidence * 100)}% — {aiTriage.confidence < 0.4 ? 'Low confidence' : aiTriage.confidence < 0.75 ? 'Moderate confidence' : 'High confidence'}
+                                                        {Math.round(aiTriage.confidence * 100)}% â€” {aiTriage.confidence < 0.4 ? 'Low confidence' : aiTriage.confidence < 0.75 ? 'Moderate confidence' : 'High confidence'}
                                                     </span>
                                                 </div>
                                                 <span style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px', lineHeight: 1.4 }}>
@@ -1642,7 +1786,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                     </span>
                                 </div>
 
-                                {/* ── Number Intelligence ──────────────────────── */}
+                                {/* â”€â”€ Number Intelligence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                                 {(() => {
                                     const phoneNumber = caseData?.meta?.details?.phone_number || caseData?.meta?.details?.sender || null;
                                     const intel = aiTriage.raw_response?.number_intel;
@@ -1663,7 +1807,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                     // Web corroboration status
                                     const webCorr = intel?.web_corroboration || null;
                                     const webStatus = webCorr?.status || 'not_performed';
-                                    const webLabel = webStatus === 'corroboration_found' ? 'Number-specific corroboration found' : webStatus === 'no_corroboration' ? 'Web search performed — no number-specific corroboration' : webStatus === 'unavailable' ? 'Web search unavailable' : 'Web search not performed';
+                                    const webLabel = webStatus === 'corroboration_found' ? 'Number-specific corroboration found' : webStatus === 'no_corroboration' ? 'Web search performed â€” no number-specific corroboration' : webStatus === 'unavailable' ? 'Web search unavailable' : 'Web search not performed';
                                     const webColor = webStatus === 'corroboration_found' ? '#dc2626' : webStatus === 'no_corroboration' ? '#16a34a' : '#94a3b8';
 
                                     // Gemini corroboration status
@@ -1671,9 +1815,9 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                     const gemStatus = gemCorr?.status || 'not_performed';
                                     const gemLabel = gemStatus === 'corroboration_found' ? 'Gemini corroboration found'
                                         : gemStatus === 'related_evidence' ? 'Gemini found related evidence'
-                                        : gemStatus === 'no_corroboration' ? 'Gemini found no number-specific corroboration'
-                                        : gemStatus === 'unavailable' ? 'Gemini unavailable'
-                                        : 'Gemini not performed';
+                                            : gemStatus === 'no_corroboration' ? 'Gemini found no number-specific corroboration'
+                                                : gemStatus === 'unavailable' ? 'Gemini unavailable'
+                                                    : 'Gemini not performed';
                                     const gemColor = gemStatus === 'corroboration_found' ? '#dc2626' : gemStatus === 'related_evidence' ? '#d97706' : gemStatus === 'no_corroboration' ? '#16a34a' : '#94a3b8';
 
                                     return (
@@ -1692,7 +1836,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                             {phoneNumber && (!intel || aiTriage.raw_response?.number_intel_pending) && (
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#2563eb', margin: '0.35rem 0 0' }}>
                                                     <Loader2 size={13} className="dsf-spinner" />
-                                                    Building number intelligence — awaiting corroboration sources…
+                                                    Building number intelligence â€” awaiting corroboration sourcesâ€¦
                                                 </div>
                                             )}
 
@@ -1701,7 +1845,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                     {/* Reported number */}
                                                     <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem' }}>
                                                         <span style={{ color: '#64748b', minWidth: '120px' }}>Reported number:</span>
-                                                        <span style={{ color: '#1e293b', fontWeight: 500 }}>{intel.phone_number || '—'}</span>
+                                                        <span style={{ color: '#1e293b', fontWeight: 500 }}>{intel.phone_number || 'â€”'}</span>
                                                     </div>
 
                                                     {/* Technical lookup status */}
@@ -1853,10 +1997,10 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                                 padding: '2px 8px', borderRadius: '4px',
                                                                 border: `1px solid ${intel.evidence_strength === 'strong_direct' ? '#fecaca' : intel.evidence_strength === 'moderate_related' ? '#fed7aa' : '#e2e8f0'}`,
                                                             }}>
-                                                                {intel.evidence_strength === 'strong_direct' ? 'Strong — direct number-specific evidence'
-                                                                    : intel.evidence_strength === 'moderate_related' ? 'Moderate — related number/prefix evidence'
-                                                                    : intel.evidence_strength === 'weak_generic' ? 'Weak — generic advice only'
-                                                                    : 'No external evidence'}
+                                                                {intel.evidence_strength === 'strong_direct' ? 'Strong â€” direct number-specific evidence'
+                                                                    : intel.evidence_strength === 'moderate_related' ? 'Moderate â€” related number/prefix evidence'
+                                                                        : intel.evidence_strength === 'weak_generic' ? 'Weak â€” generic advice only'
+                                                                            : 'No external evidence'}
                                                             </span>
                                                         </div>
                                                     )}
@@ -1870,9 +2014,9 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                             marginTop: '0.1rem',
                                                         }}>
                                                             <span style={{ fontSize: '0.72rem', color: intel.spoofing_assessment === 'possible_spoofing' ? '#92400e' : '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                                                                {intel.spoofing_assessment === 'possible_spoofing' ? '⚠ Possible Spoofing / Impersonation'
+                                                                {intel.spoofing_assessment === 'possible_spoofing' ? 'âš  Possible Spoofing / Impersonation'
                                                                     : intel.spoofing_assessment === 'likely_legitimate' ? 'Number appears legitimate'
-                                                                    : 'Spoofing unlikely'}
+                                                                        : 'Spoofing unlikely'}
                                                             </span>
                                                             {intel.spoofing_assessment === 'possible_spoofing' && (
                                                                 <div style={{ fontSize: '0.76rem', color: '#92400e', marginTop: '0.25rem', lineHeight: 1.4 }}>
@@ -2031,7 +2175,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                             disabled={numberIntelLoading}
                                                         >
                                                             {numberIntelLoading ? <Loader2 size={13} className="dsf-spinner" /> : <Search size={13} />}
-                                                            {numberIntelLoading ? 'Running…' : 'Re-run Number Intelligence'}
+                                                            {numberIntelLoading ? 'Runningâ€¦' : 'Re-run Number Intelligence'}
                                                         </button>
                                                     )}
                                                 </div>
@@ -2068,7 +2212,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                 disabled={aiAccepting || aiSaving}
                                             >
                                                 {aiAccepting ? <Loader2 size={15} className="dsf-spinner" /> : <CheckCircle2 size={15} />}
-                                                {aiAccepting ? 'Accepting…' : 'Accept AI Suggestions'}
+                                                {aiAccepting ? 'Acceptingâ€¦' : 'Accept AI Suggestions'}
                                             </button>
                                         )}
 
@@ -2077,21 +2221,21 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                             <div className="casedetail-form-field">
                                                 <label className="casedetail-form-label">Risk Level</label>
                                                 <select className="dsf-input" value={aiHumanRisk} onChange={(e) => setAiHumanRisk(e.target.value)}>
-                                                    <option value="">— Select —</option>
+                                                    <option value="">â€” Select â€”</option>
                                                     {RISK_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
                                                 </select>
                                             </div>
                                             <div className="casedetail-form-field">
                                                 <label className="casedetail-form-label">Category</label>
                                                 <select className="dsf-input" value={aiHumanCategory} onChange={(e) => setAiHumanCategory(e.target.value)}>
-                                                    <option value="">— Select —</option>
+                                                    <option value="">â€” Select â€”</option>
                                                     {CATEGORY_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
                                                 </select>
                                             </div>
                                             <div className="casedetail-form-field">
                                                 <label className="casedetail-form-label">Urgency</label>
                                                 <select className="dsf-input" value={aiHumanUrgency} onChange={(e) => setAiHumanUrgency(e.target.value)}>
-                                                    <option value="">— Select —</option>
+                                                    <option value="">â€” Select â€”</option>
                                                     {RISK_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
                                                 </select>
                                             </div>
@@ -2102,7 +2246,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                     rows={2}
                                                     value={aiHumanNotes}
                                                     onChange={(e) => setAiHumanNotes(e.target.value)}
-                                                    placeholder="Override notes…"
+                                                    placeholder="Override notesâ€¦"
                                                     style={{ minHeight: '60px' }}
                                                 />
                                             </div>
@@ -2114,7 +2258,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                 disabled={aiSaving || aiAccepting}
                                             >
                                                 {aiSaving ? <Loader2 size={15} className="dsf-spinner" /> : <Shield size={15} />}
-                                                {aiSaving ? 'Saving…' : 'Save Review'}
+                                                {aiSaving ? 'Savingâ€¦' : 'Save Review'}
                                             </button>
                                         </div>
 
@@ -2129,155 +2273,12 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         )}
                     </div>
 
-                    {/* Review Panel */}
-                    {canReview ? (
-                        <div className="casedetail-section casedetail-review-panel">
-                            <h2 className="casedetail-section-title">
-                                <Shield size={16} /> Review Panel
-                            </h2>
-
-                            {isClosed && (
-                                <div className="casedetail-closed-notice">
-                                    <Lock size={14} /> This case is closed. You may still save a new review snapshot.
-                                </div>
-                            )}
-
-                            <div className="casedetail-review-form">
-                                <div className="casedetail-form-field">
-                                    <label className="casedetail-form-label">Status</label>
-                                    <select className="dsf-input" value={rStatus} onChange={(e) => setRStatus(e.target.value)}>
-                                        {STATUS_OPTIONS.map((o) => <option key={o} value={o}>{statusLabel(o)}</option>)}
-                                    </select>
-                                </div>
-                                {/* Assign To */}
-                                <div className="casedetail-form-field">
-                                    <label className="casedetail-form-label">Assign To</label>
-                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                        <select className="dsf-input" style={{ flex: 1 }} value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
-                                            <option value="">— Unassigned —</option>
-                                            {orgStaff.map((u) => (
-                                                <option key={u.id} value={u.id}>{u.full_name ?? u.id.slice(0, 8)}</option>
-                                            ))}
-                                        </select>
-                                        <button
-                                            type="button"
-                                            className="casedetail-btn casedetail-btn-action"
-                                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
-                                            disabled={assigning || assignTo === (caseData?.assigned_to ?? '')}
-                                            onClick={handleAssignCase}
-                                        >
-                                            {assigning ? <Loader2 size={13} className="dsf-spinner" /> : <UserPlus size={13} />}
-                                            {assigning ? 'Saving…' : 'Assign'}
-                                        </button>
-                                    </div>
-                                    {assignMsg && (
-                                        <span style={{ fontSize: '0.75rem', marginTop: '0.25rem', display: 'block', color: assignMsg.startsWith('Error') ? '#dc2626' : '#16a34a' }}>{assignMsg}</span>
-                                    )}
-                                </div>
-                                <div className="casedetail-form-field">
-                                    <label className="casedetail-form-label">Category</label>
-                                    <select className="dsf-input" value={rCategory} onChange={(e) => setRCategory(e.target.value)}>
-                                        <option value="">— Select —</option>
-                                        {CATEGORY_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
-                                    </select>
-                                </div>
-                                <div className="casedetail-form-field">
-                                    <label className="casedetail-form-label">Risk Level</label>
-                                    <select className="dsf-input" value={rRisk} onChange={(e) => setRRisk(e.target.value)}>
-                                        <option value="">— Select —</option>
-                                        {RISK_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
-                                    </select>
-                                </div>
-                                <div className="casedetail-form-field">
-                                    <label className="casedetail-form-label">Decision</label>
-                                    <select className="dsf-input" value={rDecision} onChange={(e) => setRDecision(e.target.value)}>
-                                        <option value="">— Select —</option>
-                                        {DECISION_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
-                                    </select>
-                                </div>
-                                <div className="casedetail-form-field">
-                                    <label className="casedetail-form-label">Outcome</label>
-                                    <select className="dsf-input" value={rOutcome} onChange={(e) => setROutcome(e.target.value)}>
-                                        <option value="">— Select —</option>
-                                        {OUTCOME_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
-                                    </select>
-                                </div>
-                                <div className="casedetail-form-field">
-                                    <label className="casedetail-form-label">Reviewer Notes</label>
-                                    <textarea
-                                        className="dsf-textarea"
-                                        rows={3}
-                                        value={rNotes}
-                                        onChange={(e) => setRNotes(e.target.value)}
-                                        placeholder="Add review notes…"
-                                    />
-                                </div>
-
-                                {/* Buttons */}
-                                <div className="casedetail-review-actions">
-                                    <button
-                                        className="casedetail-btn casedetail-btn-save"
-                                        onClick={handleSaveReview}
-                                        disabled={saving || closing}
-                                    >
-                                        {saving ? <Loader2 size={15} className="dsf-spinner" /> : <CheckCircle2 size={15} />}
-                                        {saving ? 'Saving…' : 'Save Review'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="casedetail-section casedetail-review-locked">
-                            <h2 className="casedetail-section-title">
-                                <Lock size={16} /> Review Panel
-                            </h2>
-                            <p className="casedetail-empty">
-                                You do not have permission to review cases. Contact your administrator for access.
-                            </p>
-                        </div>
-                    )}
-
-                    {/* (C) COMPLIANCE NOTES PANEL */}
-                    <div className="casedetail-section" style={{ marginTop: '1.25rem' }}>
-                        <h2 className="casedetail-section-title">
-                            <MessageSquare size={16} /> Compliance Notes
-                        </h2>
-                        <p style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: '0.75rem' }}>
-                            Append-only safeguarding notes. Each note is recorded as an immutable action.
-                        </p>
-                        <textarea
-                            className="dsf-textarea"
-                            rows={3}
-                            value={complianceNote}
-                            onChange={(e) => setComplianceNote(e.target.value)}
-                            placeholder="Enter compliance or safeguarding note…"
-                        />
-                        {complianceError && (
-                            <div className="dsf-error" style={{ marginTop: '0.5rem' }}>
-                                <AlertTriangle size={14} /> <span>{complianceError}</span>
-                            </div>
-                        )}
-                        {complianceSuccess && (
-                            <div className="casedetail-success" style={{ marginTop: '0.5rem' }}>
-                                <CheckCircle2 size={14} /> <span>{complianceSuccess}</span>
-                            </div>
-                        )}
-                        <button
-                            className="casedetail-btn casedetail-btn-save"
-                            onClick={handleSaveComplianceNote}
-                            disabled={complianceSaving || !complianceNote.trim()}
-                            style={{ marginTop: '0.75rem' }}
-                        >
-                            {complianceSaving ? <Loader2 size={15} className="dsf-spinner" /> : <Send size={15} />}
-                            {complianceSaving ? 'Saving…' : 'Save Note'}
-                        </button>
-                    </div>
                 </div>
             </div>
 
-            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             {/* CASE HISTORY (COLLAPSIBLE)                                     */}
-            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             <div className="casedetail-section" style={{ marginTop: '1.5rem' }}>
                 <h2
                     className="casedetail-section-title"
@@ -2286,7 +2287,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 >
                     <Clock size={16} /> Case History
                     <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#94a3b8' }}>
-                        {historyOpen ? '▾ collapse' : '▸ expand'} ({caseHistory.length})
+                        {historyOpen ? 'â–¾ collapse' : 'â–¸ expand'} ({caseHistory.length})
                     </span>
                 </h2>
                 {historyOpen && (
@@ -2303,7 +2304,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                         <tr key={entry.id}>
                                             <td>{entry.source}</td>
                                             <td>{entry.action}</td>
-                                            <td>{entry.actor_type ?? '—'}</td>
+                                            <td>{entry.actor_type ?? 'â€”'}</td>
                                             <td>{fmtDateTime(entry.created_at)}</td>
                                         </tr>
                                     ))}
@@ -2314,9 +2315,9 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 )}
             </div>
 
-            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             {/* LOG ACTION MODAL                                              */}
-            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
             {showActionModal && (
                 <>
                     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100 }} onClick={() => setShowActionModal(false)} />
@@ -2333,7 +2334,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         <div className="casedetail-form-field">
                             <label className="casedetail-form-label">Action Type</label>
                             <select className="dsf-input" value={actionType} onChange={(e) => setActionType(e.target.value)}>
-                                <option value="">— Select —</option>
+                                <option value="">â€” Select â€”</option>
                                 {ACTION_TYPES.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
                             </select>
                         </div>
@@ -2344,7 +2345,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                 rows={3}
                                 value={actionNotes}
                                 onChange={(e) => setActionNotes(e.target.value)}
-                                placeholder="Describe the action taken…"
+                                placeholder="Describe the action takenâ€¦"
                             />
                         </div>
                         <div className="casedetail-form-field" style={{ marginTop: '0.75rem' }}>
@@ -2354,7 +2355,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                 className="dsf-input"
                                 value={actionAttachUrl}
                                 onChange={(e) => setActionAttachUrl(e.target.value)}
-                                placeholder="https://…"
+                                placeholder="https://â€¦"
                             />
                         </div>
 
@@ -2376,7 +2377,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                 disabled={!actionType || actionSaving}
                             >
                                 {actionSaving ? <Loader2 size={15} className="dsf-spinner" /> : <Send size={15} />}
-                                {actionSaving ? 'Logging…' : 'Log Action'}
+                                {actionSaving ? 'Loggingâ€¦' : 'Log Action'}
                             </button>
                             <button
                                 className="casedetail-btn"
@@ -2389,6 +2390,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                     </div>
                 </>
             )}
+
         </div>
     );
 }
