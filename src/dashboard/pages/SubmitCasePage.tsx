@@ -563,7 +563,7 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                         What happened? <span className="dsf-required">*</span>
                     </label>
                     <p className="dsf-hint">Select the type of incident you are reporting.</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: typeListExpanded ? '0.35rem' : '0', overflow: 'hidden', transition: 'gap 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}>
                         {INCIDENT_TYPES.map(t => {
                             const Icon = t.icon;
                             const active = incidentType === t.value;
@@ -573,13 +573,17 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                             return (
                                 <button key={t.value} type="button"
                                     className={`dsf-type-btn${active ? ' dsf-type-btn--active' : ''}`}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.65rem 0.85rem', textAlign: 'left', justifyContent: 'flex-start', transition: 'all 0.2s ease' }}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '0.55rem',
+                                        padding: active && isCollapsed ? '0.45rem 0.75rem' : '0.65rem 0.85rem',
+                                        textAlign: 'left', justifyContent: 'flex-start',
+                                        fontSize: active && isCollapsed ? '0.84rem' : undefined,
+                                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    }}
                                     onClick={() => {
                                         if (active && !typeListExpanded) {
-                                            // Click selected item when collapsed → expand
                                             setTypeListExpanded(true);
                                         } else {
-                                            // Select this item and collapse
                                             setIncidentType(t.value);
                                             setTypeListExpanded(false);
                                             setError(null);
@@ -587,10 +591,12 @@ export function SubmitCasePage({ onNavigate }: SubmitCasePageProps) {
                                     }}
                                     disabled={submitting}
                                 >
-                                    <Icon size={18} />
+                                    <Icon size={active && isCollapsed ? 16 : 18} style={{ transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', flexShrink: 0 }} />
                                     <span style={{ flex: 1 }}>{t.label}</span>
-                                    {active && !typeListExpanded && (
-                                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 400, marginLeft: 'auto' }}>Tap to change</span>
+                                    {active && isCollapsed && (
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.68rem', color: '#b0b8c4', fontWeight: 400 }}>
+                                            Change <ChevronDown size={12} />
+                                        </span>
                                     )}
                                 </button>
                             );
