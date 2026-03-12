@@ -168,7 +168,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 200px;
+    max-width: 320px;
 }
 
 .dashboard-topbar-right {
@@ -729,7 +729,7 @@
 
     .dashboard-topbar-org {
         font-size: 0.85rem;
-        max-width: 160px;
+        max-width: 180px;
     }
 
     .dashboard-topbar-right {
