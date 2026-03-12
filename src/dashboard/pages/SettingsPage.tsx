@@ -501,10 +501,10 @@ export function SettingsPage() {
                 <div className="dashboard-settings-field">
                     <label className="dashboard-settings-label">
                         <Mail size={16} />
-                        Notification Email Address
+                        Preferred Notification Email <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: '0.78rem' }}>(Optional)</span>
                     </label>
                     <p className="dashboard-settings-hint">
-                        If set, notification emails will be sent to this address instead of your account email. Leave blank to use your account email.
+                        Choose the email address where you want to receive your personal notification emails. Leave blank to use your normal account email. This only affects your own notifications.
                     </p>
                     <input
                         type="email"
@@ -512,7 +512,7 @@ export function SettingsPage() {
                         style={{ maxWidth: '340px' }}
                         value={notificationEmail}
                         onChange={(e) => setNotificationEmail(e.target.value)}
-                        placeholder="e.g. notifications@example.com"
+                        placeholder="yourname@example.com"
                     />
                 </div>
 
