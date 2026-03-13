@@ -484,7 +484,7 @@ export function OrganisationsPage() {
 
                                 {/* Micro reassurance badges */}
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '3.5rem' }}>
-                                    {['Record concerns in one structured system', 'Support manager review and follow up', 'Track patterns, pressure, and repeated issues', 'Strengthen reporting and inspection readiness'].map((badge) => (
+                                    {['Record concerns in one structured system', 'Manager review workflows', 'Inspection ready reporting', 'Group oversight visibility'].map((badge) => (
                                         <span key={badge} className="orgs-badge">{badge}</span>
                                     ))}
                                 </div>
@@ -504,9 +504,9 @@ export function OrganisationsPage() {
                                         size="md"
                                         as="a"
                                         href="#org-contact"
-                                        aria-label="Speak to Us"
+                                        aria-label="Discuss Pilot Options"
                                     >
-                                        Speak to Us
+                                        Discuss Pilot Options
                                     </Button>
                                 </div>
                             </div>

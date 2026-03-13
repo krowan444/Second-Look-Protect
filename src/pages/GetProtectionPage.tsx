@@ -106,8 +106,8 @@ const OPTIONS = [
     {
         id: 'contact',
         icon: <Phone className="w-5 h-5" />,
-        title: 'Verify a contact or request a demo',
-        description: 'Verify if a caller is legitimate, or request a call back to discuss the platform.',
+        title: 'Request a platform walkthough',
+        description: 'See structured logging, manager review, and inspection reporting in action.',
     },
 ];
 
@@ -376,11 +376,11 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             </h1>
                             <p className="text-slate-400 text-xs mb-3">Secure, confidential handling.</p>
                             <p className="text-slate-500 text-base leading-relaxed max-w-prose mb-3">
-                                Use this secure form to upload a suspicious incident for review, or to request a practical walkthrough of the Second Look Protect platform for your organisation.
+                                Use this secure form to upload a suspicious incident for review, or to request a practical walkthrough of the Second Look Protect platform to see how it supports manager oversight and inspection readiness.
                             </p>
 
                             <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                                You can upload a screenshot, paste a link, or securely provide contact details to verify.
+                                Upload a screenshot to test the review process, paste a link, or request a full demo.
                             </p>
                         </div>
                         <div className="space-y-3 mb-10" role="radiogroup" aria-label="Submission type">

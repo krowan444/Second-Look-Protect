@@ -543,17 +543,17 @@ export default function App() {
                     (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
                   }}
                 >
-                  See the Workflow
+                  Request a Walkthrough
                 </button>
               </div>
 
               {/* Sub-CTA stack — full-width, left-aligned below both buttons */}
-              <p className="text-slate-200 text-sm font-medium mb-3">Built for real safeguarding use</p>
+              <p className="text-slate-200 text-sm font-medium mb-3">A practical walkthrough for care providers:</p>
 
               <div className="flex flex-col gap-1.5 mb-5">
-                <p className="text-slate-300/85 text-sm">✓ Clear concern logging for staff and managers</p>
-                <p className="text-slate-300/85 text-sm">✓ Reviewed through structured safeguarding workflows</p>
-                <p className="text-slate-300/85 text-sm">✓ Supports oversight, audit trail, and inspection readiness</p>
+                <p className="text-slate-300/85 text-sm">✓ See whether the platform fits your safeguarding process</p>
+                <p className="text-slate-300/85 text-sm">✓ Understand how the system could work in your organisation</p>
+                <p className="text-slate-300/85 text-sm">✓ No pressure, just a clear look at the workflow</p>
               </div>
 
               {/* Reassurance line */}
@@ -729,14 +729,14 @@ export default function App() {
         </ul>
       </SectionWrapper>
 
-      {/* ── View Our Plans CTA ─────────────────────────────────────────── */}
+      {/* ── View Our Plans / Demo CTA ─────────────────────────────────────────── */}
       <SectionWrapper background="white" topBorder className="py-8 md:py-10">
         <div className="text-center">
-          <Button variant="primary" size="lg" className="inline-flex" as="a" href="#pricing">
-            View Our Plans <ArrowRight className="w-5 h-5" aria-hidden="true" />
+          <Button variant="primary" size="lg" className="inline-flex" onClick={handleGetProtection}>
+            Book a Demo <ArrowRight className="w-5 h-5 ml-2" aria-hidden="true" />
           </Button>
           <div className="mt-4 flex flex-col items-center gap-0.5">
-            <p className="text-slate-400 text-xs tracking-wide">Questions? Speak directly with us:</p>
+            <p className="text-slate-400 text-xs tracking-wide">Discuss pilot options and organisation fit:</p>
             <a
               href="mailto:hello@secondlookprotect.co.uk"
               className="text-[#A8853C] hover:text-[#C9A84C] transition-colors duration-200 font-medium text-sm"
@@ -1188,7 +1188,7 @@ export default function App() {
                 <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-2">General Enquiries</p>
                 <span className="inline-block px-4 py-1.5 rounded-full bg-[#C9A84C]/10 text-[#0B1E36] text-sm font-semibold group-hover:bg-[#C9A84C]/20 transition-colors">Send email</span>
                 <p className="text-[#0B1E36] font-semibold text-[13px] mt-2 leading-snug">hello@secondlookprotect.co.uk</p>
-                <p className="text-slate-400 text-[11px] mt-1 leading-snug">For questions about the platform and organisation fit</p>
+                <p className="text-slate-400 text-[11px] mt-1 leading-snug">For questions about platform fit and pilots</p>
               </div>
             </a>
 
@@ -1293,7 +1293,7 @@ export default function App() {
                 <p>
                   <a href="mailto:hello@secondlookprotect.co.uk" className="flex items-center gap-2 hover:text-white transition-colors duration-200">
                     <span aria-hidden="true">✉</span>
-                    <span><span className="text-slate-500">Enquiries:</span> hello@secondlookprotect.co.uk</span>
+                    <span><span className="text-slate-500">Discuss Platform Fit:</span> hello@secondlookprotect.co.uk</span>
                   </a>
                 </p>
                 <p>
@@ -1382,6 +1382,7 @@ export default function App() {
             </div>
             <p>
               Second Look Protect supports organisational safeguarding processes. It does not replace internal procedures, leadership judgement, or urgent safeguarding escalation routes.
+              To explore how the platform fits your environment, request a practical walkthrough above.
             </p>
           </div>
         </div>
