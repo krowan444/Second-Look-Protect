@@ -352,7 +352,7 @@ export function CareHomePage() {
             Example safeguarding portal prepared for <strong style={{ color: '#94a3b8' }}>(Care Home Name)</strong>
           </p>
           <p style={{ color: '#475569', fontSize: '0.7rem' }}>
-            Preview version — no login or setup required.
+            Preview version of an inspection-ready safeguarding portal. No login or setup required.
           </p>
         </section>
 

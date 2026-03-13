@@ -478,7 +478,7 @@ export default function App() {
                 style={{ fontFamily: "'Merriweather', serif", textShadow: '0px 1px 6px rgba(0,0,0,0.15)' }}
               >
                 <span className="block" style={{ color: '#A8C4DE' }}>Spot safeguarding risk earlier.</span>
-                <span className="block text-[#C9A84C]" style={{ marginTop: '-4px' }}>Manage every concern clearly. Stay inspection ready.</span>
+                <span className="block text-[#C9A84C]" style={{ marginTop: '-4px' }}>Log, review, and report concerns with clear oversight.</span>
               </h1>
 
               {/* AI context supporting line */}
@@ -543,7 +543,7 @@ export default function App() {
                     (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
                   }}
                 >
-                  See How It Works
+                  See the Workflow
                 </button>
               </div>
 
@@ -624,20 +624,20 @@ export default function App() {
             {
               step: '1',
               gold: false,
-              headline: 'Receive something suspicious?',
-              sub: '(call, text, email, link, message)',
+              headline: 'Concern Recorded',
+              sub: 'Staff or managers quickly log a suspicious email, message, call, or payment request.',
             },
             {
               step: '2',
               gold: false,
-              headline: 'Press GET PROTECTION and upload it.',
-              sub: '(no login needed)',
+              headline: 'Risk Assessed',
+              sub: 'Using AI-assisted review and human oversight, the incident is evaluated for safeguarding risk.',
             },
             {
               step: '3',
               gold: true,
-              headline: 'Our experts analyse the threat and send you a clear risk report with exactly what to do next.',
-              sub: '',
+              headline: 'Action Taken',
+              sub: 'Teams receive clear guidance on next steps, building an inspection ready trail of their decision.',
             },
           ].map(({ step, headline, sub, gold }, i) => (
             <div
@@ -751,8 +751,8 @@ export default function App() {
       {/* ── The Problem ──────────────────────────────────────────────── */}
       <SectionWrapper background="offwhite" topBorder={false} className="pt-10 md:pt-14 pb-12 md:pb-16">
         <SectionHeading
-          title="Scam related safeguarding concerns are becoming harder to spot."
-          subtitle="Suspicious calls, emails, payment requests, impersonation attempts, and financial abuse concerns can place vulnerable residents at risk. These issues are often handled across messages, memory, emails, or disconnected notes, making it harder to maintain clear oversight. Care teams need a calm, structured way to log concerns, review risk, and act consistently before harm escalates."
+          title="Scam related safeguarding concerns are becoming harder to manage."
+          subtitle="Suspicious calls, emails, payment requests, impersonation attempts, and financial abuse concerns can place vulnerable residents at risk. These issues are often handled across scattered messages or disconnected notes, making it harder to maintain clear oversight. Care teams need a calm, structured way to log concerns, review risk, and evidence their decisions before harm escalates."
         />
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -761,9 +761,9 @@ export default function App() {
             <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
               <AlertTriangle className="w-6 h-6 text-slate-500" />
             </div>
-            <h3 className="mb-3">Harder to identify risk</h3>
+            <h3 className="mb-3">Harder to evidence risk</h3>
             <p className="text-slate-600 text-base leading-relaxed">
-              Modern scam activity can look genuine, urgent, and convincing. Staff may see suspicious contact, unusual payment pressure, or signs of manipulation without having one clear place to record and assess concern.
+              Modern scam activity looks genuine and convincing. Staff may see suspicious contact, unusual payment pressure, or signs of manipulation without having one clear place to log their concern for management review.
             </p>
           </div>
 
@@ -772,9 +772,9 @@ export default function App() {
             <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
               <Lock className="w-6 h-6 text-slate-500" />
             </div>
-            <h3 className="mb-3">Higher safeguarding pressure</h3>
+            <h3 className="mb-3">Weaker leadership visibility</h3>
             <p className="text-slate-600 text-base leading-relaxed">
-              When incidents are recorded inconsistently, important patterns can be missed. Delays in review, unclear ownership, and weak visibility can increase organisational risk and reduce confidence in decision making.
+              When incidents are recorded inconsistently, important patterns — like the same resident being targeted repeatedly — can be missed. Delays in incident review can increase organisational risk.
             </p>
           </div>
 
@@ -783,9 +783,9 @@ export default function App() {
             <div className="w-12 h-12 bg-[#C9A84C]/15 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
               <Shield className="w-6 h-6 text-[#C9A84C]" />
             </div>
-            <h3 className="text-white font-semibold mb-3" style={{ color: '#F3F6FA' }}>A clearer safeguarding response</h3>
+            <h3 className="text-white font-semibold mb-3" style={{ color: '#F3F6FA' }}>A clearer operational workflow</h3>
             <p className="text-slate-200 text-base leading-relaxed">
-              Second Look Protect gives teams one structured place to record concerns, support review, track actions, and build clearer evidence for governance and inspection.
+              Second Look Protect gives teams one structured place to record concerns, support manager review, track follow-up actions, and build clear inspection-ready reporting.
             </p>
           </div>
         </div>
@@ -793,10 +793,10 @@ export default function App() {
 
 
 
-      {/* ── Digital Safety Education ──────────────────────────────────── */}
+      {/* ── Structured Safeguarding Workflow ──────────────────────────────────── */}
       <SectionWrapper background="offwhite" topBorder>
         <SectionHeading
-          title="Modern safeguarding needs clearer visibility."
+          title="See the workflow in practice."
         />
 
         {/* Sub-label + paragraphs — constrained to ~65 char line length */}
@@ -806,27 +806,27 @@ export default function App() {
           </p>
 
           <p className="text-slate-600 text-base leading-relaxed mb-5">
-            Care teams should not need to rely on scattered messages, spreadsheets, or memory when something serious is reported. Second Look Protect creates a more structured safeguarding process so concerns can be logged clearly, reviewed consistently, and followed through with confidence.
+            Care teams should not rely on scattered messages, spreadsheets, or memory when a potential issue is reported. Second Look Protect creates a structured process so concerns move from initial reporting to formal review with total clarity.
           </p>
 
           <p className="text-slate-600 text-base leading-relaxed">
-            The result is stronger oversight for managers, better support for vulnerable residents, and clearer evidence when accountability matters.
+            The platform provides oversight for managers, better support for vulnerable residents, and clear evidence when accountability matters.
           </p>
         </div>
 
         {/* Card — centered, left-aligned text inside for readability */}
         <div className="max-w-3xl mx-auto bg-white border border-slate-100 rounded-xl p-8 md:p-12 shadow-sm">
           <h3 className="text-[#0B1E36] text-lg font-semibold mb-5">
-            Why clearer safeguarding systems matter now
+            Why reporting visibility matters now
           </h3>
           <p className="text-slate-600 text-base leading-relaxed mb-4">
-            Scam related harm is no longer just a personal digital issue. In care settings, it can quickly become a safeguarding, financial abuse, resident wellbeing, and governance issue.
+            Scam related harm is not just a personal issue. In care settings, it quickly becomes a safeguarding, financial abuse, resident wellbeing, and governance matter.
           </p>
           <p className="text-slate-600 text-base leading-relaxed mb-8">
-            A structured system helps teams record what happened, assess seriousness, track review activity, and show that concerns were handled properly.
+            Second Look Protect helps leadership teams track concern volume, assess seriousness, review manager activity, and show inspectors that concerns were handled properly.
           </p>
           <p className="text-slate-400 text-sm italic">
-            As safeguarding pressure grows, clear oversight matters more.
+            Built to support governance and inspection readiness.
           </p>
         </div>
       </SectionWrapper>
@@ -854,12 +854,7 @@ export default function App() {
 
           {/* Quote */}
           <blockquote className="m-0">
-            <p
-              className="text-[#0B1E36] text-xl md:text-2xl leading-relaxed mb-10"
-              style={{ fontFamily: "'Merriweather', serif", fontWeight: 300 }}
-            >
-              I started Second Look Protect after seeing how convincing modern scams and manipulation attempts have become, especially where vulnerable people may be at greater risk. It became clear that organisations need more than informal reassurance. They need a clear process for recording concern, reviewing risk, and showing that safeguarding decisions are being handled properly.
-            </p>
+            I started Second Look Protect because I saw how convincing modern scams and manipulation attempts have become, especially toward vulnerable people. I quickly realised care organisations need more than just ad-hoc advice. They need a serious safeguarding platform — a structured place to log concerns, oversee managers, and evidence to inspectors that risk is being handled correctly. Second Look Protect was built to give leadership teams completely clear oversight.
 
             {/* Divider */}
             <div className="flex items-center justify-center gap-4 mb-6">
@@ -886,15 +881,15 @@ export default function App() {
           </p>
 
           <h2 className="text-[#0B1E36] mb-6">
-            Better safeguarding support before problems escalate
+            Understand how concerns move from reporting to review
           </h2>
 
           <p className="text-slate-600 text-lg leading-relaxed mb-6">
-            Not every concern begins with confirmed harm. Often it starts with something that feels off. A suspicious caller. An unusual payment request. A message that creates doubt. A resident who may be being targeted repeatedly.
+            Not every concern begins with confirmed harm. Often it starts with something that feels off. A suspicious caller. An unusual payment request. A resident who may be being targeted repeatedly.
           </p>
 
           <p className="text-slate-600 text-base leading-relaxed">
-            Second Look Protect exists so staff and managers can pause, record concern, review risk, and move forward with more confidence before situations become more serious.
+            Second Look Protect gives managers the structure to pause, record the concern clearly, review the safeguarding risk, and build a formal record before situations become more serious.
           </p>
         </div>
       </SectionWrapper>

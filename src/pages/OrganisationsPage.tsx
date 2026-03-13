@@ -158,35 +158,35 @@ const ORG_CARDS = [
     {
         title: 'Care Homes',
         description: 'Structured safeguarding support with clear guidance and optional monthly insight summaries.',
-        buttonLabel: 'View care home overview',
+        buttonLabel: 'Explore Care Home platform overview',
         href: '/care-homes',
         icon: Home,
     },
     {
         title: 'Assisted / Supported Living',
         description: 'Independence-focused protection with a gentle safeguarding layer for residents and teams.',
-        buttonLabel: 'View assisted living overview',
+        buttonLabel: 'Explore Assisted Living overview',
         href: '/assisted-supported-living',
         icon: Heart,
     },
     {
         title: 'Housing Associations / Extra Care',
         description: 'Safeguarding support for resident communities and tenancy support teams.',
-        buttonLabel: 'View housing overview',
+        buttonLabel: 'Explore Housing Association overview',
         href: '/housing-associations',
         icon: Building2,
     },
     {
         title: 'Community Organisations',
         description: 'Support for charities and local groups helping older adults check suspicious contacts.',
-        buttonLabel: 'View community overview',
+        buttonLabel: 'Explore Community overview',
         href: '/community-organisations',
         icon: Users,
     },
     {
         title: 'Public Sector & Partnerships',
         description: 'For councils and safeguarding teams exploring partnership or pilot discussions.',
-        buttonLabel: 'View partnership overview',
+        buttonLabel: 'Explore Partnership options',
         href: '/public-sector-partnerships',
         icon: Landmark,
     },
@@ -745,8 +745,7 @@ export function OrganisationsPage() {
                                 lineHeight: 1.7,
                                 marginBottom: '2rem',
                             }}>
-                                We can provide a simplified safeguarding view designed for organisational environments.
-                                The experience is calm, clear, and focused on protection.
+                                We designed the platform to provide teams with a clear, calm, and highly structured interface. Everything is built around safeguarding workflows, manager oversight, and inspection readiness.
                             </p>
 
                             <div style={{ marginBottom: '2.5rem' }}>
@@ -756,7 +755,7 @@ export function OrganisationsPage() {
                                     as="a"
                                     href="/example-safeguarding-environment"
                                 >
-                                    View example safeguarding environment
+                                    Explore the platform interface
                                     <ArrowRight style={{ width: '18px', height: '18px' }} aria-hidden="true" />
                                 </Button>
                             </div>
