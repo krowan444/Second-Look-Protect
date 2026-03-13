@@ -40,6 +40,51 @@ function isSuperAdmin(role?: UserRole) {
   return role === 'super_admin';
 }
 
+/* ─── Page-level Error Boundary ──────────────────────────────────────────── */
+
+class PageErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallbackNavigate?: (p: string) => void },
+  { hasError: boolean; errorMsg: string }
+> {
+  constructor(props: { children: React.ReactNode; fallbackNavigate?: (p: string) => void }) {
+    super(props);
+    this.state = { hasError: false, errorMsg: '' };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, errorMsg: error?.message || 'Unknown render error' };
+  }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[DashboardApp] PageErrorBoundary caught error:', error?.message, '\nStack:', error?.stack, '\nComponent stack:', info?.componentStack);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '2rem' }}>
+          <div style={{ padding: '1.5rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', maxWidth: '600px' }}>
+            <h2 style={{ color: '#dc2626', fontSize: '1rem', margin: '0 0 0.5rem' }}>⚠ This page encountered an error</h2>
+            <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 0.75rem' }}>
+              The page could not be displayed. Your data is safe. Please try navigating back or refreshing.
+            </p>
+            <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'monospace', margin: '0 0 1rem', wordBreak: 'break-all' }}>
+              {this.state.errorMsg}
+            </p>
+            <button
+              onClick={() => {
+                this.setState({ hasError: false, errorMsg: '' });
+                this.props.fallbackNavigate?.('/dashboard/cases');
+              }}
+              style={{ padding: '0.4rem 1rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.82rem' }}
+            >
+              ← Back to Cases
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 /* ─── Route resolver ─────────────────────────────────────────────────────── */
 
 function getPage(
@@ -83,11 +128,13 @@ function getPage(
     case 'cases':
       if (subSegment) {
         return (
-          <CaseDetailPage
-            caseId={subSegment}
-            onNavigate={navigate}
-            userRole={userRole}
-          />
+          <PageErrorBoundary fallbackNavigate={navigate}>
+            <CaseDetailPage
+              caseId={subSegment}
+              onNavigate={navigate}
+              userRole={userRole}
+            />
+          </PageErrorBoundary>
         );
       }
       return <CasesPage onNavigate={navigate} userRole={userRole} />;
