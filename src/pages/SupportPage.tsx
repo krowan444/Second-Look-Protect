@@ -63,7 +63,7 @@ export function SupportPage({ onBack }: Props) {
                         </div>
                         <div>
                             <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-1">General Enquiries</p>
-                            <p className="text-[#0B1E36] font-semibold text-sm break-all">hello@secondlookprotect.co.uk</p>
+                            <p className="text-[#0B1E36] font-semibold text-[11px] sm:text-[12px] break-all">hello@secondlookprotect.co.uk</p>
                             <p className="text-slate-400 text-xs mt-1">Questions, billing, and general help</p>
                         </div>
                     </a>
@@ -79,7 +79,7 @@ export function SupportPage({ onBack }: Props) {
                         </div>
                         <div>
                             <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-1">Technical Support</p>
-                            <p className="text-[#0B1E36] font-semibold text-sm break-all">support@secondlookprotect.co.uk</p>
+                            <p className="text-[#0B1E36] font-semibold text-[11px] sm:text-[12px] break-all">support@secondlookprotect.co.uk</p>
                             <p className="text-slate-400 text-xs mt-1">Account access, technical issues</p>
                         </div>
                     </a>
