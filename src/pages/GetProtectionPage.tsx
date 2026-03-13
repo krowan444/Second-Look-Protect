@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, ArrowLeft, CheckCircle, ArrowRight, Building2, Users, FileText, ClipboardCheck, LayoutDashboard } from 'lucide-react';
+import { Shield, ArrowLeft, CheckCircle, ArrowRight, Building2, Users, FileText, ClipboardCheck, LayoutDashboard, Phone } from 'lucide-react';
 import { Button } from '../components/Button';
 import { getSupabase } from '../lib/supabaseClient';
 
