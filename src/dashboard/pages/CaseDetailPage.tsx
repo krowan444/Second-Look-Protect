@@ -1689,16 +1689,22 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                     </span>
                                 </div>
 
-                                {/* ── Number Intelligence ──────────────────────── */}
+                                {/* ── Marker Intelligence ──────────────────────── */}
                                 {(() => {
                                     const phoneNumber = caseData?.meta?.details?.phone_number || caseData?.meta?.details?.sender || null;
+                                    const senderEmail = caseData?.meta?.details?.sender_email || (caseData?.submission_type === 'suspicious_email' ? caseData?.meta?.details?.sender : null);
+                                    const hasObservable = !!phoneNumber || !!senderEmail;
+                                    const primaryObservableLabel = phoneNumber ? 'Reported number' : senderEmail ? 'Reported email' : 'Observable';
+                                    const primaryObservableValue = phoneNumber || senderEmail || '—';
+
                                     const intel = aiTriage.raw_response?.number_intel;
                                     const lookupStatus = intel?.lookup_status || null;
                                     const extLookup = intel?.external_lookup || null;
+                                    const extEmailLookup = intel?.external_email_lookup || null;
                                     const complaints = intel?.complaint_sources || null;
 
                                     // Technical lookup status
-                                    const techStatus = extLookup ? 'completed' : lookupStatus === 'no_service' ? 'no_service' : 'unavailable';
+                                    const techStatus = (extLookup || extEmailLookup) ? 'completed' : lookupStatus === 'no_service' ? 'no_service' : 'unavailable';
                                     const techLabel = techStatus === 'completed' ? 'Technical lookup completed' : techStatus === 'no_service' ? 'No technical lookup service configured' : 'Technical lookup unavailable';
                                     const techColor = techStatus === 'completed' ? '#2563eb' : '#94a3b8';
 
@@ -1710,7 +1716,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                     // Web corroboration status
                                     const webCorr = intel?.web_corroboration || null;
                                     const webStatus = webCorr?.status || 'not_performed';
-                                    const webLabel = webStatus === 'corroboration_found' ? 'Number-specific corroboration found' : webStatus === 'no_corroboration' ? 'Web search performed — no number-specific corroboration' : webStatus === 'unavailable' ? 'Web search unavailable' : 'Web search not performed';
+                                    const webLabel = webStatus === 'corroboration_found' ? 'Marker-specific corroboration found' : webStatus === 'no_corroboration' ? 'Web search performed — no marker-specific corroboration' : webStatus === 'unavailable' ? 'Web search unavailable' : 'Web search not performed';
                                     const webColor = webStatus === 'corroboration_found' ? '#dc2626' : webStatus === 'no_corroboration' ? '#16a34a' : '#94a3b8';
 
                                     // Gemini corroboration status
@@ -1718,7 +1724,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                     const gemStatus = gemCorr?.status || 'not_performed';
                                     const gemLabel = gemStatus === 'corroboration_found' ? 'Gemini corroboration found'
                                         : gemStatus === 'related_evidence' ? 'Gemini found related evidence'
-                                            : gemStatus === 'no_corroboration' ? 'Gemini found no number-specific corroboration'
+                                            : gemStatus === 'no_corroboration' ? 'Gemini found no marker-specific corroboration'
                                                 : gemStatus === 'unavailable' ? 'Gemini unavailable'
                                                     : 'Gemini not performed';
                                     const gemColor = gemStatus === 'corroboration_found' ? '#dc2626' : gemStatus === 'related_evidence' ? '#d97706' : gemStatus === 'no_corroboration' ? '#16a34a' : '#94a3b8';
@@ -1727,28 +1733,28 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                         <div className="aitriage-field" style={{ marginTop: '0.5rem' }}>
                                             <div className="aitriage-review-divider" />
                                             <span className="aitriage-label" style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '0.5rem' }}>
-                                                <Search size={13} /> Number Intelligence
+                                                <Search size={13} /> Marker Intelligence
                                             </span>
 
-                                            {!phoneNumber && !intel && (
+                                            {!hasObservable && !intel && (
                                                 <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '0.35rem 0 0', fontStyle: 'italic' }}>
-                                                    No phone number available for number intelligence.
+                                                    No phone number or email available for intelligence check.
                                                 </p>
                                             )}
 
-                                            {phoneNumber && (!intel || aiTriage.raw_response?.number_intel_pending) && (
+                                            {hasObservable && (!intel || aiTriage.raw_response?.number_intel_pending) && (
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#2563eb', margin: '0.35rem 0 0' }}>
                                                     <Loader2 size={13} className="dsf-spinner" />
-                                                    Building number intelligence — awaiting corroboration sources…
+                                                    Building intelligence — awaiting corroboration sources…
                                                 </div>
                                             )}
 
                                             {intel && (
                                                 <div style={{ marginTop: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                                    {/* Reported number */}
+                                                    {/* Reported marker */}
                                                     <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem' }}>
-                                                        <span style={{ color: '#64748b', minWidth: '120px' }}>Reported number:</span>
-                                                        <span style={{ color: '#1e293b', fontWeight: 500 }}>{intel.phone_number || '—'}</span>
+                                                        <span style={{ color: '#64748b', minWidth: '120px' }}>{primaryObservableLabel}:</span>
+                                                        <span style={{ color: '#1e293b', fontWeight: 500 }}>{intel.phone_number || intel.email_address || primaryObservableValue}</span>
                                                     </div>
 
                                                     {/* Technical lookup status */}
@@ -1803,7 +1809,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                             {Array.isArray(webCorr.sources) && webCorr.sources.length > 0 && (
                                                                 <div style={{ marginTop: '0.3rem', fontSize: '0.72rem', color: '#64748b' }}>
                                                                     Sources: {webCorr.sources.map((url: string, i: number) => (
-                                                                        <span key={i}>{i > 0 ? ', ' : ''}<a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>{new URL(url).hostname}</a></span>
+                                                                        <span key={i}>{i > 0 ? ', ' : ''}<a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>{(() => { try { return new URL(url).hostname; } catch { return url; } })()}</a></span>
                                                                     ))}
                                                                 </div>
                                                             )}
@@ -1900,8 +1906,8 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                                 padding: '2px 8px', borderRadius: '4px',
                                                                 border: `1px solid ${intel.evidence_strength === 'strong_direct' ? '#fecaca' : intel.evidence_strength === 'moderate_related' ? '#fed7aa' : '#e2e8f0'}`,
                                                             }}>
-                                                                {intel.evidence_strength === 'strong_direct' ? 'Strong — direct number-specific evidence'
-                                                                    : intel.evidence_strength === 'moderate_related' ? 'Moderate — related number/prefix evidence'
+                                                                {intel.evidence_strength === 'strong_direct' ? 'Strong — direct marker-specific evidence'
+                                                                    : intel.evidence_strength === 'moderate_related' ? 'Moderate — related marker/domain evidence'
                                                                         : intel.evidence_strength === 'weak_generic' ? 'Weak — generic advice only'
                                                                             : 'No external evidence'}
                                                             </span>
@@ -1923,53 +1929,84 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                             </span>
                                                             {intel.spoofing_assessment === 'possible_spoofing' && (
                                                                 <div style={{ fontSize: '0.76rem', color: '#92400e', marginTop: '0.25rem', lineHeight: 1.4 }}>
-                                                                    This number may belong to a legitimate institution. The reported incident could involve caller ID spoofing or impersonation. Verify only through official contact channels.
+                                                                    This marker may belong to a legitimate institution. The reported incident could involve caller ID spoofing or phishing. Verify only through official contact channels.
                                                                 </div>
                                                             )}
                                                         </div>
                                                     )}
 
-                                                    {/* Number Risk Assessment */}
+                                                    {/* Number/Email Risk Assessment */}
                                                     {intel.number_risk_assessment && (
                                                         <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem' }}>
-                                                            <span style={{ color: '#64748b', minWidth: '120px' }}>Number profile:</span>
+                                                            <span style={{ color: '#64748b', minWidth: '120px' }}>Marker profile:</span>
                                                             <span style={{ color: '#475569', lineHeight: 1.4 }}>{intel.number_risk_assessment}</span>
                                                         </div>
                                                     )}
 
                                                     {/* External lookup data */}
-                                                    {extLookup && (
+                                                    {(extLookup || extEmailLookup) && (
                                                         <div style={{ background: '#f8fafc', borderRadius: '6px', padding: '0.5rem 0.65rem', border: '1px solid #e2e8f0', marginTop: '0.1rem' }}>
-                                                            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>External Lookup Data</span>
-                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.2rem 1rem', marginTop: '0.3rem', fontSize: '0.79rem' }}>
-                                                                {extLookup.fraud_score != null && (
-                                                                    <div><span style={{ color: '#64748b' }}>Fraud score: </span><span style={{ fontWeight: 600, color: extLookup.fraud_score >= 75 ? '#dc2626' : extLookup.fraud_score >= 50 ? '#d97706' : '#16a34a' }}>{extLookup.fraud_score}/100</span></div>
-                                                                )}
-                                                                {extLookup.line_type && (
-                                                                    <div><span style={{ color: '#64748b' }}>Line type: </span><span style={{ color: '#1e293b' }}>{extLookup.line_type}</span></div>
-                                                                )}
-                                                                {extLookup.carrier && (
-                                                                    <div><span style={{ color: '#64748b' }}>Carrier: </span><span style={{ color: '#1e293b' }}>{extLookup.carrier}</span></div>
-                                                                )}
-                                                                {extLookup.country && (
-                                                                    <div><span style={{ color: '#64748b' }}>Country: </span><span style={{ color: '#1e293b' }}>{extLookup.country}</span></div>
-                                                                )}
-                                                                {extLookup.voip != null && (
-                                                                    <div><span style={{ color: '#64748b' }}>VOIP: </span><span style={{ color: extLookup.voip ? '#d97706' : '#1e293b', fontWeight: extLookup.voip ? 600 : 400 }}>{extLookup.voip ? 'Yes' : 'No'}</span></div>
-                                                                )}
-                                                                {extLookup.recent_abuse != null && (
-                                                                    <div><span style={{ color: '#64748b' }}>Recent abuse: </span><span style={{ color: extLookup.recent_abuse ? '#dc2626' : '#1e293b', fontWeight: extLookup.recent_abuse ? 600 : 400 }}>{extLookup.recent_abuse ? 'Yes' : 'No'}</span></div>
-                                                                )}
-                                                                {extLookup.active != null && (
-                                                                    <div><span style={{ color: '#64748b' }}>Active: </span><span style={{ color: '#1e293b' }}>{extLookup.active ? 'Yes' : 'No'}</span></div>
-                                                                )}
-                                                                {extLookup.spammer != null && extLookup.spammer && (
-                                                                    <div><span style={{ color: '#64748b' }}>Spammer: </span><span style={{ color: '#dc2626', fontWeight: 600 }}>Yes</span></div>
-                                                                )}
-                                                                {extLookup.prepaid != null && (
-                                                                    <div><span style={{ color: '#64748b' }}>Prepaid: </span><span style={{ color: '#1e293b' }}>{extLookup.prepaid ? 'Yes' : 'No'}</span></div>
-                                                                )}
-                                                            </div>
+                                                            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Technical Provider Verification</span>
+
+                                                            {extLookup && (
+                                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.2rem 1rem', marginTop: '0.3rem', fontSize: '0.79rem' }}>
+                                                                    <div style={{ gridColumn: '1 / -1', fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic', marginBottom: '4px' }}>Telecoms Lookup:</div>
+                                                                    {extLookup.fraud_score != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Fraud score: </span><span style={{ fontWeight: 600, color: extLookup.fraud_score >= 75 ? '#dc2626' : extLookup.fraud_score >= 50 ? '#d97706' : '#16a34a' }}>{extLookup.fraud_score}/100</span></div>
+                                                                    )}
+                                                                    {extLookup.line_type && (
+                                                                        <div><span style={{ color: '#64748b' }}>Line type: </span><span style={{ color: '#1e293b' }}>{extLookup.line_type}</span></div>
+                                                                    )}
+                                                                    {extLookup.carrier && (
+                                                                        <div><span style={{ color: '#64748b' }}>Carrier: </span><span style={{ color: '#1e293b' }}>{extLookup.carrier}</span></div>
+                                                                    )}
+                                                                    {extLookup.country && (
+                                                                        <div><span style={{ color: '#64748b' }}>Country: </span><span style={{ color: '#1e293b' }}>{extLookup.country}</span></div>
+                                                                    )}
+                                                                    {extLookup.voip != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>VOIP: </span><span style={{ color: extLookup.voip ? '#d97706' : '#1e293b', fontWeight: extLookup.voip ? 600 : 400 }}>{extLookup.voip ? 'Yes' : 'No'}</span></div>
+                                                                    )}
+                                                                    {extLookup.recent_abuse != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Recent abuse: </span><span style={{ color: extLookup.recent_abuse ? '#dc2626' : '#1e293b', fontWeight: extLookup.recent_abuse ? 600 : 400 }}>{extLookup.recent_abuse ? 'Yes' : 'No'}</span></div>
+                                                                    )}
+                                                                    {extLookup.active != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Active: </span><span style={{ color: '#1e293b' }}>{extLookup.active ? 'Yes' : 'No'}</span></div>
+                                                                    )}
+                                                                    {extLookup.spammer != null && extLookup.spammer && (
+                                                                        <div><span style={{ color: '#64748b' }}>Spammer: </span><span style={{ color: '#dc2626', fontWeight: 600 }}>Yes</span></div>
+                                                                    )}
+                                                                    {extLookup.prepaid != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Prepaid: </span><span style={{ color: '#1e293b' }}>{extLookup.prepaid ? 'Yes' : 'No'}</span></div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {extEmailLookup && (
+                                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.2rem 1rem', marginTop: extLookup ? '0.6rem' : '0.3rem', fontSize: '0.79rem' }}>
+                                                                    <div style={{ gridColumn: '1 / -1', fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic', marginBottom: '4px' }}>Email Reputation Lookup:</div>
+                                                                    {extEmailLookup.fraud_score != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Fraud score: </span><span style={{ fontWeight: 600, color: extEmailLookup.fraud_score >= 75 ? '#dc2626' : extEmailLookup.fraud_score >= 50 ? '#d97706' : '#16a34a' }}>{extEmailLookup.fraud_score}/100</span></div>
+                                                                    )}
+                                                                    {extEmailLookup.deliverable != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Deliverable: </span><span style={{ color: extEmailLookup.deliverable ? '#16a34a' : '#dc2626', fontWeight: extEmailLookup.deliverable ? 400 : 600 }}>{extEmailLookup.deliverable ? 'Yes' : 'No'}</span></div>
+                                                                    )}
+                                                                    {extEmailLookup.disposable != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Disposable: </span><span style={{ color: extEmailLookup.disposable ? '#dc2626' : '#1e293b', fontWeight: extEmailLookup.disposable ? 600 : 400 }}>{extEmailLookup.disposable ? 'Yes' : 'No'}</span></div>
+                                                                    )}
+                                                                    {extEmailLookup.suspect != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Suspect: </span><span style={{ color: extEmailLookup.suspect ? '#dc2626' : '#1e293b', fontWeight: extEmailLookup.suspect ? 600 : 400 }}>{extEmailLookup.suspect ? 'Yes' : 'No'}</span></div>
+                                                                    )}
+                                                                    {extEmailLookup.recent_abuse != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Recent abuse: </span><span style={{ color: extEmailLookup.recent_abuse ? '#dc2626' : '#1e293b', fontWeight: extEmailLookup.recent_abuse ? 600 : 400 }}>{extEmailLookup.recent_abuse ? 'Yes' : 'No'}</span></div>
+                                                                    )}
+                                                                    {extEmailLookup.honeypot != null && extEmailLookup.honeypot && (
+                                                                        <div><span style={{ color: '#64748b' }}>Honeypot: </span><span style={{ color: '#dc2626', fontWeight: 600 }}>Yes</span></div>
+                                                                    )}
+                                                                    {extEmailLookup.domain_age != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Domain age: </span><span style={{ color: '#1e293b' }}>{extEmailLookup.domain_age}</span></div>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
 
@@ -2069,7 +2106,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                     )}
 
                                                     {/* Re-run button for admins */}
-                                                    {canReview && phoneNumber && (
+                                                    {canReview && hasObservable && (
                                                         <button
                                                             type="button"
                                                             className="casedetail-btn casedetail-btn-action"
@@ -2078,7 +2115,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                             disabled={numberIntelLoading}
                                                         >
                                                             {numberIntelLoading ? <Loader2 size={13} className="dsf-spinner" /> : <Search size={13} />}
-                                                            {numberIntelLoading ? 'Running…' : 'Re-run Number Intelligence'}
+                                                            {numberIntelLoading ? 'Running…' : 'Re-run Marker Intelligence'}
                                                         </button>
                                                     )}
                                                 </div>
