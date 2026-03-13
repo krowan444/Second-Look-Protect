@@ -321,8 +321,11 @@ Produce your response as JSON with these fields:
     /* Determine email address for intelligence */
     const senderEmail = caseRow.meta?.details?.sender_email || null;
 
+    /* Determine URL for intelligence */
+    const urlObj = caseRow.meta?.details?.url || null;
+
     /* Flag intelligence as pending if we have an actionable observable (cleared by PATCH after pipeline completes) */
-    if (phoneNumber || senderEmail) {
+    if (phoneNumber || senderEmail || urlObj) {
       triageRow.raw_response = { ...openaiData, number_intel_pending: true };
     }
 
@@ -355,13 +358,14 @@ Produce your response as JSON with these fields:
 
     console.log('[ai-triage] âœ” AI triage generated and saved successfully for case_id:', case_id, '| triage_id:', triageId);
 
-    /* 7. Automatically run source-backed intelligence if phone number or email exists */
-    if ((phoneNumber || senderEmail) && triageId) {
-      console.log('[ai-triage] Step 5: Observable found, running source-backed intelligence. Phone:', phoneNumber, '| Email:', senderEmail);
+    /* 7. Automatically run source-backed intelligence if phone number, email, or URL exists */
+    if ((phoneNumber || senderEmail || urlObj) && triageId) {
+      console.log('[ai-triage] Step 5: Observable found, running source-backed intelligence. Phone:', phoneNumber, '| Email:', senderEmail, '| URL:', urlObj);
       try {
         const IPQS_KEY = process.env.IPQS_API_KEY;
         let externalLookup = null;
         let externalEmailLookup = null;
+        let externalUrlLookup = null;
         let lookupStatus = 'unavailable';
         let sourcesChecked = [];
 
@@ -447,6 +451,47 @@ Produce your response as JSON with these fields:
               }
             } catch (ipqsErr) {
               console.error('[ai-triage] IPQS Email lookup error (non-blocking):', ipqsErr.message || ipqsErr);
+            }
+          }
+
+          if (urlObj) {
+            try {
+              const encUrl = encodeURIComponent(urlObj);
+              const ipqsUrlApi = `https://ipqualityscore.com/api/json/url/${encodeURIComponent(IPQS_KEY)}/${encUrl}`;
+              console.log('[ai-triage] Calling IPQualityScore for URL:', urlObj);
+              const ipqsUrlRes = await fetch(ipqsUrlApi, { method: 'GET' });
+              if (ipqsUrlRes.ok) {
+                const ipqsData = await ipqsUrlRes.json();
+                if (ipqsData.success) {
+                  externalUrlLookup = {
+                    risk_score: ipqsData.risk_score ?? null,
+                    malware: ipqsData.malware ?? null,
+                    phishing: ipqsData.phishing ?? null,
+                    spamming: ipqsData.spamming ?? null,
+                    suspicious: ipqsData.suspicious ?? null,
+                    adult: ipqsData.adult ?? null,
+                    category: ipqsData.category ?? null,
+                    domain_age: ipqsData.domain_age?.human ?? null,
+                    server: ipqsData.server ?? null,
+                    ip_address: ipqsData.ip_address ?? null,
+                    dns_valid: ipqsData.dns_valid ?? null,
+                    parking: ipqsData.parking ?? null
+                  };
+                  sourcesChecked.push('IPQualityScore URL scanner');
+                  if (ipqsData.risk_score >= 75 || ipqsData.malware === true || ipqsData.phishing === true || ipqsData.spamming === true || ipqsData.suspicious === true) {
+                    lookupStatus = 'match_found';
+                  } else if (ipqsData.risk_score != null && (lookupStatus === 'unavailable' || lookupStatus === 'no_service')) {
+                    lookupStatus = 'no_match';
+                  }
+                  console.log('[ai-triage] IPQS URL result — risk_score:', ipqsData.risk_score, '| phishing:', ipqsData.phishing);
+                } else {
+                  console.error('[ai-triage] IPQS URL returned success=false:', ipqsData.message || 'unknown');
+                }
+              } else {
+                console.error('[ai-triage] IPQS URL HTTP error:', ipqsUrlRes.status);
+              }
+            } catch (ipqsErr) {
+              console.error('[ai-triage] IPQS URL lookup error (non-blocking):', ipqsErr.message || ipqsErr);
             }
           }
         } else {
@@ -556,6 +601,10 @@ Produce your response as JSON with these fields:
           if (senderEmail) {
             searchQueriesParts.push(`"${senderEmail}" scam OR fraud OR phishing OR complaint`);
           }
+          if (urlObj) {
+            const cleanUrlHost = (() => { try { return new URL(urlObj).hostname.replace(/^www\./, ''); } catch { return urlObj; } })();
+            searchQueriesParts.push(`"${cleanUrlHost}" scam OR fraud OR phishing OR complaint OR malicious`);
+          }
 
           /* Extract case context keywords for targeted searching. Only run if we actually have observables. */
           const caseDesc = (caseRow.description || '') + ' ' + JSON.stringify(caseRow.meta?.details || '');
@@ -565,11 +614,15 @@ Produce your response as JSON with these fields:
           if (contextHint) {
             if (phoneNumber) searchQueriesParts.push(`"${phoneNumber.trim()}" ${contextHint}`);
             if (senderEmail) searchQueriesParts.push(`"${senderEmail}" ${contextHint}`);
+            if (urlObj) {
+              const cleanUrlHost = (() => { try { return new URL(urlObj).hostname.replace(/^www\./, ''); } catch { return urlObj; } })();
+              searchQueriesParts.push(`"${cleanUrlHost}" ${contextHint}`);
+            }
           }
 
           const searchQueries = searchQueriesParts.filter(Boolean).join('\n');
 
-          const primaryObservableText = phoneNumber ? `phone number: ${phoneNumber}` : `email address: ${senderEmail}`;
+          const primaryObservableText = phoneNumber ? `phone number: ${phoneNumber}` : senderEmail ? `email address: ${senderEmail}` : `URL/website: ${urlObj}`;
           const searchInputMessage = `Search for public scam reports, fraud reports, complaints, or lookups for the following ${primaryObservableText}. Search using ALL of these formats:
 
 ${searchQueriesParts.map((q, i) => `${i + 1}. ${q}`).join('\n')}
@@ -668,6 +721,10 @@ Do not invent findings. Summarise in 2-3 sentences.`;
             } else if (senderEmail) {
               searchContextText = `email address: ${senderEmail}.`;
               searchWordsExtract = [senderEmail];
+            } else if (urlObj) {
+              const cleanUrlHost = (() => { try { return new URL(urlObj).hostname.replace(/^www\./, ''); } catch { return urlObj; } })();
+              searchContextText = `website or domain: ${cleanUrlHost} (or ${urlObj}).`;
+              searchWordsExtract = [cleanUrlHost, urlObj];
             }
 
             const caseDesc = (caseRow.description || '') + ' ' + JSON.stringify(caseRow.meta?.details || '');
@@ -744,6 +801,9 @@ SOURCES: [comma-separated list of relevant URLs found, or "none"]`
               } else if (senderEmail) {
                 const emailDomain = senderEmail.split('@')[1];
                 numberInUrl = allUrls.some((u) => u.includes(senderEmail) || (emailDomain && u.includes(emailDomain)));
+              } else if (urlObj) {
+                const cleanUrlHost = (() => { try { return new URL(urlObj).hostname.replace(/^www\./, ''); } catch { return urlObj; } })();
+                numberInUrl = allUrls.some((u) => u.includes(cleanUrlHost));
               }
 
               const isCorroborated = classification === 'direct_match' || numberInUrl;
@@ -772,18 +832,49 @@ SOURCES: [comma-separated list of relevant URLs found, or "none"]`
 
         /* Determine combined lookup status */
         const ipqsMatch = (externalLookup && (externalLookup.fraud_score >= 75 || externalLookup.recent_abuse === true || externalLookup.risky === true || externalLookup.spammer === true)) ||
-          (externalEmailLookup && (externalEmailLookup.fraud_score >= 75 || externalEmailLookup.recent_abuse === true || externalEmailLookup.suspect === true));
+          (externalEmailLookup && (externalEmailLookup.fraud_score >= 75 || externalEmailLookup.recent_abuse === true || externalEmailLookup.suspect === true)) ||
+          (externalUrlLookup && (externalUrlLookup.risk_score >= 75 || externalUrlLookup.malware === true || externalUrlLookup.phishing === true || externalUrlLookup.spamming === true || externalUrlLookup.suspicious === true));
         const complaintMatch = complaintSources.overall_status === 'match_found';
         const webMatch = webCorroboration.status === 'corroboration_found';
         const geminiMatch = geminiCorroboration.status === 'corroboration_found';
         if (ipqsMatch || complaintMatch || webMatch || geminiMatch) {
           lookupStatus = 'match_found';
-        } else if (externalLookup || externalEmailLookup || complaintSources.overall_status === 'no_match') {
+        } else if (externalLookup || externalEmailLookup || externalUrlLookup || complaintSources.overall_status === 'no_match') {
           lookupStatus = 'no_match';
         }
 
         /* 7c. AI interpretation of all signal layers with evidence-weighted scoring */
-        const intelSystemPrompt = `You are a safeguarding intelligence analyst for UK care homes. You interpret marker data (phone numbers and emails) from multiple sources alongside safeguarding case context, and produce an evidence-weighted scam-likelihood score.
+        const intelSystemPrompt = urlObj ? `You are a safeguarding intelligence analyst for UK care homes. You interpret URL/website data from multiple sources alongside safeguarding case context to produce a structured, evidence-led operational report.
+
+CRITICAL REPORTING RULES:
+1. Primary Focus: Your report MUST be grounded explicitly in the exact submitted URL and the actual provider findings (IPQS, Web Search, Gemini).
+2. No Generic Advice: Do not produce a generic chatbot answer or general phishing education. Write a concrete, case-specific safeguarding triage report.
+3. Open-Source Data is Supporting Only: Make public/open-source information supportive only. It should strengthen the report but not dominate or replace the technical findings for the specific URL.
+4. Structure exact fields as follows:
+   - "number_risk_assessment": Start with "Item reviewed: [Exact URL]". Then list "Checks performed: [list providers attempted]". Then evaluate the domain itself.
+   - "source_findings_summary": Start with "Summary finding: ". Provide a factual summary of what the sources (IPQS, Web, Gemini) actually returned for this exact URL. Explicitly list IPQS reputation/risk findings as primary evidence if available.
+   - "ai_assessment": Start with "Safeguarding concern: ". Explain the holistic risk of this URL within the case context.
+   - "limitations": State "Confidence / limitations: " followed by what was checked, what was NOT, and if fallback explicit logic had to be used because structured data was weak.
+5. Safe Fallbacks: If all providers give weak or generic output, do not invent data. State clearly that the URL has "No significant external threat footprint" and base the assessment purely on the case context and URL structure.
+
+SCORING CALIBRATION - follow these rules strictly:
+- Score 0-20 (Low concern): Technical signals are benign (risk_score < 30, no malware/phishing) AND no web corroboration AND case context is weak.
+- Score 20-40 (Uncertain): Limited evidence. Technical signals are mostly benign but some minor flags. No direct web corroboration.
+- Score 40-60 (Suspicious): At least one moderate signal (risk_score 30-74, or case describes money/data sharing) but no strong direct web corroboration.
+- Score 60-80 (High concern): Elevated risk_score + web corroboration OR highly deceptive domain targeting a known institution.
+- Score 80-100 (Very high concern): Strong evidence across layers (risk_score >= 75, or malware/phishing=true, or direct domain-specific web corroboration, combined with case involving credentials or money).
+
+INSTITUTIONAL DOMAIN HANDLING - CRITICAL:
+- If IPQS shows the domain as valid with low risk score, AND it IS the official corporate domain (e.g. gov.uk, nhs.uk), do NOT automatically conclude the domain itself is malicious.
+- Consider: (a) the URL may contain malicious path parameters, (b) the institution's site may be compromised.
+- Distinguish closely between a deceptive "typosquatting" domain (e.g., hrnc-gov.uk) and the real domain.
+
+EVIDENCE STRENGTH - classify the evidence:
+- "strong_direct": IPQS or web search results explicitly flag THIS EXACT domain/URL as malicious, phishing, or scam.
+- "moderate_related": Web search references related infrastructure or similar scams, but not this exact domain.
+- "weak_generic": Only generic advice pages or general phishing guidance found - NOT domain-specific.
+- "none": No external evidence found beyond technical signals and case context.`
+          : `You are a safeguarding intelligence analyst for UK care homes. You interpret marker data (phone numbers and emails) from multiple sources alongside safeguarding case context, and produce an evidence-weighted scam-likelihood score.
 
 SCORING CALIBRATION â€” follow these rules strictly:
 - Score 0-20 (Low concern): Technical signals are benign (fraud_score < 30, no VOIP, no abuse, no spammer flag) AND no complaint-source matches AND no web corroboration AND case context is weak.
@@ -830,6 +921,10 @@ Important:
           ? `\nTechnical email reputation lookup was performed via IPQualityScore.\nResults:\n${JSON.stringify(externalEmailLookup, null, 2)}`
           : '';
 
+        const externalUrlDataBlock = externalUrlLookup
+          ? `\nTechnical URL/Domain reputation lookup was performed via IPQualityScore.\nResults:\n${JSON.stringify(externalUrlLookup, null, 2)}`
+          : '';
+
         const complaintDataBlock = complaintSources.overall_status !== 'unavailable'
           ? `\nPublic complaint source checks were performed.\nSources checked: ${complaintSources.sources_checked.join(', ')}\nResults:\n${JSON.stringify(complaintSources.results.filter((r) => r.status !== 'unavailable'), null, 2)}`
           : '';
@@ -842,7 +937,33 @@ Important:
           ? `\nGemini corroboration (Google Search grounding) was also performed.\nStatus: ${geminiCorroboration.status}\nClassification: ${geminiCorroboration.classification || 'unknown'}\nFindings: ${geminiCorroboration.summary}${geminiCorroboration.sources.length > 0 ? '\nSources: ' + geminiCorroboration.sources.join(', ') : ''}`
           : '\nNo Gemini corroboration was performed.';
 
-        const intelUserPrompt = `Assess the following reported marker from a safeguarding case. Consider whether this marker may belong to a legitimate institution and whether the incident could involve spoofing or impersonation.
+        const intelUserPrompt = urlObj ? `Assess the following reported URL from a safeguarding case. Generate a structured operational report as instructed.
+
+Reported details: 
+URL: ${urlObj}
+${externalUrlDataBlock}
+${webDataBlock}
+${geminiDataBlock}
+
+Case context:
+${JSON.stringify({ submission_type: caseRow.submission_type || null, description: caseRow.description || null, meta_details: caseRow.meta?.details || null }, null, 2)}
+
+Respond with JSON matching this exact shape:
+{
+  "scam_likelihood_score": 0,
+  "scam_likelihood_label": "One of: Low concern, Uncertain, Suspicious, High concern, Very high concern",
+  "scam_likelihood_explanation": "2-3 sentences explaining evidence factors. Distinguish direct vs related evidence. Note typo-squatting or impersonation.",
+  "evidence_strength": "One of: strong_direct, moderate_related, weak_generic, none",
+  "spoofing_assessment": "One of: likely_legitimate, possible_spoofing, unlikely_spoofing, not_applicable. Explain briefly.",
+  "number_risk_assessment": "Start with 'Item reviewed: [Exact URL]. Checks performed: [Providers]'. Then 1-2 sentences on the URL/Domain itself.",
+  "source_findings_summary": "Start with 'Summary finding: '. Summarise ALL source findings factually using explicit check data.",
+  "ai_assessment": "Start with 'Safeguarding concern: '. Interpret holistic risk of this URL within the case context.",
+  "risk_indicators": ["Short factual bullet points combining all evidence layers tied EXPLICITLY to the URL"],
+  "pattern_match": "Whether signals match known scam patterns (e.g. phishing). Include impersonation if relevant. N/A if none.",
+  "recommended_actions": ["1-3 next steps. Include safe verification methods."],
+  "limitations": "Start with 'Confidence / limitations: '. State what was checked, what was NOT, and whether evidence is direct or indirect."
+}`
+          : `Assess the following reported marker from a safeguarding case. Consider whether this marker may belong to a legitimate institution and whether the incident could involve spoofing or impersonation.
 
 Reported details: 
 ${phoneNumber ? `Phone: ${phoneNumber}\n` : ''}${senderEmail ? `Email: ${senderEmail}\n` : ''}
@@ -862,12 +983,12 @@ Respond with JSON matching this exact shape:
   "scam_likelihood_explanation": "2-3 sentences explaining evidence factors. Distinguish direct vs related-number evidence. Note any spoofing possibility.",
   "evidence_strength": "One of: strong_direct, moderate_related, weak_generic, none",
   "spoofing_assessment": "One of: likely_legitimate, possible_spoofing, unlikely_spoofing, not_applicable. Explain briefly.",
-  "number_risk_assessment": "1-2 sentences on the number itself separate from the incident.",
+  "number_risk_assessment": "1-2 sentences on the marker itself separate from the incident.",
   "source_findings_summary": "2-3 sentences summarising ALL source findings factually.",
   "ai_assessment": "2-3 sentences interpreting what all combined signals mean. Flag spoofing if possible.",
   "risk_indicators": ["Short factual bullet points combining all evidence layers"],
   "pattern_match": "Whether signals match known scam patterns. Include spoofing/impersonation if relevant. N/A if none.",
-  "recommended_actions": ["1-3 next steps. Include official-channel verification if institutional number suspected."],
+  "recommended_actions": ["1-3 next steps. Include official-channel verification if institutional marker suspected."],
   "limitations": "State what was checked, what was NOT, and whether evidence is direct or indirect."
 }`;
 
@@ -933,6 +1054,14 @@ Respond with JSON matching this exact shape:
             intelOutput = null;
           }
 
+          if (urlObj && intelOutput) {
+            const referencedExactUrl = intelOutput.number_risk_assessment?.includes(urlObj) || intelOutput.source_findings_summary?.includes(urlObj) || intelOutput.ai_assessment?.includes(urlObj);
+            console.log(`[url-intel-report] Final report referenced exact URL: ${referencedExactUrl}`);
+            const fallbackUsed = intelOutput.evidence_strength === 'none' || intelOutput.evidence_strength === 'weak_generic';
+            console.log(`[url-intel-report] Fallback reporting logic used (weak evidence): ${fallbackUsed}`);
+            console.log(`[url-intel-report] Providers attempted: IPQS (${externalUrlLookup ? 'Success' : 'Fail/Unavailable'}), Web Search (${webCorroboration.search_performed ? 'Success' : 'Fail/Unavailable'}), Gemini (${geminiCorroboration.search_performed ? 'Success' : 'Fail/Unavailable'})`);
+          }
+
           if (intelOutput) {
             const updatedRaw = {
               ...openaiData,
@@ -943,6 +1072,7 @@ Respond with JSON matching this exact shape:
                 sources_checked: sourcesChecked,
                 external_lookup: externalLookup,
                 external_email_lookup: externalEmailLookup,
+                external_url_lookup: externalUrlLookup,
                 complaint_sources: complaintSources,
                 web_corroboration: webCorroboration,
                 gemini_corroboration: geminiCorroboration,
@@ -960,7 +1090,7 @@ Respond with JSON matching this exact shape:
                 pattern_match: intelOutput.pattern_match || null,
                 recommended_actions: intelOutput.recommended_actions || [],
                 limitations: intelOutput.limitations || null,
-                external_check_performed: !!externalLookup || !!externalEmailLookup,
+                external_check_performed: !!externalLookup || !!externalEmailLookup || !!externalUrlLookup,
                 complaint_check_performed: complaintSources.overall_status !== 'unavailable',
                 web_search_performed: webCorroboration.search_performed,
                 gemini_checked: geminiCorroboration.search_performed,
@@ -987,10 +1117,10 @@ Respond with JSON matching this exact shape:
         console.error('[ai-triage] âš  Number intelligence error (non-blocking):', intelErr.message || intelErr);
       }
     } else {
-      console.log('[ai-triage] No observable markers (phone/email) in case â€” skipping extra intelligence');
+      console.log('[ai-triage] No observable markers (phone/email/URL) in case â€” skipping extra intelligence');
     }
 
-    const routePath = (phoneNumber || senderEmail) && triageId ? 'triage + extracted intelligence' : 'triage only';
+    const routePath = (phoneNumber || senderEmail || urlObj) && triageId ? 'triage + extracted intelligence' : 'triage only';
     console.log('[ai-triage] âœ” Route completed â€” path:', routePath, '| case_id:', case_id);
     return res.status(200).json({ ok: true });
   } catch (err) {

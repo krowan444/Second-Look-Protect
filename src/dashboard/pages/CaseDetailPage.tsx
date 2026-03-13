@@ -956,30 +956,33 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
         }
     }
 
-    /* ── Run Number Intelligence ───────────────────────────────────────────── */
+    /* ── Run Marker Intelligence ───────────────────────────────────────────── */
     async function handleRunNumberIntel() {
         if (!aiTriage || !caseData) return;
         const details = caseData.meta?.details;
         const phoneNumber = details?.phone_number || details?.sender || null;
-        if (!phoneNumber) { setNumberIntelMsg('No phone number found in case details.'); return; }
+        const urlObj = details?.url || null;
+
+        if (!phoneNumber && !urlObj) { setNumberIntelMsg('No actionable marker (phone/URL) found in case details.'); return; }
 
         setNumberIntelLoading(true);
         setNumberIntelMsg(null);
         try {
-            const resp = await fetch('/api/number-intel', {
+            const apiRoute = urlObj ? '/api/url-intel' : '/api/number-intel';
+            const payload = urlObj
+                ? { triage_id: aiTriage.id, case_id: caseData.id, url: urlObj }
+                : { triage_id: aiTriage.id, case_id: caseData.id, phone_number: phoneNumber };
+
+            const resp = await fetch(apiRoute, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    triage_id: aiTriage.id,
-                    case_id: caseData.id,
-                    phone_number: phoneNumber,
-                }),
+                body: JSON.stringify(payload),
             });
             const result = await resp.json();
             if (!result.ok) {
-                setNumberIntelMsg(`Error: ${result.error || 'Failed to run number intelligence'}`);
+                setNumberIntelMsg(`Error: ${result.error || 'Failed to run intelligence'}`);
             } else {
-                setNumberIntelMsg('Number intelligence completed.');
+                setNumberIntelMsg('Marker intelligence completed.');
                 await fetchData();
             }
         } catch (err: any) {
@@ -1277,7 +1280,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                 {contacts.map((c, i) => (
                                     <div key={i} style={{ display: 'flex', gap: '0.5rem', fontSize: '0.85rem' }}>
                                         <span style={{ color: '#64748b', minWidth: '160px', flexShrink: 0 }}>{c.label}:</span>
-                                        <span style={{ color: '#1e293b', fontWeight: 500, wordBreak: 'break-all' }}>{c.value}</span>
+                                        <span style={{ color: '#1e293b', fontWeight: 500, wordBreak: 'break-all' }}>{typeof c.value === 'object' ? JSON.stringify(c.value) : c.value}</span>
                                     </div>
                                 ))}
                             </div>
@@ -1545,7 +1548,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                 {aiTriage.summary && (
                                     <div className="aitriage-field">
                                         <span className="aitriage-label">AI Summary</span>
-                                        <div className="aitriage-value aitriage-summary">{aiTriage.summary}</div>
+                                        <div className="aitriage-value aitriage-summary">{safeString(aiTriage.summary)}</div>
                                     </div>
                                 )}
 
@@ -1578,7 +1581,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                     </div>
                                     <div className="aitriage-field">
                                         <span className="aitriage-label">Suggested Urgency</span>
-                                        <span className={`aitriage-urgency-badge aitriage-urgency-${(aiTriage.suggested_urgency ?? 'unknown').toLowerCase()}`}>
+                                        <span className={`aitriage-urgency-badge aitriage-urgency-${(aiTriage.suggested_urgency && typeof aiTriage.suggested_urgency === 'string' ? aiTriage.suggested_urgency : 'unknown').toLowerCase()}`}>
                                             {formatLabel(aiTriage.suggested_urgency)}
                                         </span>
                                     </div>
@@ -1754,7 +1757,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                     {/* Reported marker */}
                                                     <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem' }}>
                                                         <span style={{ color: '#64748b', minWidth: '120px' }}>{primaryObservableLabel}:</span>
-                                                        <span style={{ color: '#1e293b', fontWeight: 500 }}>{intel.phone_number || intel.email_address || primaryObservableValue}</span>
+                                                        <span style={{ color: '#1e293b', fontWeight: 500 }}>{intel.phone_number || intel.email_address || (typeof primaryObservableValue === 'object' ? 'Unknown' : primaryObservableValue)}</span>
                                                     </div>
 
                                                     {/* Technical lookup status */}
@@ -1804,7 +1807,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                         <div style={{ background: '#f8fafc', borderRadius: '6px', padding: '0.5rem 0.65rem', border: '1px solid #e2e8f0', marginTop: '0.1rem' }}>
                                                             <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Web Search Findings</span>
                                                             <div style={{ fontSize: '0.79rem', color: '#475569', marginTop: '0.25rem', lineHeight: 1.45 }}>
-                                                                {webCorr.summary}
+                                                                {safeString(webCorr.summary)}
                                                             </div>
                                                             {Array.isArray(webCorr.sources) && webCorr.sources.length > 0 && (
                                                                 <div style={{ marginTop: '0.3rem', fontSize: '0.72rem', color: '#64748b' }}>
@@ -1845,7 +1848,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div style={{ fontSize: '0.79rem', color: '#475569', marginTop: '0.25rem', lineHeight: 1.45 }}>{gemCorr.summary}</div>
+                                                            <div style={{ fontSize: '0.79rem', color: '#475569', marginTop: '0.25rem', lineHeight: 1.45 }}>{safeString(gemCorr.summary)}</div>
                                                             {Array.isArray(gemCorr.sources) && gemCorr.sources.length > 0 && (
                                                                 <div style={{ marginTop: '0.3rem', fontSize: '0.72rem', color: '#64748b' }}>
                                                                     Sources: {gemCorr.sources.map((url: string, i: number) => (
@@ -1883,12 +1886,12 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                             </div>
                                                             {intel.scam_likelihood.label && (
                                                                 <span style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '0.2rem', display: 'block' }}>
-                                                                    {intel.scam_likelihood.label}
+                                                                    {safeString(intel.scam_likelihood.label)}
                                                                 </span>
                                                             )}
                                                             {intel.scam_likelihood.explanation && (
                                                                 <div style={{ fontSize: '0.79rem', color: '#475569', marginTop: '0.25rem', lineHeight: 1.45 }}>
-                                                                    {intel.scam_likelihood.explanation}
+                                                                    {safeString(intel.scam_likelihood.explanation)}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1939,12 +1942,12 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                     {intel.number_risk_assessment && (
                                                         <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem' }}>
                                                             <span style={{ color: '#64748b', minWidth: '120px' }}>Marker profile:</span>
-                                                            <span style={{ color: '#475569', lineHeight: 1.4 }}>{intel.number_risk_assessment}</span>
+                                                            <span style={{ color: '#475569', lineHeight: 1.4 }}>{safeString(intel.number_risk_assessment)}</span>
                                                         </div>
                                                     )}
 
                                                     {/* External lookup data */}
-                                                    {(extLookup || extEmailLookup) && (
+                                                    {(extLookup || extEmailLookup || extUrlLookup) && (
                                                         <div style={{ background: '#f8fafc', borderRadius: '6px', padding: '0.5rem 0.65rem', border: '1px solid #e2e8f0', marginTop: '0.1rem' }}>
                                                             <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Technical Provider Verification</span>
 
@@ -2003,7 +2006,37 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                                         <div><span style={{ color: '#64748b' }}>Honeypot: </span><span style={{ color: '#dc2626', fontWeight: 600 }}>Yes</span></div>
                                                                     )}
                                                                     {extEmailLookup.domain_age != null && (
-                                                                        <div><span style={{ color: '#64748b' }}>Domain age: </span><span style={{ color: '#1e293b' }}>{extEmailLookup.domain_age}</span></div>
+                                                                        <div><span style={{ color: '#64748b' }}>Domain age: </span><span style={{ color: '#1e293b' }}>{typeof extEmailLookup.domain_age === 'object' ? extEmailLookup.domain_age.human || '' : extEmailLookup.domain_age}</span></div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {extUrlLookup && (
+                                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.2rem 1rem', marginTop: (extLookup || extEmailLookup) ? '0.6rem' : '0.3rem', fontSize: '0.79rem' }}>
+                                                                    <div style={{ gridColumn: '1 / -1', fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic', marginBottom: '4px' }}>Website/URL Reputation Lookup:</div>
+                                                                    {extUrlLookup.risk_score != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Risk score: </span><span style={{ fontWeight: 600, color: extUrlLookup.risk_score >= 75 ? '#dc2626' : extUrlLookup.risk_score >= 50 ? '#d97706' : '#16a34a' }}>{extUrlLookup.risk_score}/100</span></div>
+                                                                    )}
+                                                                    {extUrlLookup.domain && (
+                                                                        <div><span style={{ color: '#64748b' }}>Domain: </span><span style={{ color: '#1e293b' }}>{extUrlLookup.domain}</span></div>
+                                                                    )}
+                                                                    {extUrlLookup.malware != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Malware: </span><span style={{ color: extUrlLookup.malware ? '#dc2626' : '#1e293b', fontWeight: extUrlLookup.malware ? 600 : 400 }}>{extUrlLookup.malware ? 'Yes' : 'No'}</span></div>
+                                                                    )}
+                                                                    {extUrlLookup.phishing != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Phishing: </span><span style={{ color: extUrlLookup.phishing ? '#dc2626' : '#1e293b', fontWeight: extUrlLookup.phishing ? 600 : 400 }}>{extUrlLookup.phishing ? 'Yes' : 'No'}</span></div>
+                                                                    )}
+                                                                    {extUrlLookup.suspicious != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Suspicious: </span><span style={{ color: extUrlLookup.suspicious ? '#dc2626' : '#1e293b', fontWeight: extUrlLookup.suspicious ? 600 : 400 }}>{extUrlLookup.suspicious ? 'Yes' : 'No'}</span></div>
+                                                                    )}
+                                                                    {extUrlLookup.spamming != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Spamming: </span><span style={{ color: extUrlLookup.spamming ? '#dc2626' : '#1e293b', fontWeight: extUrlLookup.spamming ? 600 : 400 }}>{extUrlLookup.spamming ? 'Yes' : 'No'}</span></div>
+                                                                    )}
+                                                                    {extUrlLookup.domain_trust && (
+                                                                        <div><span style={{ color: '#64748b' }}>Domain trust: </span><span style={{ color: '#1e293b' }}>{extUrlLookup.domain_trust}</span></div>
+                                                                    )}
+                                                                    {extUrlLookup.domain_age != null && (
+                                                                        <div><span style={{ color: '#64748b' }}>Domain age: </span><span style={{ color: '#1e293b' }}>{typeof extUrlLookup.domain_age === 'object' ? extUrlLookup.domain_age.human || '' : extUrlLookup.domain_age}</span></div>
                                                                     )}
                                                                 </div>
                                                             )}
@@ -2052,7 +2085,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                         <div>
                                                             <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Source-Backed Findings</span>
                                                             <div style={{ fontSize: '0.82rem', color: '#334155', background: '#f8fafc', borderRadius: '6px', padding: '0.5rem 0.65rem', borderLeft: '3px solid #C9A84C', marginTop: '0.2rem', lineHeight: 1.5 }}>
-                                                                {intel.source_findings_summary}
+                                                                {safeString(intel.source_findings_summary)}
                                                             </div>
                                                         </div>
                                                     )}
@@ -2062,7 +2095,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                         <div>
                                                             <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>AI Assessment</span>
                                                             <div style={{ fontSize: '0.82rem', color: '#334155', background: '#fefce8', borderRadius: '6px', padding: '0.5rem 0.65rem', borderLeft: '3px solid #eab308', marginTop: '0.2rem', lineHeight: 1.5 }}>
-                                                                {intel.ai_assessment || intel.intelligence_summary}
+                                                                {safeString(intel.ai_assessment || intel.intelligence_summary)}
                                                             </div>
                                                         </div>
                                                     )}
@@ -2071,7 +2104,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                     {intel.pattern_match && intel.pattern_match !== 'N/A' && (
                                                         <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem' }}>
                                                             <span style={{ color: '#64748b', minWidth: '120px' }}>Pattern match:</span>
-                                                            <span style={{ color: '#1e293b' }}>{intel.pattern_match}</span>
+                                                            <span style={{ color: '#1e293b' }}>{safeString(intel.pattern_match)}</span>
                                                         </div>
                                                     )}
 
@@ -2080,7 +2113,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                         <div>
                                                             <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Risk indicators:</span>
                                                             <ul className="aitriage-bullets" style={{ marginTop: '0.15rem' }}>
-                                                                {intel.risk_indicators.map((r: string, i: number) => <li key={i}>{r}</li>)}
+                                                                {intel.risk_indicators.map((r: any, i: number) => <li key={i}>{typeof r === 'string' ? r : JSON.stringify(r)}</li>)}
                                                             </ul>
                                                         </div>
                                                     )}
@@ -2090,14 +2123,14 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                                         <div>
                                                             <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Recommended actions:</span>
                                                             <ul className="aitriage-bullets" style={{ marginTop: '0.15rem' }}>
-                                                                {intel.recommended_actions.map((a: string, i: number) => <li key={i}>{a}</li>)}
+                                                                {intel.recommended_actions.map((a: any, i: number) => <li key={i}>{typeof a === 'string' ? a : JSON.stringify(a)}</li>)}
                                                             </ul>
                                                         </div>
                                                     )}
 
                                                     {/* Limitations */}
                                                     <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.15rem', lineHeight: 1.4, fontStyle: 'italic' }}>
-                                                        {intel.limitations || 'This is indicative intelligence, not legal proof. External source checks are limited to configured services.'}
+                                                        {safeString(intel.limitations || 'This is indicative intelligence, not legal proof. External source checks are limited to configured services.')}
                                                     </div>
 
                                                     {/* Checked timestamp */}
