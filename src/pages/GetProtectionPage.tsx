@@ -70,6 +70,26 @@ export function GetProtectionPage({ onBack }: Props) {
                 throw new Error('There was an issue saving your request. Please try again or contact us directly.');
             }
 
+            // Fire the secondary notification request silently in the background
+            try {
+                await fetch('/api/demo-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        full_name: nameValue.trim(),
+                        work_email: emailValue.trim(),
+                        phone_number: phoneValue.trim(),
+                        organisation_name: orgNameValue.trim(),
+                        organisation_type: orgTypeValue.trim(),
+                        role: roleValue.trim(),
+                        message: noteValue.trim()
+                    })
+                });
+            } catch (notifyErr) {
+                console.error('[SLP] Email notification fetch failed securely:', notifyErr);
+                // We let this silently fail for the user, as the database insert safely succeeded
+            }
+
             trackEvent('demo_request_submitted', { orgType: orgTypeValue || 'not_provided' });
 
             setNameValue('');
