@@ -1437,6 +1437,164 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             )}
 
             {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* CLOSURE PERFORMANCE SNAPSHOT (closed cases only)               */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {isClosed && (() => {
+                /* ── Thresholds (hours) — later can come from org settings ── */
+                const T_REVIEW = { green: 1, amber: 4 };
+                const T_TRIAGE = { green: 2, amber: 8 };
+                const T_CLOSE = { green: 12, amber: 24 };
+
+                /* ── Compute durations in hours ─────────────────────────────── */
+                const submitted = caseData.submitted_at ? new Date(caseData.submitted_at).getTime() : null;
+                const reviewed = caseData.reviewed_at ? new Date(caseData.reviewed_at).getTime() : null;
+                const closed = caseData.closed_at ? new Date(caseData.closed_at).getTime() : null;
+                const triaged = aiTriage?.created_at ? new Date(aiTriage.created_at).getTime() : null;
+
+                const hoursToReview = submitted && reviewed ? (reviewed - submitted) / 3_600_000 : null;
+                const hoursToTriage = submitted && triaged ? (triaged - submitted) / 3_600_000 : null;
+                const hoursToClosure = submitted && closed ? (closed - submitted) / 3_600_000 : null;
+
+                /* ── Colour / label helpers ──────────────────────────────────── */
+                type Band = 'green' | 'amber' | 'red' | 'neutral';
+                const bandColours: Record<Band, { bg: string; fg: string; border: string }> = {
+                    green: { bg: '#ecfdf5', fg: '#065f46', border: '#a7f3d0' },
+                    amber: { bg: '#fffbeb', fg: '#92400e', border: '#fde68a' },
+                    red: { bg: '#fef2f2', fg: '#991b1b', border: '#fecaca' },
+                    neutral: { bg: '#f8fafc', fg: '#64748b', border: '#e2e8f0' },
+                };
+                const bandOf = (hours: number | null, t: { green: number; amber: number }): Band => {
+                    if (hours == null) return 'neutral';
+                    if (hours <= t.green) return 'green';
+                    if (hours <= t.amber) return 'amber';
+                    return 'red';
+                };
+                const fmtDuration = (h: number | null): string => {
+                    if (h == null) return '—';
+                    if (h < 1) return `${Math.round(h * 60)}m`;
+                    if (h < 24) return `${h.toFixed(1)}h`;
+                    return `${(h / 24).toFixed(1)}d`;
+                };
+                const barPct = (hours: number | null, max: number): number => {
+                    if (hours == null) return 0;
+                    return Math.min(100, Math.max(5, (hours / max) * 100));
+                };
+
+                /* ── Documentation completeness ──────────────────────────────── */
+                const hasCategory = !!caseData.category;
+                const hasDecision = !!caseData.decision;
+                const hasRiskLevel = !!caseData.risk_level;
+                const hasOutcome = !!caseData.outcome;
+                const hasDesc = !!caseData.description;
+                const docScore = [hasCategory, hasDecision, hasRiskLevel, hasOutcome, hasDesc].filter(Boolean).length;
+                const docBand: Band = docScore >= 4 ? 'green' : docScore >= 2 ? 'amber' : 'red';
+                const docLabel = docScore >= 4 ? 'Complete' : docScore >= 2 ? 'Mostly complete' : 'Missing key info';
+
+                /* ── Escalation outcome ──────────────────────────────────────── */
+                const hasEscalation = timeline.some(e => e.event_type === 'escalation_recorded');
+                const riskHigh = caseData.risk_level?.toLowerCase() === 'high' || caseData.risk_level?.toLowerCase() === 'critical';
+                let escalationBand: Band = 'green';
+                let escalationLabel = 'No escalation needed';
+                if (hasEscalation) { escalationBand = 'green'; escalationLabel = 'Escalated appropriately'; }
+                else if (riskHigh) { escalationBand = 'red'; escalationLabel = 'Missing escalation (high risk)'; }
+
+                /* ── Overall performance band ───────────────────────────────── */
+                const bands = [
+                    bandOf(hoursToReview, T_REVIEW),
+                    bandOf(hoursToTriage, T_TRIAGE),
+                    bandOf(hoursToClosure, T_CLOSE),
+                    docBand,
+                    escalationBand,
+                ];
+                const redCount = bands.filter(b => b === 'red').length;
+                const greenCount = bands.filter(b => b === 'green').length;
+                const overallBand: Band = redCount >= 2 ? 'red' : greenCount >= 4 ? 'green' : 'amber';
+                const overallLabel = overallBand === 'green' ? 'Excellent response' : overallBand === 'amber' ? 'Good response' : 'Attention needed';
+
+                /* ── KPI card helper ────────────────────────────────────────── */
+                const KpiCard = ({ label, value, band, hint, barPctVal }: { label: string; value: string; band: Band; hint: string; barPctVal?: number }) => {
+                    const c = bandColours[band];
+                    return (
+                        <div style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: '10px', padding: '0.75rem 0.9rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+                            <span style={{ fontSize: '1.15rem', fontWeight: 700, color: c.fg }}>{value}</span>
+                            {barPctVal != null && (
+                                <div style={{ height: '5px', background: c.border, borderRadius: '3px', overflow: 'hidden', marginTop: '2px' }}>
+                                    <div style={{ height: '100%', width: `${barPctVal}%`, background: c.fg, borderRadius: '3px', transition: 'width 0.6s ease' }} />
+                                </div>
+                            )}
+                            <span style={{ fontSize: '0.7rem', color: c.fg, opacity: 0.85 }}>{hint}</span>
+                        </div>
+                    );
+                };
+
+                /* ── Milestones ──────────────────────────────────────────────── */
+                const milestones = [
+                    { label: 'Submitted', done: !!submitted, time: caseData.submitted_at },
+                    { label: 'Reviewed', done: !!reviewed, time: caseData.reviewed_at },
+                    { label: 'Triaged', done: !!triaged, time: aiTriage?.created_at ?? null },
+                    { label: 'Closed', done: !!closed, time: caseData.closed_at },
+                ];
+
+                const reviewBand = bandOf(hoursToReview, T_REVIEW);
+                const triageBand = bandOf(hoursToTriage, T_TRIAGE);
+                const closureBand = bandOf(hoursToClosure, T_CLOSE);
+
+                const reviewHint = reviewBand === 'green' ? 'Reviewed within target' : reviewBand === 'amber' ? 'Slightly delayed' : hoursToReview == null ? 'Not yet reviewed' : 'Review delayed';
+                const triageHint = triageBand === 'green' ? 'Triaged promptly' : triageBand === 'amber' ? 'Slightly delayed' : hoursToTriage == null ? 'Not yet triaged' : 'Triage delayed';
+                const closureHint = closureBand === 'green' ? 'Closed within target' : closureBand === 'amber' ? 'Slightly delayed' : hoursToClosure == null ? 'Not yet closed' : 'Closure delayed';
+
+                const oc = bandColours[overallBand];
+
+                return (
+                    <div style={{ marginTop: '0.25rem', marginBottom: '1.5rem' }}>
+                        {/* Overall performance band */}
+                        <div style={{ background: oc.bg, border: `1px solid ${oc.border}`, borderRadius: '12px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.35rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <CheckCircle2 size={18} style={{ color: oc.fg }} />
+                                    <span style={{ fontSize: '0.92rem', fontWeight: 700, color: oc.fg }}>Case Completion Snapshot</span>
+                                </div>
+                                <span style={{ fontSize: '0.72rem', color: oc.fg, opacity: 0.7, paddingLeft: '1.65rem' }}>A quick view of how this case was handled against current response targets.</span>
+                            </div>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: oc.fg, background: `${oc.fg}14`, padding: '3px 10px', borderRadius: '20px' }}>{overallLabel}</span>
+                        </div>
+
+                        {/* KPI grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '0.75rem' }}>
+                            <KpiCard label="Time to First Review" value={fmtDuration(hoursToReview)} band={reviewBand} hint={reviewHint} barPctVal={barPct(hoursToReview, T_REVIEW.amber * 2)} />
+                            <KpiCard label="Time to Triage" value={fmtDuration(hoursToTriage)} band={triageBand} hint={triageHint} barPctVal={barPct(hoursToTriage, T_TRIAGE.amber * 2)} />
+                            <KpiCard label="Time to Closure" value={fmtDuration(hoursToClosure)} band={closureBand} hint={closureHint} barPctVal={barPct(hoursToClosure, T_CLOSE.amber * 2)} />
+                            <KpiCard label="Documentation" value={`${docScore}/5`} band={docBand} hint={docLabel} barPctVal={docScore * 20} />
+                            <KpiCard label="Escalation" value={hasEscalation ? 'Yes' : 'No'} band={escalationBand} hint={escalationLabel} />
+                        </div>
+
+                        {/* Mini milestone timeline */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginTop: '1rem', padding: '0.6rem 0.8rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                            {milestones.map((ms, idx) => (
+                                <React.Fragment key={idx}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '0 0 auto', minWidth: '60px' }}>
+                                        <div style={{
+                                            width: '22px', height: '22px', borderRadius: '50%',
+                                            background: ms.done ? '#10b981' : '#cbd5e1',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            transition: 'background 0.3s ease',
+                                        }}>
+                                            {ms.done && <CheckCircle2 size={13} style={{ color: '#fff' }} />}
+                                        </div>
+                                        <span style={{ fontSize: '0.65rem', fontWeight: 600, color: ms.done ? '#065f46' : '#94a3b8', marginTop: '4px' }}>{ms.label}</span>
+                                        {ms.time && <span style={{ fontSize: '0.58rem', color: '#94a3b8' }}>{fmtDateTime(ms.time)}</span>}
+                                    </div>
+                                    {idx < milestones.length - 1 && (
+                                        <div style={{ flex: 1, height: '2px', background: milestones[idx + 1].done ? '#10b981' : '#e2e8f0', borderRadius: '1px', margin: '0 2px', marginBottom: '1.2rem' }} />
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* TWO-COLUMN GRID                                               */}
             {/* ═══════════════════════════════════════════════════════════════ */}
             <div className="casedetail-grid">
@@ -2556,164 +2714,9 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                     </div>
                 </>
             )}
-            {/* ═══════════════════════════════════════════════════════════════ */}
-            {/* CLOSURE PERFORMANCE SNAPSHOT (closed cases only)               */}
-            {/* ═══════════════════════════════════════════════════════════════ */}
-            {isClosed && (() => {
-                /* ── Thresholds (hours) — later can come from org settings ── */
-                const T_REVIEW = { green: 1, amber: 4 };
-                const T_TRIAGE = { green: 2, amber: 8 };
-                const T_CLOSE = { green: 12, amber: 24 };
 
-                /* ── Compute durations in hours ─────────────────────────────── */
-                const submitted = caseData.submitted_at ? new Date(caseData.submitted_at).getTime() : null;
-                const reviewed = caseData.reviewed_at ? new Date(caseData.reviewed_at).getTime() : null;
-                const closed = caseData.closed_at ? new Date(caseData.closed_at).getTime() : null;
-                const triaged = aiTriage?.created_at ? new Date(aiTriage.created_at).getTime() : null;
 
-                const hoursToReview = submitted && reviewed ? (reviewed - submitted) / 3_600_000 : null;
-                const hoursToTriage = submitted && triaged ? (triaged - submitted) / 3_600_000 : null;
-                const hoursToClosure = submitted && closed ? (closed - submitted) / 3_600_000 : null;
 
-                /* ── Colour / label helpers ──────────────────────────────────── */
-                type Band = 'green' | 'amber' | 'red' | 'neutral';
-                const bandColours: Record<Band, { bg: string; fg: string; border: string }> = {
-                    green: { bg: '#ecfdf5', fg: '#065f46', border: '#a7f3d0' },
-                    amber: { bg: '#fffbeb', fg: '#92400e', border: '#fde68a' },
-                    red: { bg: '#fef2f2', fg: '#991b1b', border: '#fecaca' },
-                    neutral: { bg: '#f8fafc', fg: '#64748b', border: '#e2e8f0' },
-                };
-                const bandOf = (hours: number | null, t: { green: number; amber: number }): Band => {
-                    if (hours == null) return 'neutral';
-                    if (hours <= t.green) return 'green';
-                    if (hours <= t.amber) return 'amber';
-                    return 'red';
-                };
-                const fmtDuration = (h: number | null): string => {
-                    if (h == null) return '—';
-                    if (h < 1) return `${Math.round(h * 60)}m`;
-                    if (h < 24) return `${h.toFixed(1)}h`;
-                    return `${(h / 24).toFixed(1)}d`;
-                };
-                const barPct = (hours: number | null, max: number): number => {
-                    if (hours == null) return 0;
-                    return Math.min(100, Math.max(5, (hours / max) * 100));
-                };
-
-                /* ── Documentation completeness ──────────────────────────────── */
-                const hasCategory = !!caseData.category;
-                const hasDecision = !!caseData.decision;
-                const hasRiskLevel = !!caseData.risk_level;
-                const hasOutcome = !!caseData.outcome;
-                const hasDesc = !!caseData.description;
-                const docScore = [hasCategory, hasDecision, hasRiskLevel, hasOutcome, hasDesc].filter(Boolean).length;
-                const docBand: Band = docScore >= 4 ? 'green' : docScore >= 2 ? 'amber' : 'red';
-                const docLabel = docScore >= 4 ? 'Complete' : docScore >= 2 ? 'Mostly complete' : 'Missing key info';
-
-                /* ── Escalation outcome ──────────────────────────────────────── */
-                const hasEscalation = timeline.some(e => e.event_type === 'escalation_recorded');
-                const riskHigh = caseData.risk_level?.toLowerCase() === 'high' || caseData.risk_level?.toLowerCase() === 'critical';
-                let escalationBand: Band = 'green';
-                let escalationLabel = 'No escalation needed';
-                if (hasEscalation) { escalationBand = 'green'; escalationLabel = 'Escalated appropriately'; }
-                else if (riskHigh) { escalationBand = 'red'; escalationLabel = 'Missing escalation (high risk)'; }
-
-                /* ── Overall performance band ───────────────────────────────── */
-                const bands = [
-                    bandOf(hoursToReview, T_REVIEW),
-                    bandOf(hoursToTriage, T_TRIAGE),
-                    bandOf(hoursToClosure, T_CLOSE),
-                    docBand,
-                    escalationBand,
-                ];
-                const redCount = bands.filter(b => b === 'red').length;
-                const greenCount = bands.filter(b => b === 'green').length;
-                const overallBand: Band = redCount >= 2 ? 'red' : greenCount >= 4 ? 'green' : 'amber';
-                const overallLabel = overallBand === 'green' ? 'Excellent response' : overallBand === 'amber' ? 'Good response' : 'Attention needed';
-
-                /* ── KPI card helper ────────────────────────────────────────── */
-                const KpiCard = ({ label, value, band, hint, barPctVal }: { label: string; value: string; band: Band; hint: string; barPctVal?: number }) => {
-                    const c = bandColours[band];
-                    return (
-                        <div style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: '10px', padding: '0.75rem 0.9rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                            <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
-                            <span style={{ fontSize: '1.15rem', fontWeight: 700, color: c.fg }}>{value}</span>
-                            {barPctVal != null && (
-                                <div style={{ height: '5px', background: c.border, borderRadius: '3px', overflow: 'hidden', marginTop: '2px' }}>
-                                    <div style={{ height: '100%', width: `${barPctVal}%`, background: c.fg, borderRadius: '3px', transition: 'width 0.6s ease' }} />
-                                </div>
-                            )}
-                            <span style={{ fontSize: '0.7rem', color: c.fg, opacity: 0.85 }}>{hint}</span>
-                        </div>
-                    );
-                };
-
-                /* ── Milestones ──────────────────────────────────────────────── */
-                const milestones = [
-                    { label: 'Submitted', done: !!submitted, time: caseData.submitted_at },
-                    { label: 'Reviewed', done: !!reviewed, time: caseData.reviewed_at },
-                    { label: 'Triaged', done: !!triaged, time: aiTriage?.created_at ?? null },
-                    { label: 'Closed', done: !!closed, time: caseData.closed_at },
-                ];
-
-                const reviewBand = bandOf(hoursToReview, T_REVIEW);
-                const triageBand = bandOf(hoursToTriage, T_TRIAGE);
-                const closureBand = bandOf(hoursToClosure, T_CLOSE);
-
-                const reviewHint = reviewBand === 'green' ? 'Reviewed within target' : reviewBand === 'amber' ? 'Slightly delayed' : hoursToReview == null ? 'Not yet reviewed' : 'Review delayed';
-                const triageHint = triageBand === 'green' ? 'Triaged promptly' : triageBand === 'amber' ? 'Slightly delayed' : hoursToTriage == null ? 'Not yet triaged' : 'Triage delayed';
-                const closureHint = closureBand === 'green' ? 'Closed within target' : closureBand === 'amber' ? 'Slightly delayed' : hoursToClosure == null ? 'Not yet closed' : 'Closure delayed';
-
-                const oc = bandColours[overallBand];
-
-                return (
-                    <div style={{ marginTop: '1.5rem' }}>
-                        {/* Overall performance band */}
-                        <div style={{ background: oc.bg, border: `1px solid ${oc.border}`, borderRadius: '12px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.35rem' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <CheckCircle2 size={18} style={{ color: oc.fg }} />
-                                    <span style={{ fontSize: '0.92rem', fontWeight: 700, color: oc.fg }}>Case Completion Snapshot</span>
-                                </div>
-                                <span style={{ fontSize: '0.72rem', color: oc.fg, opacity: 0.7, paddingLeft: '1.65rem' }}>A quick view of how this case was handled against current response targets.</span>
-                            </div>
-                            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: oc.fg, background: `${oc.fg}14`, padding: '3px 10px', borderRadius: '20px' }}>{overallLabel}</span>
-                        </div>
-
-                        {/* KPI grid */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '0.75rem' }}>
-                            <KpiCard label="Time to First Review" value={fmtDuration(hoursToReview)} band={reviewBand} hint={reviewHint} barPctVal={barPct(hoursToReview, T_REVIEW.amber * 2)} />
-                            <KpiCard label="Time to Triage" value={fmtDuration(hoursToTriage)} band={triageBand} hint={triageHint} barPctVal={barPct(hoursToTriage, T_TRIAGE.amber * 2)} />
-                            <KpiCard label="Time to Closure" value={fmtDuration(hoursToClosure)} band={closureBand} hint={closureHint} barPctVal={barPct(hoursToClosure, T_CLOSE.amber * 2)} />
-                            <KpiCard label="Documentation" value={`${docScore}/5`} band={docBand} hint={docLabel} barPctVal={docScore * 20} />
-                            <KpiCard label="Escalation" value={hasEscalation ? 'Yes' : 'No'} band={escalationBand} hint={escalationLabel} />
-                        </div>
-
-                        {/* Mini milestone timeline */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginTop: '1rem', padding: '0.6rem 0.8rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                            {milestones.map((ms, idx) => (
-                                <React.Fragment key={idx}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '0 0 auto', minWidth: '60px' }}>
-                                        <div style={{
-                                            width: '22px', height: '22px', borderRadius: '50%',
-                                            background: ms.done ? '#10b981' : '#cbd5e1',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            transition: 'background 0.3s ease',
-                                        }}>
-                                            {ms.done && <CheckCircle2 size={13} style={{ color: '#fff' }} />}
-                                        </div>
-                                        <span style={{ fontSize: '0.65rem', fontWeight: 600, color: ms.done ? '#065f46' : '#94a3b8', marginTop: '4px' }}>{ms.label}</span>
-                                        {ms.time && <span style={{ fontSize: '0.58rem', color: '#94a3b8' }}>{fmtDateTime(ms.time)}</span>}
-                                    </div>
-                                    {idx < milestones.length - 1 && (
-                                        <div style={{ flex: 1, height: '2px', background: milestones[idx + 1].done ? '#10b981' : '#e2e8f0', borderRadius: '1px', margin: '0 2px', marginBottom: '1.2rem' }} />
-                                    )}
-                                </React.Fragment>
-                            ))}
-                        </div>
-                    </div>
-                );
-            })()}
             {/* DELETE CASE MODAL (super admin only)                          */}
             {/* ═══════════════════════════════════════════════════════════════ */}
             {showDeleteModal && isSuperAdmin && (
