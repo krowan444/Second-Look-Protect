@@ -1125,8 +1125,7 @@ export default function App() {
               <div className="text-center">
                 <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-2">General Enquiries</p>
                 <span className="inline-block px-4 py-1.5 rounded-full bg-[#C9A84C]/10 text-[#0B1E36] text-sm font-semibold group-hover:bg-[#C9A84C]/20 transition-colors">Send email</span>
-                <p className="text-[#0B1E36] font-semibold text-[11px] sm:text-[12px] break-all mt-2 leading-snug">hello@secondlookprotect.co.uk</p>
-                <p className="text-slate-400 text-[11px] mt-1 leading-snug">For questions about platform fit and pilots</p>
+                <p className="text-slate-400 text-[11px] mt-2 leading-snug">For questions about platform fit and pilots</p>
               </div>
             </a>
 
@@ -1142,8 +1141,7 @@ export default function App() {
               <div className="text-center">
                 <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-2">Technical Support</p>
                 <span className="inline-block px-4 py-1.5 rounded-full bg-[#C9A84C]/10 text-[#0B1E36] text-sm font-semibold group-hover:bg-[#C9A84C]/20 transition-colors">Send email</span>
-                <p className="text-[#0B1E36] font-semibold text-[11px] sm:text-[12px] break-all mt-2 leading-snug">support@secondlookprotect.co.uk</p>
-                <p className="text-slate-400 text-[11px] mt-1 leading-snug">For platform support and account help</p>
+                <p className="text-slate-400 text-[11px] mt-2 leading-snug">For platform support and account help</p>
               </div>
             </a>
           </div>
