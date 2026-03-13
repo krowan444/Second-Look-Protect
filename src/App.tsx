@@ -713,11 +713,14 @@ export default function App() {
         {/* Header — centred */}
         <div className="max-w-xl mx-auto text-center mb-10">
           <p className="text-[#A8853C] text-lg font-semibold tracking-widest uppercase mb-6">
-            Who this is for
+            WHO THIS IS FOR
           </p>
           <h2 className="text-[#0B1E36]">
-            Designed for real people who want extra reassurance online.
+            Built for organisations responsible for safeguarding vulnerable people.
           </h2>
+          <p className="text-slate-600 text-lg leading-relaxed mt-4">
+            Second Look Protect is designed for care homes, assisted living providers, housing and support teams, safeguarding leads, compliance managers, and care groups that need a clearer way to record concerns, review risk, and evidence oversight.
+          </p>
         </div>
 
         {/* 2-col card grid */}
@@ -726,10 +729,10 @@ export default function App() {
           role="list"
         >
           {[
-            'Individuals wanting a trusted second opinion',
-            'Family members supporting loved ones',
-            'Care home or retirement community residents',
-            'Older adults wanting reassurance without complexity',
+            'Care home managers needing clearer oversight',
+            'Safeguarding leads reviewing suspicious incidents',
+            'Compliance and governance teams preparing for inspection',
+            'Care groups monitoring risk across multiple services',
           ].map((item) => (
             <li
               key={item}
@@ -773,8 +776,8 @@ export default function App() {
       {/* ── The Problem ──────────────────────────────────────────────── */}
       <SectionWrapper background="offwhite" topBorder={false} className="pt-10 md:pt-14 pb-12 md:pb-16">
         <SectionHeading
-          title="The internet should not feel like a minefield."
-          subtitle="Every day, convincing fake messages, websites, and calls target innocent people. They look like your bank, your delivery service, or even your family. One wrong click can cost you everything."
+          title="Scam related safeguarding concerns are becoming harder to spot."
+          subtitle="Suspicious calls, emails, payment requests, impersonation attempts, and financial abuse concerns can place vulnerable residents at risk. These issues are often handled across messages, memory, emails, or disconnected notes, making it harder to maintain clear oversight. Care teams need a calm, structured way to log concerns, review risk, and act consistently before harm escalates."
         />
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -783,9 +786,9 @@ export default function App() {
             <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
               <AlertTriangle className="w-6 h-6 text-slate-500" />
             </div>
-            <h3 className="mb-3">Increasingly Convincing Fraud</h3>
+            <h3 className="mb-3">Harder to identify risk</h3>
             <p className="text-slate-600 text-base leading-relaxed">
-              Modern fraud is difficult to distinguish from genuine communications. Criminals replicate real logos, names, and language to prompt immediate action.
+              Modern scam activity can look genuine, urgent, and convincing. Staff may see suspicious contact, unusual payment pressure, or signs of manipulation without having one clear place to record and assess concern.
             </p>
           </div>
 
@@ -794,9 +797,9 @@ export default function App() {
             <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
               <Lock className="w-6 h-6 text-slate-500" />
             </div>
-            <h3 className="mb-3">Serious Financial Consequences</h3>
+            <h3 className="mb-3">Higher safeguarding pressure</h3>
             <p className="text-slate-600 text-base leading-relaxed">
-              Once funds are transferred, recovery is rarely possible. The financial and personal impact can be significant and long-lasting.
+              When incidents are recorded inconsistently, important patterns can be missed. Delays in review, unclear ownership, and weak visibility can increase organisational risk and reduce confidence in decision making.
             </p>
           </div>
 
@@ -805,9 +808,9 @@ export default function App() {
             <div className="w-12 h-12 bg-[#C9A84C]/15 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
               <Shield className="w-6 h-6 text-[#C9A84C]" />
             </div>
-            <h3 className="text-white font-semibold mb-3" style={{ color: '#F3F6FA' }}>The Second Look Solution</h3>
+            <h3 className="text-white font-semibold mb-3" style={{ color: '#F3F6FA' }}>A clearer safeguarding response</h3>
             <p className="text-slate-200 text-base leading-relaxed">
-              Pause. Before you click or pay — get a second look. Send it to us instead. Our experts analyse the request and give you a clear verdict — Safe or Scam.
+              Second Look Protect gives teams one structured place to record concerns, support review, track actions, and build clearer evidence for governance and inspection.
             </p>
           </div>
         </div>
@@ -818,37 +821,37 @@ export default function App() {
       {/* ── Digital Safety Education ──────────────────────────────────── */}
       <SectionWrapper background="offwhite" topBorder>
         <SectionHeading
-          title="The digital world is changing — and that's OK."
+          title="Modern safeguarding needs clearer visibility."
         />
 
         {/* Sub-label + paragraphs — constrained to ~65 char line length */}
         <div className="max-w-[640px] mx-auto text-center mt-10 mb-14">
           <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-5">
-            A calm perspective on modern scams
+            A CALMER WAY TO MANAGE CONCERNS
           </p>
 
           <p className="text-slate-600 text-base leading-relaxed mb-5">
-            Technology — including AI — is evolving rapidly. While this brings many benefits, it also means scam techniques are becoming more convincing and harder to recognise.
+            Care teams should not need to rely on scattered messages, spreadsheets, or memory when something serious is reported. Second Look Protect creates a more structured safeguarding process so concerns can be logged clearly, reviewed consistently, and followed through with confidence.
           </p>
 
           <p className="text-slate-600 text-base leading-relaxed">
-            You shouldn't need to be a technology expert to stay safe online. Second Look Protect provides a clear, calm second opinion whenever something feels uncertain.
+            The result is stronger oversight for managers, better support for vulnerable residents, and clearer evidence when accountability matters.
           </p>
         </div>
 
         {/* Card — centered, left-aligned text inside for readability */}
         <div className="max-w-3xl mx-auto bg-white border border-slate-100 rounded-xl p-8 md:p-12 shadow-sm">
           <h3 className="text-[#0B1E36] text-lg font-semibold mb-5">
-            Why is online safety becoming more challenging?
+            Why clearer safeguarding systems matter now
           </h3>
           <p className="text-slate-600 text-base leading-relaxed mb-4">
-            Technology and AI tools are evolving quickly. Unfortunately, this means scammers can create more convincing messages, emails, and fake content than ever before.
+            Scam related harm is no longer just a personal digital issue. In care settings, it can quickly become a safeguarding, financial abuse, resident wellbeing, and governance issue.
           </p>
           <p className="text-slate-600 text-base leading-relaxed mb-8">
-            Having a trusted second opinion helps you stay confident without needing to understand all the technical details.
+            A structured system helps teams record what happened, assess seriousness, track review activity, and show that concerns were handled properly.
           </p>
           <p className="text-slate-400 text-sm italic">
-            As scams evolve, so does your protection.
+            As safeguarding pressure grows, clear oversight matters more.
           </p>
         </div>
       </SectionWrapper>
@@ -880,7 +883,7 @@ export default function App() {
               className="text-[#0B1E36] text-xl md:text-2xl leading-relaxed mb-10"
               style={{ fontFamily: "'Merriweather', serif", fontWeight: 300 }}
             >
-              I started Second Look Protect after seeing how convincing modern scams have become. Even careful, intelligent people are being caught off guard. This service exists to create a pause&nbsp;— a second look&nbsp;— before a decision is made.
+              I started Second Look Protect after seeing how convincing modern scams and manipulation attempts have become, especially where vulnerable people may be at greater risk. It became clear that organisations need more than informal reassurance. They need a clear process for recording concern, reviewing risk, and showing that safeguarding decisions are being handled properly.
             </p>
 
             {/* Divider */}
@@ -904,25 +907,19 @@ export default function App() {
       <SectionWrapper background="offwhite" topBorder>
         <div className="max-w-2xl mx-auto flex flex-col items-center text-center">
           <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-4">
-            Peace of mind
+            Clear. Calm. Structured.
           </p>
 
           <h2 className="text-[#0B1E36] mb-6">
-            You don't need to have been scammed to protect yourself.
+            Better safeguarding support before problems escalate
           </h2>
 
           <p className="text-slate-600 text-lg leading-relaxed mb-6">
-            Most members join after experiencing uncertainty — not after losing money.
+            Not every concern begins with confirmed harm. Often it starts with something that feels off. A suspicious caller. An unusual payment request. A message that creates doubt. A resident who may be being targeted repeatedly.
           </p>
 
-          <div className="space-y-3 text-slate-600 text-base leading-relaxed mb-8">
-            <p>Sometimes it's just a message that feels slightly off.</p>
-            <p>A phone call that doesn't sit right.</p>
-            <p>An email that creates doubt.</p>
-          </div>
-
           <p className="text-slate-600 text-base leading-relaxed">
-            Second Look Protect exists so you can pause, check, and move forward with confidence — before anything goes wrong.
+            Second Look Protect exists so staff and managers can pause, record concern, review risk, and move forward with more confidence before situations become more serious.
           </p>
         </div>
       </SectionWrapper>
@@ -1134,24 +1131,15 @@ export default function App() {
       <SectionWrapper id="testimonials" background="offwhite" topBorder>
         <div className="max-w-2xl mx-auto text-center">
           <SectionHeading
-            title="Helping shape the future of safeguarding — together"
+            title="Built with real safeguarding use in mind"
           />
 
           <p className="text-slate-600 text-lg leading-relaxed mb-6">
-            Second Look Protect is currently in early rollout.
+            Second Look Protect is being shaped around the needs of real care environments and safeguarding teams. Early rollout helps refine the platform around practical workflows, clearer reporting, and stronger operational oversight.
           </p>
 
-          <div className="space-y-4 text-slate-600 text-base leading-relaxed mb-8">
-            <p>
-              We are working with local care environments and early users to refine and improve the service based on real-world feedback.
-            </p>
-            <p>
-              If you join today, you're not just using the service — you're helping shape how modern safeguarding support should feel: calm, simple, and human.
-            </p>
-          </div>
-
-          <p className="text-slate-500 text-sm leading-relaxed text-center mx-auto max-w-xl" style={{ opacity: 0.85 }}>
-            Early partners help guide new features, improve clarity, and ensure the experience remains supportive and easy to use.
+          <p className="text-slate-600 text-lg leading-relaxed mb-6">
+            This keeps the product grounded in real world care sector use while improving clarity, usability, and inspection readiness over time.
           </p>
         </div>
       </SectionWrapper>
