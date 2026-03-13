@@ -2669,10 +2669,13 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                 return (
                     <div style={{ marginTop: '1.5rem' }}>
                         {/* Overall performance band */}
-                        <div style={{ background: oc.bg, border: `1px solid ${oc.border}`, borderRadius: '12px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <CheckCircle2 size={18} style={{ color: oc.fg }} />
-                                <span style={{ fontSize: '0.92rem', fontWeight: 700, color: oc.fg }}>Case Completion Snapshot</span>
+                        <div style={{ background: oc.bg, border: `1px solid ${oc.border}`, borderRadius: '12px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.35rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <CheckCircle2 size={18} style={{ color: oc.fg }} />
+                                    <span style={{ fontSize: '0.92rem', fontWeight: 700, color: oc.fg }}>Case Completion Snapshot</span>
+                                </div>
+                                <span style={{ fontSize: '0.72rem', color: oc.fg, opacity: 0.7, paddingLeft: '1.65rem' }}>A quick view of how this case was handled against current response targets.</span>
                             </div>
                             <span style={{ fontSize: '0.78rem', fontWeight: 600, color: oc.fg, background: `${oc.fg}14`, padding: '3px 10px', borderRadius: '20px' }}>{overallLabel}</span>
                         </div>
