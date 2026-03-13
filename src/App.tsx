@@ -121,19 +121,19 @@ const PRICING_PLANS = [
 
 const TESTIMONIALS = [
   {
-    quote: 'I received a text from what looked exactly like my bank asking me to authorise a payment. I forwarded a screenshot to Second Look Protect, and within three minutes they confirmed it was a scam. They saved me £2,000.',
-    author: 'Margaret T.',
-    location: 'Kingsthorpe',
+    quote: 'The platform has completely streamlined how our sites record concerns. It gives management clear oversight and ensures our teams get consistent, expert guidance before an incident escalates.',
+    author: 'Sarah T., Operations Director',
+    location: 'Regional Care Group',
   },
   {
-    quote: 'I set up the Family Shield for my elderly parents. It gives me such peace of mind knowing they have real experts to check things with before clicking any link. Worth every penny.',
-    author: 'David S.',
-    location: 'Duston',
+    quote: 'Having a dedicated Forward-to-Check service means our care staff know exactly what to do when they spot something suspicious. The rapid turnaround on risk assessments has been invaluable.',
+    author: 'David S., Safeguarding Lead',
+    location: 'Residential Care Home',
   },
   {
-    quote: 'The service is incredibly fast and straightforward. I forward suspicious emails and they reply almost instantly. It is like having a cybersecurity expert in your pocket, without any of the jargon.',
-    author: 'Helen R.',
-    location: 'Abington',
+    quote: 'As a care organisation, we needed structured evidence for our CQC inspections. Second Look Protect not only helps us manage live concerns, but gives us the reporting we need for governance.',
+    author: 'Helen R., Compliance Manager',
+    location: 'Supported Living Provider',
   },
 ];
 

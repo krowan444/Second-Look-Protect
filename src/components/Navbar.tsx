@@ -154,7 +154,7 @@ export function Navbar({ onGetProtection }: NavbarProps) {
                             className="btn-gold-gradient"
                             onClick={onGetProtection}
                         >
-                            Get Protection
+                            Book a Demo
                         </Button>
                     </nav>
 
@@ -213,7 +213,7 @@ export function Navbar({ onGetProtection }: NavbarProps) {
                         <Button variant="primary" size="lg" className="w-full justify-center bg-[#C9A84C] text-[#0B1E36] hover:bg-[#D9BC78] border-0"
                             onClick={onGetProtection}
                         >
-                            Get Protection
+                            Book a Demo
                         </Button>
                     </div>
                 </div>
@@ -223,11 +223,11 @@ export function Navbar({ onGetProtection }: NavbarProps) {
             <div className="md:hidden fixed bottom-6 right-4 z-50 home-fab-old">
                 <button
                     onClick={onGetProtection}
-                    aria-label="Get Protection"
+                    aria-label="Book a Demo"
                     className="fab-pulse btn-gold-gradient flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm active:scale-95"
                 >
                     <Shield className="w-4 h-4 text-white" aria-hidden="true" />
-                    Get Protection
+                    Book a Demo
                 </button>
             </div>
         </>

@@ -94,20 +94,20 @@ const OPTIONS = [
     {
         id: 'screenshot',
         icon: <Upload className="w-5 h-5" />,
-        title: 'Upload a screenshot',
-        description: 'Send a screenshot of a suspicious message, email, or website.',
+        title: 'Upload a screenshot or file',
+        description: 'Securely upload a suspicious message, email, invoice, or document for review.',
     },
     {
         id: 'link',
         icon: <Link2 className="w-5 h-5" />,
         title: 'Submit a suspicious link',
-        description: 'Paste a URL you are unsure about — we will check what is behind it.',
+        description: 'Paste a URL your team is unsure about — we will assess the risk.',
     },
     {
         id: 'contact',
         icon: <Phone className="w-5 h-5" />,
-        title: 'Request contact verification',
-        description: 'Verify if a phone number, email address, or caller is legitimate.',
+        title: 'Verify a contact or request a demo',
+        description: 'Verify if a caller is legitimate, or request a call back to discuss the platform.',
     },
 ];
 
@@ -330,16 +330,16 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             <CheckCircle className="w-10 h-10 text-[#C9A84C]" />
                         </div>
                         <h1 className="text-[#0B1E36] mb-2" style={{ fontFamily: "'Merriweather', serif" }}>
-                            Request received.
+                            Request securely received.
                         </h1>
-                        <p className="text-slate-400 text-xs mb-4">You are taking a second look.</p>
+                        <p className="text-slate-400 text-xs mb-4">Your organisation's submission is securely logged.</p>
                         <p className="text-slate-600 text-lg leading-relaxed mb-4">
                             A UK-based specialist will review your submission and respond promptly.
                             <br /><br />
-                            <span className="text-slate-500 text-base">No judgement. No pressure. Just clarity.</span>
+                            <span className="text-slate-500 text-base">Clear, structured safeguarding support.</span>
                         </p>
                         <p className="text-slate-400 text-sm leading-relaxed mb-10">
-                            You've done the right thing. There's no need to rush. We will review this for you.
+                            The incident has been recorded. We will review the details and provide next steps shortly.
                         </p>
                         <Button
                             onClick={onBack}
@@ -369,18 +369,18 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                         </div>
                         <div className="mb-10">
                             <p className="text-[#A8853C] text-xs font-semibold tracking-widest uppercase mb-3">
-                                Step 1 of 2 — Choose your check type
+                                Step 1 of 2 — Choose submission type
                             </p>
                             <h1 className="text-[#0B1E36] mb-2" style={{ fontFamily: "'Merriweather', serif" }}>
-                                Not sure if something is safe? Let's take a second look.
+                                Submit a concern or request a platform demo
                             </h1>
-                            <p className="text-slate-400 text-xs mb-3">You are taking a second look.</p>
+                            <p className="text-slate-400 text-xs mb-3">Secure, confidential handling.</p>
                             <p className="text-slate-500 text-base leading-relaxed max-w-prose mb-3">
-                                If something doesn't feel right, simply upload it below — we'll review it and send you a clear, easy-to-understand risk report explaining what's safe, what's risky, and what to do next.
+                                Use this secure form to upload a suspicious incident for review, or to request a practical walkthrough of the Second Look Protect platform for your organisation.
                             </p>
 
                             <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                                You can upload a screenshot, paste a link, or copy the message — whichever is easiest for you.
+                                You can upload a screenshot, paste a link, or securely provide contact details to verify.
                             </p>
                         </div>
                         <div className="space-y-3 mb-10" role="radiogroup" aria-label="Submission type">
@@ -478,17 +478,17 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             Step 2 of 2 — Provide details
                         </p>
                         <h1 className="text-[#0B1E36] mb-2" style={{ fontFamily: "'Merriweather', serif" }}>
-                            {selectedOption === 'screenshot' ? 'Upload your screenshot'
+                            {selectedOption === 'screenshot' ? 'Upload your file'
                                 : selectedOption === 'link' ? 'Paste the suspicious link'
-                                    : 'Enter the contact to verify'}
+                                    : 'Enter contact or demo details'}
                         </h1>
-                        <p className="text-slate-400 text-xs mb-3">You are taking a second look.</p>
+                        <p className="text-slate-400 text-xs mb-3">Secure, confidential handling.</p>
                         <p className="text-slate-500 text-base leading-relaxed max-w-prose">
                             {selectedOption === 'screenshot'
-                                ? 'Attach a screenshot if you have one — this is optional. Fill in your details below and we will still get back to you.'
+                                ? 'Attach a screenshot or document for review. Fill in your details below and our team will securely assess it.'
                                 : selectedOption === 'link'
-                                    ? 'Paste the full URL (starting with https://) that you would like us to check.'
-                                    : 'Enter the phone number, email address, or contact name you want us to verify.'}
+                                    ? 'Paste the full URL (starting with https://) that you would like us to check for your organisation.'
+                                    : 'Enter the phone number, email address, or contact name you want us to verify, or leave a note requesting a demo.'}
                         </p>
                     </div>
 
@@ -510,8 +510,8 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                                         <Image className="w-6 h-6 text-slate-400" />
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-slate-600 font-medium text-sm">Click to upload a screenshot</p>
-                                        <p className="text-slate-400 text-xs mt-1">Optional · JPG, PNG, WEBP, GIF</p>
+                                        <p className="text-slate-600 font-medium text-sm">Click to upload a file</p>
+                                        <p className="text-slate-400 text-xs mt-1">Optional · JPG, PNG, WEBP, PDF</p>
                                     </div>
                                 </button>
                             ) : (
@@ -673,7 +673,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                                 aria-describedby={consentError ? 'consent-error' : undefined}
                             />
                             <span className="text-slate-600 text-sm leading-relaxed">
-                                I understand my information will be used to review my enquiry in line with the{' '}
+                                I understand my information will be handled securely in line with the{' '}
                                 <a
                                     href="/privacy-policy"
                                     className="text-[#A8853C] underline underline-offset-2 hover:text-[#C9A84C] transition-colors"
@@ -682,7 +682,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                                 >
                                     Privacy Policy
                                 </a>
-                                , and that this service provides guidance to help me decide what to do next and does not provide financial advice.
+                                , and that this service provides organisational safeguarding guidance, not financial or legal advice.
                             </span>
                         </label>
                         {consentError && (

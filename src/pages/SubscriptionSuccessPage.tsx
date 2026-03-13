@@ -7,40 +7,40 @@ interface Props {
 
 // Plan-specific perks shown on the confirmation page
 const PLAN_PERKS: Record<string, { title: string; items: string[] }> = {
-    'Basic Shield': {
-        title: 'Your Basic Shield includes:',
+    'Single Site': {
+        title: 'Your Single Site plan includes:',
         items: [
-            'Up to 5 Personal Reviews per month',
-            '24-Hour Reassurance Response',
-            'Clear Risk Assessment (Low / Medium / High)',
-            'Guardian Risk Summary for your records',
-            "The Recovery Blueprint — step-by-step guidance if you've already clicked",
+            'Up to 5 User Accounts per site',
+            'Forward-to-Check submission for staff',
+            'Clear Guardian Risk Assessment for incidents',
+            'Monthly insight summary for your records',
         ],
     },
-    'The Guardian': {
-        title: '',   // header removed per design update
+    'Professional': {
+        title: '',
         items: [
-            'Up to 15 Personal Reviews per month — professional scam checks whenever you need them.',
-            'Priority 12-Hour Reassurance Response — fast-track support for your peace of mind.',
-            'Premium Fridge Magnet — a quick-access physical guide to scam warning signs.',
-            '2× Wallet Cards & Phone Stickers — keep your protection visible on every device.',
-            'Guardian Risk Summary — a detailed monthly breakdown for your records.',
+            'Up to 15 User Accounts per site',
+            'Priority human review — faster professional assessment',
+            'Manager oversight dashboard — clear visibility of concerns',
+            'Inspection-ready case exports — stronger compliance evidence',
+            'Automated management alerts — proactive risk notification',
+            'Weekly safeguarding threat briefings',
         ],
     },
-    'Family Shield': {
-        title: '',   // header removed to match Guardian design
+    'Group Oversight': {
+        title: '',
         items: [
-            'Full Guardian Pack for 5 \u2014 physical magnets and stickers for the whole household.',
-            'Scam Scenario Flash Cards \u2014 interactive training tools for family safety.',
-            'Unlimited Personal Reviews \u2014 professional scam checks for every family member.',
-            "Emergency 'Human-Line' Call-Back \u2014 your direct priority line for urgent help.",
-            '1-on-1 Annual Digital Health Review \u2014 a personal security audit for the family lead.',
-            "Monthly 'Peace of Mind' Summary \u2014 a comprehensive safety report for all 5 members.",
+            'Unlimited staff accounts across your organisation',
+            'Cross-site intelligence views — spot patterns early',
+            'Custom severity routing rules — align with internal policy',
+            'Board-level PDF reporting — clearer governance data',
+            'Dedicated account manager — operational support',
+            'Compliance & audit API access',
         ],
     },
 };
 
-const PHYSICAL_PLANS = ['The Guardian', 'Family Shield'];
+const PHYSICAL_PLANS: string[] = [];
 
 export default function SubscriptionSuccessPage({ onGoHome }: Props) {
     const [email, setEmail] = useState<string | null>(null);
@@ -192,92 +192,7 @@ export default function SubscriptionSuccessPage({ onGoHome }: Props) {
                     )}
                 </div>
             )}
-            {/* Shipping claim form — all three tiers */}
-            {(plan === 'Basic Shield' || plan === 'The Guardian' || plan === 'Family Shield') && email && (
-                <div className="w-full max-w-md mb-8 bg-white/5 rounded-xl p-6 text-left ring-1 ring-white/10">
-                    {stickerDone ? (
-                        <div className="flex items-start gap-3 text-emerald-400">
-                            <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
-                            <p className="text-sm font-medium">
-                                {plan === 'The Guardian'
-                                    ? 'Success! Your Guardian Magnet and Stickers are being prepared for dispatch.'
-                                    : plan === 'Family Shield'
-                                        ? 'Success! Your 5× Family Guardian Packs and Flash Cards are being prepared for dispatch.'
-                                        : 'Thank you! Your sticker will be sent to this address.'}
-                            </p>
-                        </div>
-                    ) : (
-                        <form onSubmit={handleStickerSubmit} noValidate>
-                            <p className="text-slate-200 font-semibold mb-4 flex items-center gap-2">
-                                <Package className="w-4 h-4 text-[#C9A84C]" aria-hidden="true" />
-                                {plan === 'The Guardian'
-                                    ? 'Where should we send your Guardian Magnet & Stickers?'
-                                    : plan === 'Family Shield'
-                                        ? 'Where should we send your Family Guardian Packs?'
-                                        : 'Claim Your Shield Sticker'}
-                            </p>
-                            <p className="text-slate-400 text-xs mb-4">
-                                {plan === 'The Guardian'
-                                    ? "Enter your UK address and we'll post your Guardian Kit within 3–5 working days."
-                                    : plan === 'Family Shield'
-                                        ? "Enter your UK address and we'll post your 5 Family Guardian Packs within 3–5 working days."
-                                        : "Enter your UK address and we'll post your free Shield Sticker within 3–5 working days."}
-                            </p>
-
-                            <div className="space-y-3">
-                                <div>
-                                    <label htmlFor="sticker-line1" className="block text-xs text-slate-400 mb-1">Address Line 1</label>
-                                    <input
-                                        id="sticker-line1"
-                                        type="text"
-                                        required
-                                        value={stickerLine1}
-                                        onChange={(e) => setStickerLine1(e.target.value)}
-                                        placeholder="12 High Street"
-                                        className="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/60"
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="sticker-city" className="block text-xs text-slate-400 mb-1">Town / City</label>
-                                    <input
-                                        id="sticker-city"
-                                        type="text"
-                                        required
-                                        value={stickerCity}
-                                        onChange={(e) => setStickerCity(e.target.value)}
-                                        placeholder="London"
-                                        className="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/60"
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="sticker-postcode" className="block text-xs text-slate-400 mb-1">Postcode</label>
-                                    <input
-                                        id="sticker-postcode"
-                                        type="text"
-                                        required
-                                        value={stickerPostcode}
-                                        onChange={(e) => setStickerPostcode(e.target.value)}
-                                        placeholder="SW1A 1AA"
-                                        className="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/60"
-                                    />
-                                </div>
-                            </div>
-
-                            {stickerError && (
-                                <p className="mt-3 text-xs text-red-400">{stickerError}</p>
-                            )}
-
-                            <button
-                                type="submit"
-                                disabled={stickerSaving || !stickerLine1 || !stickerCity || !stickerPostcode}
-                                className="mt-4 w-full py-2.5 rounded-lg bg-[#C9A84C] text-[#0B1E36] font-semibold text-sm hover:bg-[#D9BC78] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {stickerSaving ? 'Saving…' : 'Confirm Delivery'}
-                            </button>
-                        </form>
-                    )}
-                </div>
-            )}
+            {/* Shipping claim form — removed for digital B2B plans */}
 
             <p className="text-slate-400 text-sm max-w-sm mb-6 leading-relaxed">
                 If you spot anything suspicious, forward it to our team straight away —
