@@ -109,93 +109,196 @@ export default async function handler(req, res) {
     const IMAGE_TRIAGE_TYPES = ['suspicious_email', 'suspicious_letter'];
     const hasImageEvidence = IMAGE_TRIAGE_TYPES.includes(caseRow.submission_type) && caseRow.meta?.evidence?.length > 0;
 
-    console.log(`[ai-triage] [letter-evidence] Image attached: ${hasImageEvidence} | submission_type: ${caseRow.submission_type} | evidence_count: ${caseRow.meta?.evidence?.length ?? 0}`);
+    console.log(`[ai-triage] [screenshot-pipeline] ═══ SCREENSHOT TRIAGE PIPELINE START ═══`);
+    console.log(`[ai-triage] [screenshot-pipeline] case_id: ${case_id}`);
+    console.log(`[ai-triage] [screenshot-pipeline] submission_type: ${caseRow.submission_type}`);
+    console.log(`[ai-triage] [screenshot-pipeline] image_attached: ${hasImageEvidence}`);
+    console.log(`[ai-triage] [screenshot-pipeline] evidence_entries: ${caseRow.meta?.evidence?.length ?? 0}`);
 
     if (hasImageEvidence) {
-      // Find the first image attachment
-      const imageAttachment = caseRow.meta.evidence.find(ev =>
-        ev.url && (
-          ev.url.toLowerCase().endsWith('.png') ||
-          ev.url.toLowerCase().endsWith('.jpg') ||
-          ev.url.toLowerCase().endsWith('.jpeg') ||
-          ev.url.toLowerCase().endsWith('.webp')
-        )
-      );
+      // Find the first image attachment — check both url and path fields
+      const imageAttachment = caseRow.meta.evidence.find(ev => {
+        const checkUrl = (ev.url || '').toLowerCase();
+        const checkPath = (ev.path || '').toLowerCase();
+        const isImage = (s) => s.endsWith('.png') || s.endsWith('.jpg') || s.endsWith('.jpeg') || s.endsWith('.webp');
+        return (ev.url && isImage(checkUrl)) || (ev.path && isImage(checkPath));
+      });
 
       if (imageAttachment) {
-        console.log(`[ai-triage] [letter-evidence] Screenshot detected for ${caseRow.submission_type}, attempting OCR pre-processing...`);
-        console.log(`[ai-triage] [letter-evidence] OCR attempted: true | image URL (truncated): ${imageAttachment.url?.slice(0, 80)}...`);
+        console.log(`[ai-triage] [screenshot-pipeline] Image found — url: ${imageAttachment.url?.slice(0, 100)} | path: ${imageAttachment.path || 'none'}`);
+
+        /* ── Resolve accessible image URL ────────────────────────────── */
+        let accessibleUrl = null;
         try {
-          const ocrStart = Date.now();
-          const ocrRes = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${OPENAI_KEY}`,
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages: [
-                {
-                  role: 'user',
-                  content: [
-                    {
-                      type: 'text',
-                      text: caseRow.submission_type === 'suspicious_letter'
-                        ? 'Extract all readable text from this photograph or scan of a physical letter/document exactly as written. Include all visible text: headers, body text, signatures, URLs, QR code labels, return addresses, reference numbers, and any fine print. Return only the extracted text, no commentary.'
-                        : 'Extract all readable text from this screenshot exactly as written. Return only the extracted text, no commentary.'
-                    },
-                    { type: 'image_url', image_url: { url: imageAttachment.url } }
-                  ]
-                }
-              ],
-              max_tokens: 2000
-            })
-          });
-
-          if (ocrRes.ok) {
-            const ocrData = await ocrRes.json();
-            ocrText = ocrData.choices?.[0]?.message?.content?.trim();
-            if (ocrText) {
-              console.log(`[ai-triage] [letter-evidence] OCR SUCCESS — extracted length: ${ocrText.length} | elapsed: ${Date.now() - ocrStart}ms`);
-              console.log(`[ai-triage] [letter-evidence] OCR text preview (first 300 chars): ${ocrText.slice(0, 300)}`);
-
-              // Inject extracted text into case context
-              if (!caseContext.meta) caseContext.meta = {};
-              if (!caseContext.meta.details) caseContext.meta.details = {};
-              caseContext.meta.details.extracted_text_from_screenshot = ocrText;
-
-              // ── Entity extraction from OCR text ──────────────────────────
-              extractedEntities = extractEntitiesFromText(ocrText);
-              if (extractedEntities) {
-                caseContext.meta.details.extracted_entities = extractedEntities;
-                console.log(`[ai-triage] [letter-evidence] Extracted entities: ${JSON.stringify(extractedEntities)}`);
+          // Strategy 1: If evidence has a storage path, generate a signed URL (works for private buckets)
+          if (imageAttachment.path) {
+            console.log(`[ai-triage] [screenshot-pipeline] Generating signed URL from storage path: ${imageAttachment.path}`);
+            const signedRes = await fetch(
+              `${SUPABASE_URL}/storage/v1/object/sign/evidence/${imageAttachment.path.split('/').map(s => encodeURIComponent(s)).join('/')}`,
+              {
+                method: 'POST',
+                headers: {
+                  apikey: SERVICE_KEY,
+                  Authorization: `Bearer ${SERVICE_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ expiresIn: 300 }), // 5-minute signed URL
+              }
+            );
+            if (signedRes.ok) {
+              const signedData = await signedRes.json();
+              if (signedData.signedURL) {
+                accessibleUrl = `${SUPABASE_URL}/storage/v1${signedData.signedURL}`;
+                console.log(`[ai-triage] [screenshot-pipeline] ✔ Signed URL generated (${accessibleUrl.length} chars)`);
               }
             } else {
-              console.log('[ai-triage] [letter-evidence] OCR completed but returned no text');
-              console.log('[ai-triage] [letter-evidence] OCR success: false (empty result)');
+              const signedErr = await signedRes.text();
+              console.warn(`[ai-triage] [screenshot-pipeline] Signed URL failed (${signedRes.status}): ${signedErr}`);
             }
-          } else {
-            const ocrErrText = await ocrRes.text();
-            console.warn(`[ai-triage] [letter-evidence] OCR FAILED — status: ${ocrRes.status} | body: ${ocrErrText}`);
-            console.log('[ai-triage] [letter-evidence] OCR success: false (API error)');
           }
-        } catch (ocrErr) {
-          console.error('[ai-triage] [letter-evidence] ✖ OCR error:', ocrErr.message);
-          console.log('[ai-triage] [letter-evidence] OCR success: false (exception)');
-          // Fail gracefully, don't block the main triage flow
+
+          // Strategy 2: Fall back to the stored public URL
+          if (!accessibleUrl && imageAttachment.url) {
+            accessibleUrl = imageAttachment.url;
+            console.log(`[ai-triage] [screenshot-pipeline] Using stored public URL: ${accessibleUrl.slice(0, 100)}`);
+
+            // Quick check: if the URL is a Supabase storage URL, verify it's accessible
+            if (accessibleUrl.includes('/storage/v1/object/public/')) {
+              try {
+                const headRes = await fetch(accessibleUrl, { method: 'HEAD' });
+                if (!headRes.ok) {
+                  console.warn(`[ai-triage] [screenshot-pipeline] ⚠ Public URL returned ${headRes.status} — image may not be accessible`);
+                  // Try signed URL as fallback if we have a path
+                  if (imageAttachment.path && !accessibleUrl.includes('token=')) {
+                    console.log(`[ai-triage] [screenshot-pipeline] Attempting signed URL fallback...`);
+                    const signedRes2 = await fetch(
+                      `${SUPABASE_URL}/storage/v1/object/sign/evidence/${imageAttachment.path.split('/').map(s => encodeURIComponent(s)).join('/')}`,
+                      {
+                        method: 'POST',
+                        headers: {
+                          apikey: SERVICE_KEY,
+                          Authorization: `Bearer ${SERVICE_KEY}`,
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ expiresIn: 300 }),
+                      }
+                    );
+                    if (signedRes2.ok) {
+                      const signedData2 = await signedRes2.json();
+                      if (signedData2.signedURL) {
+                        accessibleUrl = `${SUPABASE_URL}/storage/v1${signedData2.signedURL}`;
+                        console.log(`[ai-triage] [screenshot-pipeline] ✔ Signed URL fallback succeeded`);
+                      }
+                    }
+                  }
+                } else {
+                  console.log(`[ai-triage] [screenshot-pipeline] ✔ Public URL verified accessible (HEAD ${headRes.status})`);
+                }
+              } catch (headErr) {
+                console.warn(`[ai-triage] [screenshot-pipeline] HEAD check error: ${headErr.message}`);
+              }
+            }
+          }
+        } catch (urlErr) {
+          console.error(`[ai-triage] [screenshot-pipeline] ✖ URL resolution error: ${urlErr.message}`);
+          accessibleUrl = imageAttachment.url; // last resort fallback
+        }
+
+        if (!accessibleUrl) {
+          console.error(`[ai-triage] [screenshot-pipeline] ✖ No accessible image URL could be resolved — skipping OCR`);
+          console.log(`[ai-triage] [screenshot-pipeline] OCR attempted: false (no accessible URL)`);
+        } else {
+          console.log(`[ai-triage] [screenshot-pipeline] OCR attempted: true`);
+          console.log(`[ai-triage] [screenshot-pipeline] Accessible URL (truncated): ${accessibleUrl.slice(0, 120)}...`);
+
+          try {
+            const ocrStart = Date.now();
+            const OCR_TIMEOUT_MS = 25000;
+            const ocrController = new AbortController();
+            const ocrTimer = setTimeout(() => ocrController.abort(), OCR_TIMEOUT_MS);
+
+            const ocrRes = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${OPENAI_KEY}`,
+              },
+              signal: ocrController.signal,
+              body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [
+                  {
+                    role: 'user',
+                    content: [
+                      {
+                        type: 'text',
+                        text: caseRow.submission_type === 'suspicious_letter'
+                          ? 'Extract all readable text from this photograph or scan of a physical letter/document exactly as written. Include all visible text: headers, body text, signatures, URLs, QR code labels, return addresses, reference numbers, and any fine print. Return only the extracted text, no commentary.'
+                          : 'Extract all readable text from this screenshot exactly as written. Return only the extracted text, no commentary.'
+                      },
+                      { type: 'image_url', image_url: { url: accessibleUrl } }
+                    ]
+                  }
+                ],
+                max_tokens: 2000
+              })
+            });
+
+            clearTimeout(ocrTimer);
+            const ocrElapsed = Date.now() - ocrStart;
+
+            if (ocrRes.ok) {
+              const ocrData = await ocrRes.json();
+              ocrText = ocrData.choices?.[0]?.message?.content?.trim();
+              if (ocrText) {
+                console.log(`[ai-triage] [screenshot-pipeline] ✔ OCR SUCCESS — extracted_text_length: ${ocrText.length} | elapsed: ${ocrElapsed}ms`);
+                console.log(`[ai-triage] [screenshot-pipeline] OCR text preview (first 300 chars): ${ocrText.slice(0, 300)}`);
+
+                // Inject extracted text into case context
+                if (!caseContext.meta) caseContext.meta = {};
+                if (!caseContext.meta.details) caseContext.meta.details = {};
+                caseContext.meta.details.extracted_text_from_screenshot = ocrText;
+
+                // ── Entity extraction from OCR text ──────────────────────────
+                extractedEntities = extractEntitiesFromText(ocrText);
+                if (extractedEntities) {
+                  caseContext.meta.details.extracted_entities = extractedEntities;
+                  console.log(`[ai-triage] [screenshot-pipeline] Extracted entities: ${JSON.stringify(extractedEntities)}`);
+                }
+                console.log(`[ai-triage] [screenshot-pipeline] Evidence text passed to provider: true`);
+              } else {
+                console.log(`[ai-triage] [screenshot-pipeline] OCR completed but returned no text | elapsed: ${ocrElapsed}ms`);
+                console.log(`[ai-triage] [screenshot-pipeline] OCR success: false (empty result)`);
+              }
+            } else {
+              const ocrErrText = await ocrRes.text();
+              console.warn(`[ai-triage] [screenshot-pipeline] ✖ OCR FAILED — status: ${ocrRes.status} | elapsed: ${ocrElapsed}ms | body: ${ocrErrText.slice(0, 500)}`);
+              console.log(`[ai-triage] [screenshot-pipeline] OCR success: false (API error ${ocrRes.status})`);
+            }
+          } catch (ocrErr) {
+            const isTimeout = ocrErr.name === 'AbortError';
+            console.error(`[ai-triage] [screenshot-pipeline] ✖ OCR error: ${isTimeout ? 'TIMEOUT (25s)' : ocrErr.message}`);
+            console.log(`[ai-triage] [screenshot-pipeline] OCR success: false (${isTimeout ? 'timeout' : 'exception'})`);
+            // Fail gracefully, don't block the main triage flow
+          }
         }
       } else {
-        console.log(`[ai-triage] [letter-evidence] ${caseRow.submission_type} case has evidence, but no image attachments found for OCR.`);
-        console.log('[ai-triage] [letter-evidence] OCR attempted: false (no image files)');
+        const evidenceUrls = (caseRow.meta.evidence || []).map(e => e.url || e.path || 'no-url').join(', ');
+        console.log(`[ai-triage] [screenshot-pipeline] No image attachments found among evidence entries`);
+        console.log(`[ai-triage] [screenshot-pipeline] Evidence URLs/paths present: ${evidenceUrls}`);
+        console.log(`[ai-triage] [screenshot-pipeline] OCR attempted: false (no image files matching png/jpg/jpeg/webp)`);
       }
+    } else {
+      console.log(`[ai-triage] [screenshot-pipeline] Skipping OCR — not an image-bearing type or no evidence`);
     }
+    console.log(`[ai-triage] [screenshot-pipeline] ═══ OCR PHASE COMPLETE | ocrText: ${ocrText ? ocrText.length + ' chars' : 'null'} ═══`);
 
     /* ── Build evidence-aware prompt additions for letter/image cases ──── */
     let evidencePromptAddition = '';
-    if (ocrText && caseRow.submission_type === 'suspicious_letter') {
-      console.log('[ai-triage] [letter-evidence] Building evidence-aware prompt addition');
-      evidencePromptAddition = `\n\nIMPORTANT — EXTRACTED EVIDENCE FROM UPLOADED SCREENSHOT:\nThe user uploaded a photograph/scan of a physical letter. The following text was extracted from the image via OCR. Base your analysis primarily on this extracted content:\n\n--- START EXTRACTED TEXT ---\n${ocrText}\n--- END EXTRACTED TEXT ---\n`;
+    if (ocrText && (caseRow.submission_type === 'suspicious_letter' || caseRow.submission_type === 'suspicious_email')) {
+      const isLetter = caseRow.submission_type === 'suspicious_letter';
+      console.log(`[ai-triage] [screenshot-pipeline] Building evidence-aware prompt addition for ${caseRow.submission_type}`);
+      evidencePromptAddition = `\n\nIMPORTANT — EXTRACTED EVIDENCE FROM UPLOADED SCREENSHOT:\nThe user uploaded ${isLetter ? 'a photograph/scan of a physical letter' : 'a screenshot of a suspicious email'}. The following text was extracted from the image via OCR. Base your analysis primarily on this extracted content:\n\n--- START EXTRACTED TEXT ---\n${ocrText}\n--- END EXTRACTED TEXT ---\n`;
 
       if (extractedEntities) {
         const eParts = [];
@@ -211,10 +314,10 @@ export default async function handler(req, res) {
         }
       }
 
-      evidencePromptAddition += `\nYour report MUST specifically reference the details found in this extracted text. Do NOT produce a generic "suspicious letter" summary. Identify the specific scam pattern, suspicious domains, impersonation tactics, pressure language, and any instructions (like QR codes or wallet validation) found in the letter.`;
-      console.log(`[ai-triage] [letter-evidence] Evidence prompt addition length: ${evidencePromptAddition.length} chars | entities present: ${!!extractedEntities} | report will use evidence-derived details: true`);
-    } else if (caseRow.submission_type === 'suspicious_letter' && !ocrText) {
-      console.log('[ai-triage] [letter-evidence] No OCR text available — fallback generic summary logic will be used: true');
+      evidencePromptAddition += `\nYour report MUST specifically reference the details found in this extracted text. Do NOT produce a generic summary. Identify the specific scam pattern, suspicious domains, impersonation tactics, pressure language, and any instructions (like QR codes or wallet validation) found in the ${isLetter ? 'letter' : 'email'}.`;
+      console.log(`[ai-triage] [screenshot-pipeline] Evidence prompt addition length: ${evidencePromptAddition.length} chars | entities present: ${!!extractedEntities} | report will use evidence-derived details: true`);
+    } else if (IMAGE_TRIAGE_TYPES.includes(caseRow.submission_type) && !ocrText) {
+      console.log(`[ai-triage] [screenshot-pipeline] No OCR text available for ${caseRow.submission_type} — fallback generic summary logic will be used: true`);
     }
 
     const systemPrompt = `You are a safeguarding triage assistant for UK care homes. You help staff prioritise and categorise safeguarding cases involving vulnerable adults. You produce concise, direct, operational assessments.
