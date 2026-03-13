@@ -469,12 +469,12 @@ export default function App() {
 
               {/* AI context supporting line */}
               <p className="animate-fade-in-up animate-delay-150 text-slate-300 text-lg leading-relaxed mb-4 max-w-lg">
-                Second Look Protect helps care homes and care groups record suspicious incidents, assess scam related safeguarding risk, support vulnerable residents, and maintain clear oversight through one secure platform.
+                Scam tactics are becoming more convincing, including AI enabled impersonation and deception. Second Look Protect helps care homes and care groups record concerns, track developing scam trends affecting vulnerable residents, and maintain clear, inspection ready oversight in one secure platform.
               </p>
 
               {/* Supporting text */}
               <p className="animate-fade-in-up animate-delay-200 text-slate-400 text-sm leading-relaxed mb-3 max-w-lg">
-                From suspicious calls, emails, payment requests, and impersonation attempts to wider financial abuse concerns, teams can log issues quickly, review them consistently, and act with confidence.
+                From suspicious calls, emails, payment requests, and impersonation attempts to wider financial abuse concerns, teams can respond more consistently, see patterns earlier, and act with confidence.
               </p>
 
 
@@ -482,9 +482,9 @@ export default function App() {
               <div className="animate-fade-in-up animate-delay-300 flex flex-wrap gap-2 mb-10" role="list" aria-label="Key benefits">
                 {[
                   '✓ Record safeguarding concerns in one clear place',
-                  '✓ Support vulnerable residents when something feels wrong',
-                  '✓ Strengthen manager oversight and review workflows',
-                  '✓ Build clearer evidence for governance and inspection',
+                  '✓ Track scam trends affecting vulnerable residents',
+                  '✓ Support safer team decisions when something feels wrong',
+                  '✓ Strengthen oversight and inspection readiness',
                 ].map((chip) => (
                   <span
                     key={chip}
@@ -537,8 +537,9 @@ export default function App() {
               <p className="text-slate-200 text-sm font-medium mb-3">A practical walkthrough for care providers:</p>
 
               <div className="flex flex-col gap-1.5 mb-5">
-                <p className="text-slate-300/85 text-sm">✓ See whether the platform fits your safeguarding process</p>
-                <p className="text-slate-300/85 text-sm">✓ Understand how the system could work in your organisation</p>
+                <p className="text-slate-300/85 text-sm">✓ See how the platform supports safeguarding reporting and oversight</p>
+                <p className="text-slate-300/85 text-sm">✓ Understand how scam trend visibility can help protect residents</p>
+                <p className="text-slate-300/85 text-sm">✓ See how concerns can be logged clearly and reviewed consistently</p>
                 <p className="text-slate-300/85 text-sm">✓ No pressure, just a clear look at the workflow</p>
               </div>
 
