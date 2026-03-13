@@ -103,9 +103,15 @@ export default async function handler(req, res) {
       assigned_to: caseRow.assigned_to || null,
     };
 
-    /* 3a. Pre-processing: Email Screenshot OCR */
+    /* 3a. Pre-processing: Screenshot OCR for image-bearing case types */
     let ocrText = null;
-    if (caseRow.submission_type === 'suspicious_email' && caseRow.meta?.evidence?.length > 0) {
+    let extractedEntities = null;
+    const IMAGE_TRIAGE_TYPES = ['suspicious_email', 'suspicious_letter'];
+    const hasImageEvidence = IMAGE_TRIAGE_TYPES.includes(caseRow.submission_type) && caseRow.meta?.evidence?.length > 0;
+
+    console.log(`[ai-triage] [letter-evidence] Image attached: ${hasImageEvidence} | submission_type: ${caseRow.submission_type} | evidence_count: ${caseRow.meta?.evidence?.length ?? 0}`);
+
+    if (hasImageEvidence) {
       // Find the first image attachment
       const imageAttachment = caseRow.meta.evidence.find(ev =>
         ev.url && (
@@ -117,7 +123,8 @@ export default async function handler(req, res) {
       );
 
       if (imageAttachment) {
-        console.log('[ai-triage] Email screenshot detected, attempting OCR pre-processing...');
+        console.log(`[ai-triage] [letter-evidence] Screenshot detected for ${caseRow.submission_type}, attempting OCR pre-processing...`);
+        console.log(`[ai-triage] [letter-evidence] OCR attempted: true | image URL (truncated): ${imageAttachment.url?.slice(0, 80)}...`);
         try {
           const ocrStart = Date.now();
           const ocrRes = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -132,12 +139,17 @@ export default async function handler(req, res) {
                 {
                   role: 'user',
                   content: [
-                    { type: 'text', text: 'Extract all readable text from this screenshot exactly as written. Return only the extracted text, no commentary.' },
+                    {
+                      type: 'text',
+                      text: caseRow.submission_type === 'suspicious_letter'
+                        ? 'Extract all readable text from this photograph or scan of a physical letter/document exactly as written. Include all visible text: headers, body text, signatures, URLs, QR code labels, return addresses, reference numbers, and any fine print. Return only the extracted text, no commentary.'
+                        : 'Extract all readable text from this screenshot exactly as written. Return only the extracted text, no commentary.'
+                    },
                     { type: 'image_url', image_url: { url: imageAttachment.url } }
                   ]
                 }
               ],
-              max_tokens: 1500
+              max_tokens: 2000
             })
           });
 
@@ -145,24 +157,64 @@ export default async function handler(req, res) {
             const ocrData = await ocrRes.json();
             ocrText = ocrData.choices?.[0]?.message?.content?.trim();
             if (ocrText) {
-              console.log('[ai-triage] OCR SUCCESS \u2014 extracted length:', ocrText.length, '| elapsed:', (Date.now() - ocrStart) + 'ms');
+              console.log(`[ai-triage] [letter-evidence] OCR SUCCESS — extracted length: ${ocrText.length} | elapsed: ${Date.now() - ocrStart}ms`);
+              console.log(`[ai-triage] [letter-evidence] OCR text preview (first 300 chars): ${ocrText.slice(0, 300)}`);
+
               // Inject extracted text into case context
               if (!caseContext.meta) caseContext.meta = {};
               if (!caseContext.meta.details) caseContext.meta.details = {};
               caseContext.meta.details.extracted_text_from_screenshot = ocrText;
+
+              // ── Entity extraction from OCR text ──────────────────────────
+              extractedEntities = extractEntitiesFromText(ocrText);
+              if (extractedEntities) {
+                caseContext.meta.details.extracted_entities = extractedEntities;
+                console.log(`[ai-triage] [letter-evidence] Extracted entities: ${JSON.stringify(extractedEntities)}`);
+              }
             } else {
-              console.log('[ai-triage] OCR completed but returned no text');
+              console.log('[ai-triage] [letter-evidence] OCR completed but returned no text');
+              console.log('[ai-triage] [letter-evidence] OCR success: false (empty result)');
             }
           } else {
-            console.warn('[ai-triage] OCR FAILED \u2014 status:', ocrRes.status, await ocrRes.text());
+            const ocrErrText = await ocrRes.text();
+            console.warn(`[ai-triage] [letter-evidence] OCR FAILED — status: ${ocrRes.status} | body: ${ocrErrText}`);
+            console.log('[ai-triage] [letter-evidence] OCR success: false (API error)');
           }
         } catch (ocrErr) {
-          console.error('[ai-triage] \u2716 OCR error:', ocrErr.message);
+          console.error('[ai-triage] [letter-evidence] ✖ OCR error:', ocrErr.message);
+          console.log('[ai-triage] [letter-evidence] OCR success: false (exception)');
           // Fail gracefully, don't block the main triage flow
         }
       } else {
-        console.log('[ai-triage] Suspicious email case has evidence, but no image attachments found for OCR.');
+        console.log(`[ai-triage] [letter-evidence] ${caseRow.submission_type} case has evidence, but no image attachments found for OCR.`);
+        console.log('[ai-triage] [letter-evidence] OCR attempted: false (no image files)');
       }
+    }
+
+    /* ── Build evidence-aware prompt additions for letter/image cases ──── */
+    let evidencePromptAddition = '';
+    if (ocrText && caseRow.submission_type === 'suspicious_letter') {
+      console.log('[ai-triage] [letter-evidence] Building evidence-aware prompt addition');
+      evidencePromptAddition = `\n\nIMPORTANT — EXTRACTED EVIDENCE FROM UPLOADED SCREENSHOT:\nThe user uploaded a photograph/scan of a physical letter. The following text was extracted from the image via OCR. Base your analysis primarily on this extracted content:\n\n--- START EXTRACTED TEXT ---\n${ocrText}\n--- END EXTRACTED TEXT ---\n`;
+
+      if (extractedEntities) {
+        const eParts = [];
+        if (extractedEntities.domains?.length) eParts.push(`Domains/URLs found: ${extractedEntities.domains.join(', ')}`);
+        if (extractedEntities.brandNames?.length) eParts.push(`Brand/service names referenced: ${extractedEntities.brandNames.join(', ')}`);
+        if (extractedEntities.walletSecurityLanguage?.length) eParts.push(`Wallet/security/payment language: ${extractedEntities.walletSecurityLanguage.join(', ')}`);
+        if (extractedEntities.qrReferences?.length) eParts.push(`QR code references: ${extractedEntities.qrReferences.join(', ')}`);
+        if (extractedEntities.urgencyLanguage?.length) eParts.push(`Urgency/pressure language: ${extractedEntities.urgencyLanguage.join(', ')}`);
+        if (extractedEntities.impersonationCues?.length) eParts.push(`Impersonation indicators: ${extractedEntities.impersonationCues.join(', ')}`);
+        if (extractedEntities.contactInfo?.length) eParts.push(`Contact info/references: ${extractedEntities.contactInfo.join(', ')}`);
+        if (eParts.length > 0) {
+          evidencePromptAddition += `\nExtracted suspicious indicators:\n${eParts.map(p => '• ' + p).join('\n')}\n`;
+        }
+      }
+
+      evidencePromptAddition += `\nYour report MUST specifically reference the details found in this extracted text. Do NOT produce a generic "suspicious letter" summary. Identify the specific scam pattern, suspicious domains, impersonation tactics, pressure language, and any instructions (like QR codes or wallet validation) found in the letter.`;
+      console.log(`[ai-triage] [letter-evidence] Evidence prompt addition length: ${evidencePromptAddition.length} chars | entities present: ${!!extractedEntities} | report will use evidence-derived details: true`);
+    } else if (caseRow.submission_type === 'suspicious_letter' && !ocrText) {
+      console.log('[ai-triage] [letter-evidence] No OCR text available — fallback generic summary logic will be used: true');
     }
 
     const systemPrompt = `You are a safeguarding triage assistant for UK care homes. You help staff prioritise and categorise safeguarding cases involving vulnerable adults. You produce concise, direct, operational assessments.
@@ -178,12 +230,13 @@ Rules:
 - Avoid vague management-speak like "assess the intent", "protect from exploitation", or "monitor generally".
 - Keep recommended actions direct, short, and specific to the case (max 5 items).
 - Keep indicators concise and factual (max 5 items).
+- If extracted text from a screenshot/document is provided, your analysis MUST be grounded in that evidence. Reference specific details from the text (domains, wording, instructions, claims) rather than giving a generic summary.
 - Respond with valid JSON only matching the required schema.`;
 
     const userPrompt = `Triage the following safeguarding case. Base your analysis strictly on the submitted case details below.
 
 Case data:
-${JSON.stringify(caseContext, null, 2)}
+${JSON.stringify(caseContext, null, 2)}${evidencePromptAddition}
 
 Produce your response as JSON with these fields:
 
@@ -1256,4 +1309,67 @@ Respond with JSON matching this exact shape:
     console.error('[ai-triage] Stack:', err.stack || 'N/A');
     return res.status(500).json({ ok: false, error: err.message || 'Unknown error', step: 'unexpected' });
   }
+}
+
+/* ── Entity extraction from OCR text ─────────────────────────────────────── */
+function extractEntitiesFromText(text) {
+  if (!text || typeof text !== 'string') return null;
+
+  const entities = {};
+  const t = text;
+
+  // Domains and URLs
+  const domainMatches = t.match(/(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?(?:\/[^\s]*)?)/gi);
+  if (domainMatches?.length) {
+    entities.domains = [...new Set(domainMatches.map(d => d.trim()))];
+  }
+
+  // Brand / service names (common impersonation targets)
+  const brandPatterns = /\b(Ledger|Coinbase|Binance|MetaMask|Trezor|PayPal|Amazon|Microsoft|Apple|Google|BT|HMRC|Royal Mail|Post Office|DHL|FedEx|Hermes|Evri|DPD|Barclays|Lloyds|HSBC|NatWest|Santander|Halifax|Nationwide|Visa|Mastercard|Bank of England|Action Fraud|NHS|DVLA)\b/gi;
+  const brands = t.match(brandPatterns);
+  if (brands?.length) {
+    entities.brandNames = [...new Set(brands.map(b => b.trim()))];
+  }
+
+  // Wallet / security / payment / crypto language
+  const walletPatterns = /\b(wallet|seed phrase|recovery phrase|private key|validate|verification|crypto|bitcoin|ethereum|blockchain|token|authentication|two-factor|2fa|secure your|protect your account|unauthorized access|compromised|breach|suspended|locked|frozen|deactivat)\w*\b/gi;
+  const walletMatches = t.match(walletPatterns);
+  if (walletMatches?.length) {
+    entities.walletSecurityLanguage = [...new Set(walletMatches.map(w => w.trim().toLowerCase()))];
+  }
+
+  // QR code references
+  const qrPatterns = /\b(QR\s*code|scan\s*(this|the|below|above)|point your (camera|phone)|scan with|download.*app.*scan)\b/gi;
+  const qrMatches = t.match(qrPatterns);
+  if (qrMatches?.length) {
+    entities.qrReferences = [...new Set(qrMatches.map(q => q.trim()))];
+  }
+
+  // Urgency / pressure language
+  const urgencyPatterns = /\b(immediately|urgent|within \d+ (hours?|days?|minutes?)|act now|time.?sensitive|expires?|deadline|limited time|final (notice|warning)|do not delay|failure to|will result in|permanent(ly)?|irrevocabl[ey]|at risk|must be completed)\b/gi;
+  const urgencyMatches = t.match(urgencyPatterns);
+  if (urgencyMatches?.length) {
+    entities.urgencyLanguage = [...new Set(urgencyMatches.map(u => u.trim().toLowerCase()))];
+  }
+
+  // Impersonation cues
+  const impersonationPatterns = /\b(official|authorized|authorised|certified|registered|verified|genuine|legitimate|approved|compliance|regulatory|mandatory|required by law|legal requirement|government|department of|customer (service|support|care)|help\s*desk|support team|security team|fraud team|technical support)\b/gi;
+  const impersonationMatches = t.match(impersonationPatterns);
+  if (impersonationMatches?.length) {
+    entities.impersonationCues = [...new Set(impersonationMatches.map(i => i.trim().toLowerCase()))];
+  }
+
+  // Contact info (phone numbers, email addresses)
+  const phoneMatches = t.match(/(?:\+?\d{1,4}[\s-]?)?(?:\(?\d{2,5}\)?[\s-]?)?\d{3,4}[\s-]?\d{3,4}/g);
+  const emailMatches = t.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+  const contactInfo = [];
+  if (phoneMatches?.length) contactInfo.push(...phoneMatches.map(p => p.trim()));
+  if (emailMatches?.length) contactInfo.push(...emailMatches.map(e => e.trim()));
+  if (contactInfo.length) {
+    entities.contactInfo = [...new Set(contactInfo)];
+  }
+
+  // Return null if nothing was found
+  const hasEntities = Object.keys(entities).length > 0;
+  return hasEntities ? entities : null;
 }
