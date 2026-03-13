@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import {
     LayoutDashboard, AlertTriangle, ShieldCheck, Clock,
     TrendingUp, Loader2, Info, Bell, Users, Globe,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
-/* ─── Types ───────────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 interface CaseRow {
     id: string;
@@ -39,7 +39,7 @@ interface ExecAlert {
     meta: any;
 }
 
-/* ─── Helpers ─────────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /** Map DB status to human-friendly label */
 function statusLabel(s: string | null): string {
@@ -87,11 +87,11 @@ function fmtDate(iso: string): string {
         const d = new Date(iso);
         return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
     } catch {
-        return '—';
+        return 'â€”';
     }
 }
 
-/* ─── Overview Page ───────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Overview Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 export function OverviewPage() {
     const [loading, setLoading] = useState(true);
@@ -110,7 +110,7 @@ export function OverviewPage() {
     const [platformOrgCount, setPlatformOrgCount] = useState(0);
     const [platformCases, setPlatformCases] = useState<(CaseRow & { org_name?: string })[]>([]);
 
-    /* ── Fetch data on mount ───────────────────────────────────────────────── */
+    /* â”€â”€ Fetch data on mount â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     useEffect(() => {
         let cancelled = false;
 
@@ -153,7 +153,7 @@ export function OverviewPage() {
 
                 if (!orgId) {
                     if (isAdmin) {
-                        // Super Admin (Global) — fetch platform-wide data
+                        // Super Admin (Global) â€” fetch platform-wide data
                         const { count: orgCount } = await supabase
                             .from('organisations')
                             .select('id', { count: 'exact', head: true });
@@ -258,7 +258,7 @@ export function OverviewPage() {
         return () => { cancelled = true; };
     }, []);
 
-    /* ── Computed metrics (this month) ─────────────────────────────────────── */
+    /* â”€â”€ Computed metrics (this month) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const metrics = useMemo(() => {
         const total = casesMonth.length;
 
@@ -285,7 +285,7 @@ export function OverviewPage() {
         return { total, highRisk, scamPct, legitPct, decisionTotal, awaiting };
     }, [casesMonth]);
 
-    /* ── Panel data ────────────────────────────────────────────────────────── */
+    /* â”€â”€ Panel data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const panels = useMemo(() => {
         const AWAITING_STATUSES = ['new', 'submitted', 'in_review'];
 
@@ -304,7 +304,7 @@ export function OverviewPage() {
         return { awaitingReview, highRiskQueue, recentCases };
     }, [casesAll]);
 
-    /* ── Calm insight ──────────────────────────────────────────────────────── */
+    /* â”€â”€ Calm insight â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const insight = useMemo(() => {
         if (casesMonth.length === 0) return null;
 
@@ -319,7 +319,7 @@ export function OverviewPage() {
         return `This month saw ${casesMonth.length} incident${casesMonth.length !== 1 ? 's' : ''}. Most common category: ${topCategory}. High-risk: ${metrics.highRisk}.`;
     }, [casesMonth, metrics.highRisk]);
 
-    /* ── Residents needing attention (all-time, 2+ incidents) ────────────── */
+    /* â”€â”€ Residents needing attention (all-time, 2+ incidents) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const residentsAttention = useMemo(() => {
         const counts: Record<string, number> = {};
         for (const c of casesAll) {
@@ -332,12 +332,12 @@ export function OverviewPage() {
             .slice(0, 5);
     }, [casesAll]);
 
-    /* ── Render ─────────────────────────────────────────────────────────────── */
+    /* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     if (loading) {
         return (
             <div className="dashboard-overview-loading">
                 <Loader2 className="dashboard-overview-spinner-icon" />
-                <p>Loading overview…</p>
+                <p>Loading overviewâ€¦</p>
             </div>
         );
     }
@@ -357,7 +357,7 @@ export function OverviewPage() {
     }
 
     if (noOrg) {
-        // Super Admin (Global) — show platform-wide overview
+        // Super Admin (Global) â€” show platform-wide overview
         if (isSuperAdmin) {
             const totalCases = platformCases.length;
             const highRisk = platformCases.filter(c => ['high', 'critical'].includes((c.risk_level ?? '').toLowerCase())).length;
@@ -446,8 +446,8 @@ export function OverviewPage() {
                                             {recentCases.map((c) => (
                                                 <tr key={c.id}>
                                                     <td>{fmtDate(c.submitted_at)}</td>
-                                                    <td style={{ fontWeight: 500 }}>{c.org_name ?? '—'}</td>
-                                                    <td>{c.submission_type ?? '—'}</td>
+                                                    <td style={{ fontWeight: 500 }}>{c.org_name ?? 'â€”'}</td>
+                                                    <td>{c.submission_type ?? 'â€”'}</td>
                                                     <td>
                                                         <span className={`dashboard-status-badge status-${statusClass(c.status)}`}>
                                                             {statusLabel(c.status)}
@@ -455,7 +455,7 @@ export function OverviewPage() {
                                                     </td>
                                                     <td>
                                                         <span className={`dashboard-risk-badge risk-${riskClass(c.risk_level)}`}>
-                                                            {c.risk_level ?? '—'}
+                                                            {c.risk_level ?? 'â€”'}
                                                         </span>
                                                     </td>
                                                 </tr>
@@ -470,7 +470,7 @@ export function OverviewPage() {
             );
         }
 
-        // Non-admin with no org — original empty state
+        // Non-admin with no org â€” original empty state
         return (
             <div>
                 <div className="dashboard-page-header">
@@ -494,6 +494,42 @@ export function OverviewPage() {
         );
     }
 
+    /* â”€â”€ Severity helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    const sevColour = (sev: string | null) => {
+        switch (sev?.toLowerCase()) {
+            case 'critical': return { bg: '#fef2f2', fg: '#991b1b', border: '#fecaca', dot: '#dc2626' };
+            case 'high': return { bg: '#fef2f2', fg: '#991b1b', border: '#fecaca', dot: '#dc2626' };
+            case 'warning': return { bg: '#fffbeb', fg: '#92400e', border: '#fde68a', dot: '#f59e0b' };
+            case 'info': return { bg: '#f0f9ff', fg: '#0c4a6e', border: '#bae6fd', dot: '#0ea5e9' };
+            default: return { bg: '#f8fafc', fg: '#64748b', border: '#e2e8f0', dot: '#94a3b8' };
+        }
+    };
+
+    const plainEventType = (t: string) =>
+        t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    /* â”€â”€ System status banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    const sevs = execAlerts.map(e => (e.severity ?? '').toLowerCase());
+    const sysStatusLabel = sevs.includes('critical') ? 'Immediate Attention Required'
+        : sevs.includes('high') ? 'Elevated Risk'
+            : sevs.includes('warning') ? 'Monitor Closely' : 'All Clear';
+    const sysStatusBand = sevs.includes('critical') || sevs.includes('high') ? 'red'
+        : sevs.includes('warning') ? 'amber' : 'green';
+    const sysBandC = sysStatusBand === 'red' ? { bg: '#fef2f2', fg: '#991b1b', border: '#fecaca' }
+        : sysStatusBand === 'amber' ? { bg: '#fffbeb', fg: '#92400e', border: '#fde68a' }
+            : { bg: '#ecfdf5', fg: '#065f46', border: '#a7f3d0' };
+
+    /* â”€â”€ Age helper for Awaiting Review â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    const ageLabel = (iso: string) => {
+        const hrs = (Date.now() - new Date(iso).getTime()) / 3_600_000;
+        if (hrs < 1) return { text: '<1h', band: 'green' as const };
+        if (hrs < 4) return { text: `${Math.round(hrs)}h`, band: 'green' as const };
+        if (hrs < 24) return { text: `${Math.round(hrs)}h`, band: 'amber' as const };
+        return { text: `${(hrs / 24).toFixed(1)}d`, band: 'red' as const };
+    };
+    const ageBandC = (b: string) => b === 'red' ? '#991b1b' : b === 'amber' ? '#92400e' : '#065f46';
+    const ageBandBg = (b: string) => b === 'red' ? '#fef2f2' : b === 'amber' ? '#fffbeb' : '#ecfdf5';
+
     return (
         <div>
             {/* Header */}
@@ -509,141 +545,104 @@ export function OverviewPage() {
                 </p>
             </div>
 
-            {/* ── Executive Safeguarding Alerts ──────────────────────────── */}
-            {(() => {
-                const sevs = execAlerts.map(e => (e.severity ?? '').toLowerCase());
-                const sysStatus = sevs.includes('critical') ? 'Immediate Attention Required'
-                    : sevs.includes('high') ? 'Elevated Risk'
-                        : sevs.includes('warning') ? 'Monitor Closely'
-                            : 'Stable';
-                return <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem' }}><strong>System Status:</strong> {sysStatus}</p>;
-            })()}
+            {/* â”€â”€ System Status Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            <div style={{ background: sysBandC.bg, border: `1px solid ${sysBandC.border}`, borderRadius: '10px', padding: '0.6rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <ShieldCheck size={16} style={{ color: sysBandC.fg }} />
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: sysBandC.fg }}>System Status</span>
+                </div>
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: sysBandC.fg, background: `${sysBandC.fg}14`, padding: '2px 10px', borderRadius: '20px' }}>{sysStatusLabel}</span>
+            </div>
+
+            {/* â”€â”€ Executive Safeguarding Alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
                 <div className="dashboard-panel-header">
                     <h2 className="dashboard-panel-title">
                         <AlertTriangle size={16} className="dashboard-panel-title-icon" />
                         Executive Safeguarding Alerts
                     </h2>
+                    <span className="dashboard-panel-count">{execAlerts.length}</span>
                 </div>
-                <p style={{ padding: '0 1rem', margin: '0 0 0.75rem', fontSize: '0.78rem', color: '#64748b' }}>
-                    Automated safeguarding intelligence – updated continuously.
+                <p style={{ padding: '0 1rem', margin: '0 0 0.75rem', fontSize: '0.75rem', color: '#94a3b8' }}>
+                    Automated safeguarding intelligence â€” updated continuously.
                 </p>
                 {execAlerts.length === 0 ? (
-                    <div className="dashboard-panel-empty">
-                        No executive alerts currently triggered.
+                    <div className="dashboard-panel-empty" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <ShieldCheck size={14} style={{ color: '#10b981' }} />
+                        <span>No executive alerts currently triggered.</span>
                     </div>
                 ) : (
-                    <div style={{ padding: '0 1rem 1rem' }}>
-                        {execAlerts.map((ea, i) => (
-                            <div key={ea.id} style={{
-                                padding: '0.75rem',
-                                marginBottom: i < execAlerts.length - 1 ? '0.5rem' : 0,
-                                borderRadius: '8px',
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                                    <strong style={{ fontSize: '0.85rem' }}>{ea.severity ? `${ea.severity.toUpperCase()}: ${ea.title}` : ea.title}</strong>
-                                    <span className={`dashboard-risk-badge risk-${severityRiskClass(ea.severity)}`} style={{ fontSize: '0.7rem' }}>
-                                        {ea.severity}
-                                    </span>
+                    <div style={{ padding: '0 1rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {execAlerts.map((ea) => {
+                            const sc = sevColour(ea.severity);
+                            return (
+                                <div key={ea.id} style={{ background: sc.bg, border: `1px solid ${sc.border}`, borderLeft: `4px solid ${sc.dot}`, borderRadius: '8px', padding: '0.65rem 0.85rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: sc.dot, flexShrink: 0 }} />
+                                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: sc.fg }}>{ea.title || plainEventType(ea.event_type)}</span>
+                                        <span style={{ fontSize: '0.62rem', fontWeight: 600, color: sc.fg, background: `${sc.fg}14`, padding: '1px 7px', borderRadius: '10px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{ea.severity ?? 'info'}</span>
+                                    </div>
+                                    <p style={{ margin: '0 0 0.15rem', fontSize: '0.78rem', color: '#334155', lineHeight: 1.45, paddingLeft: '1.1rem' }}>{ea.description}</p>
+                                    {ea.recommendation && (
+                                        <p style={{ margin: 0, fontSize: '0.72rem', color: '#64748b', paddingLeft: '1.1rem' }}>â†³ {ea.recommendation}</p>
+                                    )}
+                                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem', paddingLeft: '1.1rem' }}>
+                                        {typeof ea.meta?.count === 'number' && (
+                                            <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{ea.meta.count} cases detected (7-day window)</span>
+                                        )}
+                                        <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Last triggered: {fmtDate(ea.last_triggered_at ?? ea.sent_at ?? '')}</span>
+                                    </div>
                                 </div>
-                                <p style={{ margin: '0 0 0.25rem', fontSize: '0.72rem', color: '#64748b' }}>Last triggered: {fmtDate(ea.last_triggered_at ?? ea.sent_at ?? '')}</p>
-                                {typeof ea.meta?.count === 'number' && (
-                                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.72rem', color: '#64748b' }}>Detected: {ea.meta.count} cases (7-day window)</p>
-                                )}
-                                <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#334155' }}>{ea.description}</p>
-                                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>{ea.recommendation}</p>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
 
-            {/* ── Safeguarding Alerts ─────────────────────────────────────── */}
-            <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">
-                        <Bell size={16} className="dashboard-panel-title-icon" />
-                        Safeguarding Alerts
-                    </h2>
-                    <span className="dashboard-panel-count">{alerts.length}</span>
-                </div>
-
-                {alerts.length === 0 ? (
-                    <div className="dashboard-panel-empty">
-                        <ShieldCheck size={16} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} />
-                        No active safeguarding alerts.
-                    </div>
-                ) : (
-                    <div className="dashboard-panel-table-wrap">
-                        <table className="dashboard-panel-table">
-                            <thead>
-                                <tr>
-                                    <th>Event</th>
-                                    <th>Entity</th>
-                                    <th>Severity</th>
-                                    <th>Sent At</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {alerts.map((a) => (
-                                    <tr key={a.id}>
-                                        <td>{a.event_type}</td>
-                                        <td>{a.entity_type ?? '—'}</td>
-                                        <td>
-                                            {a.severity ? (
-                                                <span className={`dashboard-risk-badge risk-${riskClass(a.severity)}`}>
-                                                    {a.severity}
-                                                </span>
-                                            ) : '—'}
-                                        </td>
-                                        <td>{fmtDate(a.sent_at)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-
-            {/* ── Stat Cards ────────────────────────────────────────────────── */}
+            {/* â”€â”€ KPI Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="dashboard-overview-cards">
+                {/* Total Cases */}
                 <div className="dashboard-stat-card">
                     <div className="dashboard-stat-card-accent accent-blue" />
                     <div className="dashboard-stat-card-body">
-                        <div className="dashboard-stat-icon blue">
-                            <LayoutDashboard size={20} />
-                        </div>
+                        <div className="dashboard-stat-icon blue"><LayoutDashboard size={20} /></div>
                         <div className="dashboard-stat-value">{metrics.total}</div>
                         <div className="dashboard-stat-label">Total Cases</div>
                         <div className="dashboard-stat-period">This month</div>
                     </div>
                 </div>
 
-                <div className="dashboard-stat-card">
+                {/* High Risk */}
+                <div className="dashboard-stat-card" style={{ borderLeft: metrics.highRisk > 0 ? '3px solid #dc2626' : undefined }}>
                     <div className="dashboard-stat-card-accent accent-red" />
                     <div className="dashboard-stat-card-body">
-                        <div className="dashboard-stat-icon red">
-                            <AlertTriangle size={20} />
-                        </div>
-                        <div className="dashboard-stat-value">{metrics.highRisk}</div>
+                        <div className="dashboard-stat-icon red"><AlertTriangle size={20} /></div>
+                        <div className="dashboard-stat-value" style={{ color: metrics.highRisk > 0 ? '#dc2626' : undefined }}>{metrics.highRisk}</div>
                         <div className="dashboard-stat-label">High Risk</div>
-                        <div className="dashboard-stat-period">This month</div>
+                        <div className="dashboard-stat-period" style={{ color: metrics.highRisk > 0 ? '#dc2626' : undefined }}>
+                            {metrics.highRisk === 0 ? 'None this month' : metrics.highRisk === 1 ? 'Requires attention' : `${metrics.highRisk} require attention`}
+                        </div>
                     </div>
                 </div>
 
+                {/* Scam vs Not Scam â€” with mini stacked bar */}
                 <div className="dashboard-stat-card">
                     <div className="dashboard-stat-card-accent accent-gold" />
                     <div className="dashboard-stat-card-body">
-                        <div className="dashboard-stat-icon gold">
-                            <ShieldCheck size={20} />
-                        </div>
+                        <div className="dashboard-stat-icon gold"><ShieldCheck size={20} /></div>
                         <div className="dashboard-stat-value">
                             {metrics.decisionTotal > 0
                                 ? `${metrics.scamPct}% / ${metrics.legitPct}%`
-                                : '—'}
+                                : 'â€”'}
                         </div>
                         <div className="dashboard-stat-label">Scam vs Not Scam</div>
-                        <div className="dashboard-stat-period">
+                        {metrics.decisionTotal > 0 && (
+                            <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', marginTop: '4px', background: '#e2e8f0' }}>
+                                <div style={{ width: `${metrics.scamPct}%`, background: '#dc2626', transition: 'width 0.5s ease' }} />
+                                <div style={{ width: `${metrics.legitPct}%`, background: '#10b981', transition: 'width 0.5s ease' }} />
+                            </div>
+                        )}
+                        <div className="dashboard-stat-period" style={{ marginTop: '2px' }}>
                             {metrics.decisionTotal > 0
                                 ? `${metrics.decisionTotal} decided`
                                 : 'No decisions yet'}
@@ -651,20 +650,21 @@ export function OverviewPage() {
                     </div>
                 </div>
 
-                <div className="dashboard-stat-card">
+                {/* Awaiting Review */}
+                <div className="dashboard-stat-card" style={{ borderLeft: metrics.awaiting > 3 ? '3px solid #f59e0b' : undefined }}>
                     <div className="dashboard-stat-card-accent accent-amber" />
                     <div className="dashboard-stat-card-body">
-                        <div className="dashboard-stat-icon amber">
-                            <Clock size={20} />
-                        </div>
+                        <div className="dashboard-stat-icon amber"><Clock size={20} /></div>
                         <div className="dashboard-stat-value">{metrics.awaiting}</div>
                         <div className="dashboard-stat-label">Awaiting Review</div>
-                        <div className="dashboard-stat-period">All open</div>
+                        <div className="dashboard-stat-period" style={{ color: metrics.awaiting > 3 ? '#92400e' : undefined }}>
+                            {metrics.awaiting === 0 ? 'Queue clear' : metrics.awaiting <= 3 ? 'On track' : 'Building up'}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* ── Insight Box ───────────────────────────────────────────────── */}
+            {/* â”€â”€ Insight Box â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             {insight && (
                 <div className="dashboard-insight-box">
                     <Info size={16} className="dashboard-insight-icon" />
@@ -672,7 +672,7 @@ export function OverviewPage() {
                 </div>
             )}
 
-            {/* ── Residents Needing Attention ────────────────────────────── */}
+            {/* â”€â”€ Residents Needing Attention â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
                 <div className="dashboard-panel-header">
                     <h2 className="dashboard-panel-title">
@@ -681,33 +681,40 @@ export function OverviewPage() {
                     </h2>
                     <span className="dashboard-panel-count">{residentsAttention.length}</span>
                 </div>
+                <p style={{ padding: '0 1rem', margin: '0 0 0.5rem', fontSize: '0.72rem', color: '#94a3b8' }}>
+                    Residents with two or more reported incidents across all time.
+                </p>
                 {residentsAttention.length === 0 ? (
-                    <div className="dashboard-panel-empty">
-                        No repeated resident incidents detected.
+                    <div className="dashboard-panel-empty" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <ShieldCheck size={14} style={{ color: '#10b981' }} />
+                        <span>No repeated resident incidents detected.</span>
                     </div>
                 ) : (
                     <div style={{ padding: '0 1rem 1rem' }}>
-                        {residentsAttention.map(([ref, count]) => (
-                            <div
-                                key={ref}
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    padding: '0.55rem 0',
-                                    borderBottom: '1px solid #f1f5f9',
-                                    fontSize: '0.85rem',
-                                }}
-                            >
-                                <span style={{ fontWeight: 500, color: '#1e293b' }}>{ref}</span>
-                                <span style={{ color: '#64748b', fontSize: '0.78rem' }}>{count} incident{count !== 1 ? 's' : ''}</span>
-                            </div>
-                        ))}
+                        {(() => {
+                            const maxCount = Math.max(...residentsAttention.map(([, n]) => n), 1);
+                            return residentsAttention.map(([ref, count]) => {
+                                const pct = Math.max(8, (count / maxCount) * 100);
+                                const barColour = count >= 5 ? '#dc2626' : count >= 3 ? '#f59e0b' : '#3b82f6';
+                                const barBg = count >= 5 ? '#fef2f2' : count >= 3 ? '#fffbeb' : '#eff6ff';
+                                return (
+                                    <div key={ref} style={{ marginBottom: '0.4rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
+                                            <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#1e293b' }}>{ref}</span>
+                                            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: barColour }}>{count} incident{count !== 1 ? 's' : ''}</span>
+                                        </div>
+                                        <div style={{ height: '6px', background: barBg, borderRadius: '3px', overflow: 'hidden' }}>
+                                            <div style={{ height: '100%', width: `${pct}%`, background: barColour, borderRadius: '3px', transition: 'width 0.5s ease' }} />
+                                        </div>
+                                    </div>
+                                );
+                            });
+                        })()}
                     </div>
                 )}
             </div>
 
-            {/* ── Panels ────────────────────────────────────────────────────── */}
+            {/* â”€â”€ Panels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="dashboard-overview-panels">
                 {/* Cases Awaiting Review */}
                 <div className="dashboard-panel">
@@ -718,39 +725,49 @@ export function OverviewPage() {
                         </h2>
                         <span className="dashboard-panel-count">{panels.awaitingReview.length}</span>
                     </div>
-
+                    <p style={{ padding: '0 1rem', margin: '0 0 0.35rem', fontSize: '0.72rem', color: '#94a3b8' }}>
+                        Open cases that still need an admin decision.
+                    </p>
                     {panels.awaitingReview.length === 0 ? (
-                        <div className="dashboard-panel-empty">No cases awaiting review.</div>
+                        <div className="dashboard-panel-empty" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <ShieldCheck size={14} style={{ color: '#10b981' }} />
+                            <span>No cases awaiting review â€” great work.</span>
+                        </div>
                     ) : (
                         <div className="dashboard-panel-table-wrap">
                             <table className="dashboard-panel-table">
                                 <thead>
                                     <tr>
                                         <th>Date</th>
+                                        <th>Age</th>
                                         <th>Type</th>
                                         <th>Status</th>
                                         <th>Risk</th>
-                                        <th>Category</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {panels.awaitingReview.map((c) => (
-                                        <tr key={c.id}>
-                                            <td>{fmtDate(c.submitted_at)}</td>
-                                            <td>{c.submission_type ?? '—'}</td>
-                                            <td>
-                                                <span className={`dashboard-status-badge status-${statusClass(c.status)}`}>
-                                                    {statusLabel(c.status)}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className={`dashboard-risk-badge risk-${riskClass(c.risk_level)}`}>
-                                                    {c.risk_level ?? '—'}
-                                                </span>
-                                            </td>
-                                            <td>{c.category ?? '—'}</td>
-                                        </tr>
-                                    ))}
+                                    {panels.awaitingReview.map((c) => {
+                                        const age = ageLabel(c.submitted_at);
+                                        return (
+                                            <tr key={c.id}>
+                                                <td>{fmtDate(c.submitted_at)}</td>
+                                                <td>
+                                                    <span style={{ fontSize: '0.72rem', fontWeight: 600, color: ageBandC(age.band), background: ageBandBg(age.band), padding: '1px 7px', borderRadius: '8px' }}>{age.text}</span>
+                                                </td>
+                                                <td>{c.submission_type ? plainEventType(c.submission_type) : 'â€”'}</td>
+                                                <td>
+                                                    <span className={`dashboard-status-badge status-${statusClass(c.status)}`}>
+                                                        {statusLabel(c.status)}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span className={`dashboard-risk-badge risk-${riskClass(c.risk_level)}`}>
+                                                        {c.risk_level ?? 'â€”'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
@@ -758,17 +775,24 @@ export function OverviewPage() {
                 </div>
 
                 {/* High-Risk Queue */}
-                <div className="dashboard-panel">
+                <div className="dashboard-panel" style={{ borderLeft: panels.highRiskQueue.length > 0 ? '3px solid #dc2626' : undefined }}>
                     <div className="dashboard-panel-header">
                         <h2 className="dashboard-panel-title">
-                            <AlertTriangle size={16} className="dashboard-panel-title-icon" />
+                            <AlertTriangle size={16} className="dashboard-panel-title-icon" style={{ color: '#dc2626' }} />
                             High-Risk Queue
                         </h2>
-                        <span className="dashboard-panel-count">{panels.highRiskQueue.length}</span>
+                        <span className="dashboard-panel-count" style={{ background: panels.highRiskQueue.length > 0 ? '#fef2f2' : undefined, color: panels.highRiskQueue.length > 0 ? '#991b1b' : undefined }}>
+                            {panels.highRiskQueue.length}
+                        </span>
                     </div>
-
+                    <p style={{ padding: '0 1rem', margin: '0 0 0.35rem', fontSize: '0.72rem', color: '#94a3b8' }}>
+                        Open cases assessed as high risk or critical.
+                    </p>
                     {panels.highRiskQueue.length === 0 ? (
-                        <div className="dashboard-panel-empty">No high-risk cases open — looking good.</div>
+                        <div className="dashboard-panel-empty" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <ShieldCheck size={14} style={{ color: '#10b981' }} />
+                            <span>No high-risk cases open â€” looking good.</span>
+                        </div>
                     ) : (
                         <div className="dashboard-panel-table-wrap">
                             <table className="dashboard-panel-table">
@@ -784,13 +808,13 @@ export function OverviewPage() {
                                     {panels.highRiskQueue.map((c) => (
                                         <tr key={c.id}>
                                             <td>{fmtDate(c.submitted_at)}</td>
-                                            <td>{c.submission_type ?? '—'}</td>
+                                            <td>{c.submission_type ? plainEventType(c.submission_type) : 'â€”'}</td>
                                             <td>
                                                 <span className={`dashboard-status-badge status-${statusClass(c.status)}`}>
                                                     {statusLabel(c.status)}
                                                 </span>
                                             </td>
-                                            <td>{c.category ?? '—'}</td>
+                                            <td>{c.category ? plainEventType(c.category) : 'â€”'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -799,16 +823,18 @@ export function OverviewPage() {
                     )}
                 </div>
 
-                {/* Recent Cases */}
-                <div className="dashboard-panel">
+                {/* Recent Cases â€“ calmer styling */}
+                <div className="dashboard-panel" style={{ opacity: 0.85 }}>
                     <div className="dashboard-panel-header">
-                        <h2 className="dashboard-panel-title">
-                            <TrendingUp size={16} className="dashboard-panel-title-icon" />
+                        <h2 className="dashboard-panel-title" style={{ color: '#64748b' }}>
+                            <TrendingUp size={16} className="dashboard-panel-title-icon" style={{ color: '#94a3b8' }} />
                             Recent Cases
                         </h2>
                         <span className="dashboard-panel-count">{panels.recentCases.length}</span>
                     </div>
-
+                    <p style={{ padding: '0 1rem', margin: '0 0 0.35rem', fontSize: '0.72rem', color: '#94a3b8' }}>
+                        Latest submissions for reference.
+                    </p>
                     {panels.recentCases.length === 0 ? (
                         <div className="dashboard-panel-empty">No cases submitted yet.</div>
                     ) : (
@@ -827,7 +853,7 @@ export function OverviewPage() {
                                     {panels.recentCases.map((c) => (
                                         <tr key={c.id}>
                                             <td>{fmtDate(c.submitted_at)}</td>
-                                            <td>{c.submission_type ?? '—'}</td>
+                                            <td>{c.submission_type ? plainEventType(c.submission_type) : 'â€”'}</td>
                                             <td>
                                                 <span className={`dashboard-status-badge status-${statusClass(c.status)}`}>
                                                     {statusLabel(c.status)}
@@ -835,10 +861,10 @@ export function OverviewPage() {
                                             </td>
                                             <td>
                                                 <span className={`dashboard-risk-badge risk-${riskClass(c.risk_level)}`}>
-                                                    {c.risk_level ?? '—'}
+                                                    {c.risk_level ?? 'â€”'}
                                                 </span>
                                             </td>
-                                            <td>{c.category ?? '—'}</td>
+                                            <td>{c.category ? plainEventType(c.category) : 'â€”'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -847,6 +873,54 @@ export function OverviewPage() {
                     )}
                 </div>
             </div>
+
+            {/* â”€â”€ Safeguarding Alert Log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            <div className="dashboard-panel" style={{ marginTop: '1.5rem', opacity: 0.85 }}>
+                <div className="dashboard-panel-header">
+                    <h2 className="dashboard-panel-title" style={{ color: '#64748b' }}>
+                        <Bell size={16} className="dashboard-panel-title-icon" style={{ color: '#94a3b8' }} />
+                        Alert Log (Last 14 Days)
+                    </h2>
+                    <span className="dashboard-panel-count">{alerts.length}</span>
+                </div>
+                {alerts.length === 0 ? (
+                    <div className="dashboard-panel-empty" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <ShieldCheck size={14} style={{ color: '#10b981' }} />
+                        <span>No recent alerts.</span>
+                    </div>
+                ) : (
+                    <div className="dashboard-panel-table-wrap">
+                        <table className="dashboard-panel-table">
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Entity</th>
+                                    <th>Severity</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {alerts.map((a) => (
+                                    <tr key={a.id}>
+                                        <td>{plainEventType(a.event_type)}</td>
+                                        <td>{a.entity_type ? plainEventType(a.entity_type) : 'â€”'}</td>
+                                        <td>
+                                            {a.severity ? (
+                                                <span className={`dashboard-risk-badge risk-${severityRiskClass(a.severity)}`}>
+                                                    {a.severity}
+                                                </span>
+                                            ) : 'â€”'}
+                                        </td>
+                                        <td>{fmtDate(a.sent_at)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
         </div>
     );
 }
+
