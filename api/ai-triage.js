@@ -516,7 +516,7 @@ Produce your response as JSON with these fields:
 
     /* 7. Automatically run source-backed intelligence if phone number, email, URL, or OCR text exists */
     let isOcrEmail = false;
-    let extractedEntities = null;
+    extractedEntities = null;
 
     if (caseRow.submission_type === 'suspicious_email' && (ocrText || caseRow.meta?.details?.extracted_text_from_screenshot)) {
       isOcrEmail = true;
