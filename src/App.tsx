@@ -34,27 +34,23 @@ const PRICING_PLANS = [
     monthlyPrice: '£9.99',
     yearlyPrice: '£8.32',   // per month equivalent
     yearlyTotal: '£99.90', // billed annually (saves 2 months)
-    tagline: 'Simple concern logging and structured advice.',
-    description: 'For small care settings needing a clearer way to assess suspicious incidents.',
+    tagline: 'Simple monthly access. Cancel anytime.',
+    description: 'For one care home or service that needs a clearer way to record concerns and manage safeguarding review.',
     featureGroups: [
       {
         groupTitle: 'Core Platform',
         items: [
-          'Up to 5 User Accounts per site',
-          'Forward-to-Check submission',
-          'Clear Guardian Risk Assessment',
-          'Monthly insight summary',
-        ],
-      },
-      {
-        groupTitle: 'Incident Support',
-        items: [
-          'UK-based human review',
-          'Clear next-step guidance',
+          'Structured concern logging',
+          'Manager review workflow',
+          'AI supported initial triage',
+          'Clear risk visibility',
+          'Case history and audit trail',
+          'Monthly reporting support',
+          'Inspection ready record keeping',
         ],
       },
     ],
-    ctaLabel: 'Start with Single Site',
+    ctaLabel: 'Book a Demo',
     featured: false,
   },
   {
@@ -63,28 +59,23 @@ const PRICING_PLANS = [
     monthlyPrice: '£19.99',
     yearlyPrice: '£16.65',
     yearlyTotal: '£199.90',
-    tagline: 'Stronger oversight for safeguarding leads.',
-    description: 'Our most popular plan. Faster review, management workflows, and inspection evidence.',
+    tagline: 'Simple monthly access. Cancel anytime.',
+    description: 'For services that need stronger reporting, clearer visibility, and more operational support.',
     featureGroups: [
       {
         groupTitle: 'Enhanced Oversight',
         items: [
-          'Up to 15 User Accounts per site',
-          'Priority human review',
-          'Manager oversight dashboard',
-          'Inspection-ready case exports',
-          'Automated management alerts',
-        ],
-      },
-      {
-        groupTitle: 'Proactive Intelligence',
-        items: [
-          'Weekly safeguarding threat briefings',
-          'Site-level vulnerability insights',
+          'Everything in Single Site',
+          'Stronger reporting visibility',
+          'Priority support',
+          'Clearer alerting and follow up',
+          'Improved oversight for managers',
+          'Better support for governance review',
+          'More confidence for inspection preparation',
         ],
       },
     ],
-    ctaLabel: 'Start with Professional',
+    ctaLabel: 'Book a Demo',
     featured: true,
   },
   {
@@ -93,28 +84,23 @@ const PRICING_PLANS = [
     monthlyPrice: '£34.99',
     yearlyPrice: '£29.15',
     yearlyTotal: '£349.90',
-    tagline: 'Complete visibility across multiple care locations.',
-    description: 'Designed for care groups ensuring consistent safeguarding practice across sites.',
+    tagline: 'Simple monthly access. Cancel anytime.',
+    description: 'For care groups and multi site providers that need visibility across multiple services.',
     featureGroups: [
       {
         groupTitle: 'Multi-Site Management',
         items: [
-          'Unlimited staff accounts',
-          'Cross-site intelligence views',
-          'Custom severity routing rules',
-          'Compliance & audit API access',
-          'Dedicated account manager',
-        ],
-      },
-      {
-        groupTitle: 'Advanced Reporting',
-        items: [
-          'Board-level PDF reporting',
-          'Trend and pattern analysis',
+          'Everything in Professional',
+          'Multi site oversight',
+          'Cross service benchmarking',
+          'Group trends and pressure visibility',
+          'Repeated resident targeting insight',
+          'Monthly group reporting support',
+          'Leadership visibility across services',
         ],
       },
     ],
-    ctaLabel: 'Start with Group Oversight',
+    ctaLabel: 'Talk to Us About Your Organisation',
     featured: false,
   },
 ];
