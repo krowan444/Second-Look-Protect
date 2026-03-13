@@ -94,7 +94,7 @@ const OPTIONS = [
     {
         id: 'screenshot',
         icon: <Upload className="w-5 h-5" />,
-        title: 'Upload a screenshot or file',
+        title: 'Upload evidence for review',
         description: 'Securely upload a suspicious message, email, invoice, or document for review.',
     },
     {
@@ -380,7 +380,7 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             </p>
 
                             <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                                Upload a screenshot to test the review process, paste a link, or request a full demo.
+                                Upload incident evidence to test the review process, paste a link, or request a full demo.
                             </p>
                         </div>
                         <div className="space-y-3 mb-10" role="radiogroup" aria-label="Submission type">
@@ -478,14 +478,14 @@ export function GetProtectionPage({ onBack }: NavigationProps) {
                             Step 2 of 2 — Provide details
                         </p>
                         <h1 className="text-[#0B1E36] mb-2" style={{ fontFamily: "'Merriweather', serif" }}>
-                            {selectedOption === 'screenshot' ? 'Upload your file'
+                            {selectedOption === 'screenshot' ? 'Upload evidence for review'
                                 : selectedOption === 'link' ? 'Paste the suspicious link'
                                     : 'Enter contact or demo details'}
                         </h1>
                         <p className="text-slate-400 text-xs mb-3">Secure, confidential handling.</p>
                         <p className="text-slate-500 text-base leading-relaxed max-w-prose">
                             {selectedOption === 'screenshot'
-                                ? 'Attach a screenshot or document for review. Fill in your details below and our team will securely assess it.'
+                                ? 'Attach a screenshot of the suspicious communication. Your concern will be securely reviewed in our safeguarding environment.'
                                 : selectedOption === 'link'
                                     ? 'Paste the full URL (starting with https://) that you would like us to check for your organisation.'
                                     : 'Enter the phone number, email address, or contact name you want us to verify, or leave a note requesting a demo.'}

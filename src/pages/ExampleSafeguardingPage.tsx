@@ -12,8 +12,8 @@ import { Button } from '../components/Button';
 const DASHBOARD_CARDS = [
     { label: 'Active cases', value: '4', icon: Shield, accent: '#C9A84C' },
     { label: 'Cases this month', value: '12', icon: FileText, accent: '#3b82f6' },
-    { label: 'Pending reviews', value: '2', icon: Clock, accent: '#f59e0b' },
-    { label: 'Resolved this month', value: '10', icon: CheckCircle, accent: '#22c55e' },
+    { label: 'Needs manager review', value: '2', icon: Clock, accent: '#f59e0b' },
+    { label: 'Closed this month', value: '10', icon: CheckCircle, accent: '#22c55e' },
 ];
 
 const SCAM_TYPES = [
@@ -481,7 +481,7 @@ export function ExampleSafeguardingPage() {
                             letterSpacing: '0.06em',
                             marginBottom: '0.75rem',
                         }}>
-                            Organisational safeguarding demonstration environment
+                            Safeguarding platform demonstration environment
                         </p>
                         <span className="demo-badge">
                             <Shield style={{ width: '13px', height: '13px' }} />
@@ -497,7 +497,7 @@ export function ExampleSafeguardingPage() {
                             marginBottom: '1rem',
                             lineHeight: 1.25,
                         }}>
-                            Example Safeguarding Dashboard
+                            Platform Oversight Dashboard
                         </h1>
 
                         <p style={{
@@ -522,13 +522,13 @@ export function ExampleSafeguardingPage() {
 
                         <div className="demo-notice" style={{ maxWidth: '420px', margin: '0 auto 1.5rem' }}>
                             <Shield style={{ width: '16px', height: '16px', color: '#C9A84C', flexShrink: 0 }} />
-                            This is a view-only demonstration.
+                            This is a view-only platform preview.
                         </div>
 
                         <div className="demo-reassurance">
-                            <span><UserCheck style={{ width: '13px', height: '13px' }} /> Human-reviewed guidance</span>
-                            <span><Shield style={{ width: '13px', height: '13px' }} /> Built for safeguarding workflows</span>
-                            <span><Globe style={{ width: '13px', height: '13px' }} /> Designed for care environments</span>
+                            <span><UserCheck style={{ width: '13px', height: '13px' }} /> Human-reviewed triage</span>
+                            <span><Shield style={{ width: '13px', height: '13px' }} /> Supports structured safeguarding workflows</span>
+                            <span><Globe style={{ width: '13px', height: '13px' }} /> Built for care providers</span>
                         </div>
 
                         <p style={{
@@ -607,7 +607,7 @@ export function ExampleSafeguardingPage() {
                             fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
                             fontWeight: 600,
                         }}>
-                            What this delivers for your organisation
+                            Built for manager oversight and operational clarity
                         </h2>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -615,7 +615,7 @@ export function ExampleSafeguardingPage() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                                     <Eye style={{ width: '18px', height: '18px', color: '#C9A84C' }} />
                                     <h3 style={{ fontFamily: "'Merriweather', serif", color: '#0B1E36', fontSize: '0.95rem', fontWeight: 600 }}>
-                                        Clear safeguarding visibility
+                                        Centralised risk visibility
                                     </h3>
                                 </div>
                                 <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.6 }}>
@@ -637,7 +637,7 @@ export function ExampleSafeguardingPage() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                                     <BarChart3 style={{ width: '18px', height: '18px', color: '#C9A84C' }} />
                                     <h3 style={{ fontFamily: "'Merriweather', serif", color: '#0B1E36', fontSize: '0.95rem', fontWeight: 600 }}>
-                                        Monthly safeguarding insight
+                                        Safeguarding risk oversight
                                     </h3>
                                 </div>
                                 <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.6 }}>
@@ -648,7 +648,7 @@ export function ExampleSafeguardingPage() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                                     <ClipboardList style={{ width: '18px', height: '18px', color: '#C9A84C' }} />
                                     <h3 style={{ fontFamily: "'Merriweather', serif", color: '#0B1E36', fontSize: '0.95rem', fontWeight: 600 }}>
-                                        Audit-ready documentation
+                                        Inspection ready reporting
                                     </h3>
                                 </div>
                                 <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.6 }}>

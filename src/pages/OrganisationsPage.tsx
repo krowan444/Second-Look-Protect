@@ -512,7 +512,7 @@ export function OrganisationsPage() {
                             </div>
 
                             {/* Image column */}
-                            <div style={{ display: 'flex', justifyContent: 'center' }} className="md:justify-end">
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="md:items-end">
                                 <img
                                     src="/images/organisations/organisation-hero.png"
                                     alt="Organisation safeguarding dashboard preview"
@@ -520,6 +520,9 @@ export function OrganisationsPage() {
                                     loading="eager"
                                     decoding="async"
                                 />
+                                <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '1rem', textAlign: 'center', fontWeight: 500 }} className="md:text-right w-full">
+                                    Platform overview: Structured concern logging and manager review workflows.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -735,7 +738,7 @@ export function OrganisationsPage() {
                             fontSize: 'clamp(1.5rem, 2.8vw, 2.25rem)',
                             fontWeight: 600,
                         }}>
-                            See how Second Look Protect fits your safeguarding environment
+                            See the safeguarding workflow in practice
                         </h2>
 
                         <div style={{ maxWidth: '580px', margin: '0 auto', textAlign: 'center' }}>

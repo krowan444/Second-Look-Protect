@@ -611,19 +611,19 @@ export default function App() {
               step: '1',
               gold: false,
               headline: 'Concern Recorded',
-              sub: 'Staff or managers quickly log a suspicious email, message, call, or payment request.',
+              sub: 'Staff or managers record a suspicious email, message, call, or payment request.',
             },
             {
               step: '2',
               gold: false,
               headline: 'Risk Assessed',
-              sub: 'Using AI-assisted review and human oversight, the incident is evaluated for safeguarding risk.',
+              sub: 'Using AI-supported initial triage and human oversight, the incident is evaluated for safeguarding risk.',
             },
             {
               step: '3',
               gold: true,
               headline: 'Action Taken',
-              sub: 'Teams receive clear guidance on next steps, building an inspection ready trail of their decision.',
+              sub: 'Teams follow clear guidance and build an inspection-ready trail of their actions.',
             },
           ].map(({ step, headline, sub, gold }, i) => (
             <div
@@ -682,6 +682,10 @@ export default function App() {
           <p className="text-slate-600 text-lg leading-relaxed mt-4">
             Second Look Protect is designed for care homes, assisted living providers, housing and support teams, safeguarding leads, compliance managers, and care groups that need a clearer way to record concerns, review risk, and evidence oversight.
           </p>
+          <div className="mt-8 flex items-center justify-center gap-2 text-slate-500 bg-slate-50 rounded-full px-5 py-2 inline-flex border border-slate-100 mx-auto">
+            <Shield className="w-4 h-4 text-[#A8853C]" aria-hidden="true" />
+            <span className="text-sm font-medium">Built for single site and multi site organisations</span>
+          </div>
         </div>
 
         {/* 2-col card grid */}
