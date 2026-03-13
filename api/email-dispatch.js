@@ -44,17 +44,78 @@ export default async function handler(req, res) {
         return res.status(401).json({ ok: false, error: 'Unauthorized' });
     }
 
+    // ── Developer Feedback (Stape-Lee) — direct send, no org pipeline ─────
+    const { event_type, organisation_id, case_id, actor_id, context } = req.body || {};
+
+    if (event_type === 'developer_feedback') {
+        const DEV_FEEDBACK_EMAIL = process.env.DEV_FEEDBACK_EMAIL || 'developer-feedback@secondlookprotect.co.uk';
+        const feedbackContext = context || {};
+        console.log('[stape-lee-feedback] ═══ FEEDBACK SEND REQUESTED ═══');
+        console.log(`[stape-lee-feedback] Route hit: yes`);
+        console.log(`[stape-lee-feedback] Recipient resolved: ${DEV_FEEDBACK_EMAIL}`);
+        console.log(`[stape-lee-feedback] Sender resolved: ${EMAIL_FROM}`);
+        console.log(`[stape-lee-feedback] Category: ${feedbackContext.category || 'General'} | Page: ${feedbackContext.page || 'unknown'} | Priority: ${feedbackContext.priority || 'Medium'}`);
+
+        const fbSubject = `[${feedbackContext.category || 'Feedback'}] Dashboard Feedback — ${feedbackContext.page || 'Dashboard'}`;
+        const fbBody =
+            `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:600px;margin:0 auto">` +
+            `<div style="background:#1e293b;color:#f1f5f9;padding:16px 20px;border-radius:10px 10px 0 0">` +
+            `<strong>🔧 Developer Feedback via Stape-Lee</strong></div>` +
+            `<div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px">` +
+            `<table style="width:100%;border-collapse:collapse;font-size:14px">` +
+            `<tr><td style="padding:6px 0;color:#64748b;width:100px"><strong>Type</strong></td><td>${feedbackContext.category || 'General'}</td></tr>` +
+            `<tr><td style="padding:6px 0;color:#64748b"><strong>Page</strong></td><td>${feedbackContext.page || 'Unknown'}</td></tr>` +
+            `<tr><td style="padding:6px 0;color:#64748b"><strong>Priority</strong></td><td>${feedbackContext.priority || 'Medium'}</td></tr>` +
+            `</table>` +
+            `<hr style="border:none;border-top:1px solid #e2e8f0;margin:14px 0"/>` +
+            `<div style="font-size:14px;line-height:1.6;white-space:pre-wrap">${escapeHtml(feedbackContext.description || '(No description)')}</div>` +
+            `<hr style="border:none;border-top:1px solid #e2e8f0;margin:14px 0"/>` +
+            `<div style="font-size:12px;color:#94a3b8">` +
+            `Sent from: ${feedbackContext.sourceUrl || 'Dashboard'}<br/>` +
+            `Timestamp: ${new Date().toISOString()}` +
+            `</div></div></div>`;
+
+        console.log(`[stape-lee-feedback] Payload built: subject="${fbSubject}" | html_length=${fbBody.length}`);
+
+        try {
+            const fbRes = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${RESEND_API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    from: EMAIL_FROM,
+                    to: [DEV_FEEDBACK_EMAIL],
+                    subject: fbSubject,
+                    html: fbBody,
+                }),
+            });
+            const fbData = await fbRes.json();
+
+            if (fbRes.ok) {
+                console.log(`[stape-lee-feedback] ✔ EMAIL SENT — provider_id: ${fbData?.id}`);
+                return res.status(200).json({ ok: true, sent: true, provider_message_id: fbData?.id });
+            } else {
+                console.error(`[stape-lee-feedback] ✖ EMAIL FAILED — status: ${fbRes.status} | error: ${fbData?.message || 'unknown'}`);
+                return res.status(500).json({ ok: false, error: fbData?.message || `Provider error (${fbRes.status})`, step: 'resend' });
+            }
+        } catch (fbErr) {
+            console.error(`[stape-lee-feedback] ✖ EXCEPTION — ${fbErr.message}`);
+            return res.status(500).json({ ok: false, error: fbErr.message || 'Send failed', step: 'exception' });
+        }
+    }
+
+    // ── Standard event dispatch continues below ──────────────────────────
+    if (!event_type || !organisation_id) {
+        return res.status(400).json({ ok: false, error: 'Missing required: event_type, organisation_id' });
+    }
+
     const sbHeaders = {
         apikey: SERVICE_KEY,
         Authorization: `Bearer ${SERVICE_KEY}`,
         'Content-Type': 'application/json',
     };
-
-    // ── Parse body ───────────────────────────────────────────────────────
-    const { event_type, organisation_id, case_id, actor_id, context } = req.body || {};
-    if (!event_type || !organisation_id) {
-        return res.status(400).json({ ok: false, error: 'Missing required: event_type, organisation_id' });
-    }
 
     // ── Diagnostic trace flag (admin_case_created only) ──────────────────
     const trace = (event_type === 'admin_case_created');
@@ -866,4 +927,14 @@ function buildAlertEmailHtml({ icon, subject, orgName, eventType, caseId, contex
 </body>
 </html>
     `.trim();
+}
+
+// ── Helper: escape HTML special characters ───────────────────────────────
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }

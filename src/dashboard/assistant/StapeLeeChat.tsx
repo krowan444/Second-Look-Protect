@@ -316,33 +316,48 @@ export function StapeLeeChat({ currentPath }: Props) {
         setFeedbackSending(true);
         setIsThinking(true);
         try {
+            // Get auth token from Supabase session
+            const { getSupabase } = await import('../../lib/supabaseClient');
+            const sb = getSupabase();
+            const { data: { session } } = await sb.auth.getSession();
+            const token = session?.access_token;
+
+            if (!token) {
+                addAssistantReply('⚠ **You appear to be logged out.** Please refresh the page and try again.');
+                setFeedbackSending(false);
+                return;
+            }
+
             const res = await fetch('/api/email-dispatch', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
                 body: JSON.stringify({
-                    to: 'developer-feedback@secondlookprotect.co.uk',
-                    subject: `[${draft.category}] Dashboard Feedback — ${draft.page}`,
-                    body:
-                        `Developer Feedback via Stape-Lee\n` +
-                        `────────────────────────────────\n` +
-                        `Type: ${draft.category}\n` +
-                        `Page: ${draft.page}\n` +
-                        `Priority: ${draft.priority}\n` +
-                        `────────────────────────────────\n\n` +
-                        `${draft.description}\n\n` +
-                        `────────────────────────────────\n` +
-                        `Sent from: ${window.location.href}\n` +
-                        `Timestamp: ${new Date().toISOString()}`,
+                    event_type: 'developer_feedback',
+                    context: {
+                        category: draft.category,
+                        page: draft.page,
+                        description: draft.description,
+                        priority: draft.priority,
+                        sourceUrl: window.location.href,
+                    },
                 }),
             });
-            setFeedbackDraft(null);
-            if (res.ok) {
+
+            const data = await res.json().catch(() => ({}));
+
+            if (res.ok && data.ok) {
+                setFeedbackDraft(null);
                 addAssistantReply('✓ **Feedback sent.** The dev team will review it — thanks for sharing.');
             } else {
-                throw new Error('fail');
+                // Keep draft visible so user doesn't lose it
+                const serverError = data.error || `Server returned ${res.status}`;
+                addAssistantReply(`⚠ **Feedback could not be sent** — ${serverError}.\n\nYour draft is still saved. Say **"send"** to retry or **"cancel"** to discard.`);
             }
-        } catch {
-            addAssistantReply('⚠ **Couldn\'t send that.** Check your connection and try again, or copy the message manually.');
+        } catch (err: any) {
+            addAssistantReply(`⚠ **Couldn't reach the server** — ${err.message || 'network error'}.\n\nYour draft is still saved. Say **"send"** to retry or **"cancel"** to discard.`);
         } finally {
             setFeedbackSending(false);
         }
