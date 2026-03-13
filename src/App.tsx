@@ -30,12 +30,9 @@ import {
 const PRICING_PLANS = [
   {
     name: 'Single Site',
-    planKey: 'BASIC',           // maps to NEXT_PUBLIC_PRICE_ID_BASIC_MONTHLY / _YEARLY
-    monthlyPrice: '£9.99',
-    yearlyPrice: '£8.32',   // per month equivalent
-    yearlyTotal: '£99.90', // billed annually (saves 2 months)
-    tagline: 'Simple monthly access. Cancel anytime.',
-    description: 'For one care home or service that needs a clearer way to record concerns and manage safeguarding review.',
+    planKey: 'BASIC',
+    tagline: 'Clear, structured oversight.',
+    description: 'For one care home or service that needs a clearer way to record concerns, manage review, and improve safeguarding oversight.',
     featureGroups: [
       {
         groupTitle: 'Core Platform',
@@ -56,11 +53,8 @@ const PRICING_PLANS = [
   {
     name: 'Professional',
     planKey: 'GUARDIAN',
-    monthlyPrice: '£19.99',
-    yearlyPrice: '£16.65',
-    yearlyTotal: '£199.90',
-    tagline: 'Simple monthly access. Cancel anytime.',
-    description: 'For services that need stronger reporting, clearer visibility, and more operational support.',
+    tagline: 'Enhanced oversight for managers.',
+    description: 'For services that need stronger reporting visibility, clearer follow up, and more support for managers and governance review.',
     featureGroups: [
       {
         groupTitle: 'Enhanced Oversight',
@@ -81,11 +75,8 @@ const PRICING_PLANS = [
   {
     name: 'Group Oversight',
     planKey: 'FAMILY',
-    monthlyPrice: '£34.99',
-    yearlyPrice: '£29.15',
-    yearlyTotal: '£349.90',
-    tagline: 'Simple monthly access. Cancel anytime.',
-    description: 'For care groups and multi site providers that need visibility across multiple services.',
+    tagline: 'Visibility across services.',
+    description: 'For care groups and multi site providers that need visibility across services, clearer trend reporting, and stronger leadership oversight.',
     featureGroups: [
       {
         groupTitle: 'Multi-Site Management',
@@ -100,7 +91,7 @@ const PRICING_PLANS = [
         ],
       },
     ],
-    ctaLabel: 'Talk to Us About Your Organisation',
+    ctaLabel: 'Speak to Our Team',
     featured: false,
   },
 ];
@@ -885,51 +876,20 @@ export default function App() {
         </div>
       </SectionWrapper>
 
-      {/* ── Pricing ──────────────────────────────────────────────────── */}
+      {/* ── Plans ──────────────────────────────────────────────────── */}
       <SectionWrapper id="pricing" background="navy">
         <SectionHeading
           title="Plans for care providers"
-          subtitle="Simple options for organisations that want clearer safeguarding workflows, stronger oversight, and more confidence in reporting."
+          subtitle="Flexible options for care homes, assisted living teams, and care groups that want clearer safeguarding workflows, stronger oversight, and inspection ready reporting."
           light
         />
 
-        {/* Monthly / Yearly toggle */}
-        <div className="flex items-center justify-center gap-4 mb-10" role="group" aria-label="Billing period">
-          <span className={`text-sm font-medium transition-colors ${!isYearly ? 'text-white' : 'text-slate-400'}`}>
-            Monthly
-          </span>
-          <button
-            onClick={() => setIsYearly((v) => !v)}
-            aria-pressed={isYearly}
-            aria-label={isYearly ? 'Switch to monthly billing' : 'Switch to yearly billing'}
-            className={[
-              'relative w-14 h-7 rounded-full transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C]',
-              isYearly ? 'bg-[#C9A84C]' : 'bg-white/20',
-            ].join(' ')}
-          >
-            <span
-              className={[
-                'absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-300',
-                isYearly ? 'translate-x-7' : 'translate-x-0',
-              ].join(' ')}
-            />
-          </button>
-          <span className={`text-sm font-medium transition-colors ${isYearly ? 'text-white' : 'text-slate-400'}`}>
-            Yearly
-            <span className="ml-1.5 text-xs font-semibold text-[#C9A84C] bg-[#C9A84C]/15 px-2 py-0.5 rounded-md">
-              Save 2 months
-            </span>
-          </span>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6 items-start">
+        <div className="grid md:grid-cols-3 gap-6 items-start mt-8">
           {PRICING_PLANS.map((plan) => (
             <div key={plan.name}>
               <PricingCard
                 {...plan}
-                isYearly={isYearly}
-                isLoading={loadingPlan === `${plan.planKey}_${isYearly ? 'yearly' : 'monthly'}`}
-                onSubscribe={handleSubscribe}
+                onSubscribe={() => handleGetProtection()}
               />
             </div>
           ))}
@@ -937,23 +897,10 @@ export default function App() {
 
         <div className="mt-14 mx-auto max-w-lg text-center space-y-3">
           <p className="text-slate-300 text-sm font-medium tracking-wide">
-            Simple cancellation if your organisation no longer needs the service:
+            Pricing is shaped around organisation size, structure, and support needs.
           </p>
           <p className="text-slate-400 text-sm leading-relaxed">
-            Just email{' '}
-            <a
-              href="mailto:support@secondlookprotect.co.uk"
-              className="text-slate-200 font-medium hover:text-[#C9A84C] transition-colors duration-200"
-            >
-              support@secondlookprotect.co.uk
-            </a>
-            {' '}and we'll take care of it for you. Stop anytime.
-          </p>
-          <p className="text-slate-500 text-xs" style={{ opacity: 0.8 }}>
-            Direct support from a real person. No unnecessary friction.
-          </p>
-          <p className="text-slate-500 text-xs text-center mt-4">
-            All plans include a 14-day free trial. · Prices shown in GBP.
+            Speak to us for the most suitable setup for your service or group.
           </p>
         </div>
 

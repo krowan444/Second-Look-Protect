@@ -1,6 +1,5 @@
 import React from 'react';
-import { CheckCircle, Loader2 } from 'lucide-react';
-import { Button } from './Button';
+import { CheckCircle } from 'lucide-react';
 
 interface FeatureGroup {
     groupTitle: string;
@@ -9,24 +8,12 @@ interface FeatureGroup {
 
 export interface PricingCardProps {
     name: string;
-    planKey: string;            // 'BASIC' | 'GUARDIAN' | 'FAMILY' — sent to server
-
-    // Monthly pricing
-    monthlyPrice: string;       // e.g. "£9.99"
-
-    // Yearly pricing (billed annually — saves 2 months)
-    yearlyPrice: string;        // e.g. "£8.32"  (per-month equivalent)
-    yearlyTotal: string;        // e.g. "£99.90"
-
+    planKey: string;
     tagline: string;
     description: string;
     featureGroups: FeatureGroup[];
     ctaLabel: string;
     featured?: boolean;
-
-    // Runtime props injected from parent
-    isYearly: boolean;
-    isLoading: boolean;
     onSubscribe: (planKey: string) => void;
 }
 
@@ -59,61 +46,27 @@ function GroupedFeatureList({ groups, light }: { groups: FeatureGroup[]; light: 
 export function PricingCard({
     name,
     planKey,
-    monthlyPrice,
-    yearlyPrice,
-    yearlyTotal,
     tagline,
     description,
     featureGroups,
     ctaLabel,
     featured = false,
-    isYearly,
-    isLoading,
     onSubscribe,
 }: PricingCardProps) {
-    const displayPrice = isYearly ? yearlyPrice : monthlyPrice;
-
-    const PriceBlock = ({ light }: { light: boolean }) => (
-        <div className="mb-4">
-            <div className="flex items-baseline gap-1">
-                <span
-                    className={`text-4xl font-extrabold ${light ? 'text-white' : 'text-[#112540]'}`}
-                    style={{ fontFamily: "'Merriweather', serif" }}
-                >
-                    {displayPrice}
-                </span>
-                <span className={`text-sm ml-1 ${light ? 'text-slate-400' : 'text-slate-500'}`}>/mo</span>
-            </div>
-            {isYearly ? (
-                <p className={`text-xs mt-1 ${light ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Billed {yearlyTotal}/yr · <span className="text-[#C9A84C] font-medium">Save 2 months</span>
-                </p>
-            ) : (
-                <p className={`text-xs mt-1 ${light ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Simple monthly protection. Cancel anytime.
-                </p>
-            )}
-        </div>
-    );
-
     const CtaButton = ({ variant }: { variant: 'primary' | 'secondary-light' | 'secondary-dark' }) => (
         <button
             onClick={() => onSubscribe(planKey)}
-            disabled={isLoading}
-            aria-label={`Subscribe to ${name} plan`}
+            aria-label={`${ctaLabel} for ${name} plan`}
             className={[
                 'w-full mt-8 py-4 rounded-lg font-semibold text-base transition-all duration-200 min-h-[48px]',
                 'flex items-center justify-center gap-2',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A84C] focus-visible:ring-offset-2',
-                isLoading ? 'opacity-70 cursor-not-allowed' : '',
                 variant === 'primary'
                     ? 'btn-gold-gradient active:scale-[0.98]'
                     : 'border border-white/20 text-white hover:bg-white/10 focus-visible:ring-offset-[#112540]',
             ].join(' ')}
         >
-            {isLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Redirecting…</>
-            ) : ctaLabel}
+            {ctaLabel}
         </button>
     );
 
@@ -132,10 +85,7 @@ export function PricingCard({
                 </div>
 
                 {/* Tagline */}
-                <p className="text-sm font-medium text-[#A8853C] italic mb-3">{tagline}</p>
-
-                {/* Price — decision anchor */}
-                <PriceBlock light={false} />
+                <p className="text-sm font-medium text-[#A8853C] italic mb-6">{tagline}</p>
 
                 {/* Description */}
                 <p className="text-slate-500 mb-6 text-sm leading-relaxed">{description}</p>
@@ -155,10 +105,7 @@ export function PricingCard({
             <h3 className="text-white mb-1">{name}</h3>
 
             {/* Tagline */}
-            <p className="text-sm font-medium text-[#C9A84C]/80 italic mb-3">{tagline}</p>
-
-            {/* Price — decision anchor */}
-            <PriceBlock light={true} />
+            <p className="text-sm font-medium text-[#C9A84C]/80 italic mb-6">{tagline}</p>
 
             {/* Description */}
             <p className="text-slate-400 mb-6 text-sm leading-relaxed">{description}</p>
