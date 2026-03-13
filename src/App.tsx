@@ -29,117 +29,92 @@ import {
 
 const PRICING_PLANS = [
   {
-    name: 'Basic Shield',
+    name: 'Single Site',
     planKey: 'BASIC',           // maps to NEXT_PUBLIC_PRICE_ID_BASIC_MONTHLY / _YEARLY
     monthlyPrice: '£9.99',
     yearlyPrice: '£8.32',   // per month equivalent
     yearlyTotal: '£99.90', // billed annually (saves 2 months)
-    tagline: 'Simple, steady reassurance when you need it.',
-    description: 'For independent individuals who want a trusted second opinion before they act.',
+    tagline: 'Simple concern logging and structured advice.',
+    description: 'For small care settings needing a clearer way to assess suspicious incidents.',
     featureGroups: [
       {
-        groupTitle: 'Protection Includes',
+        groupTitle: 'Core Platform',
         items: [
-          'Up to 5 Personal Reviews per month',
-          '24-Hour Reassurance Response',
-          'Clear Risk Assessment (Low / Medium / High)',
-          'Guardian Risk Summary for your records',
-          'The Recovery Blueprint – step-by-step guidance if you\'ve already clicked',
+          'Up to 5 User Accounts per site',
+          'Forward-to-Check submission',
+          'Clear Guardian Risk Assessment',
+          'Monthly insight summary',
         ],
       },
       {
-        groupTitle: 'Ongoing Support',
+        groupTitle: 'Incident Support',
         items: [
-          'Monthly UK Scam Bulletin',
-          'Optional monthly Pause Reminder text',
-        ],
-      },
-      {
-        groupTitle: 'Physical Protection Kit',
-        items: [
-          '1x Phone-Side "Pause & Check" Sticker',
-          '1x Wallet Emergency Card',
+          'UK-based human review',
+          'Clear next-step guidance',
         ],
       },
     ],
-    ctaLabel: 'Start with Basic Shield',
+    ctaLabel: 'Start with Single Site',
     featured: false,
   },
   {
-    name: 'The Guardian',
+    name: 'Professional',
     planKey: 'GUARDIAN',
     monthlyPrice: '£19.99',
     yearlyPrice: '£16.65',
     yearlyTotal: '£199.90',
-    tagline: 'Confident protection for you and someone you care about.',
-    description: 'Our most popular plan. Faster response, broader coverage, and proactive safety tools.',
+    tagline: 'Stronger oversight for safeguarding leads.',
+    description: 'Our most popular plan. Faster review, management workflows, and inspection evidence.',
     featureGroups: [
       {
-        groupTitle: 'Everything in Basic, plus',
+        groupTitle: 'Enhanced Oversight',
         items: [
-          'Up to 20 Full Reviews per month',
-          'Priority Response (within 4 hours, Mon–Fri)',
-          'Safe-Shop Website, QR Code & Invoice Verification',
-          'Verified Vault – real bank & service contact numbers',
-          'Protection for 2 People',
-          'Annual Digital Safety Check-Up',
+          'Up to 15 User Accounts per site',
+          'Priority human review',
+          'Manager oversight dashboard',
+          'Inspection-ready case exports',
+          'Automated management alerts',
         ],
       },
       {
-        groupTitle: 'Proactive Alerts',
+        groupTitle: 'Proactive Intelligence',
         items: [
-          'Weekly UK Scam Alerts',
-          'Monthly Protection Activity Summary',
-        ],
-      },
-      {
-        groupTitle: 'Full Guardian Pack',
-        items: [
-          'Premium Fridge Magnet',
-          '2x Wallet Cards',
-          '2x Phone Reminder Stickers',
-          'A5 "Top Scam Red Flags" Desktop Guide',
+          'Weekly safeguarding threat briefings',
+          'Site-level vulnerability insights',
         ],
       },
     ],
-    ctaLabel: 'Start with The Guardian',
+    ctaLabel: 'Start with Professional',
     featured: true,
   },
   {
-    name: 'Family Shield',
+    name: 'Group Oversight',
     planKey: 'FAMILY',
     monthlyPrice: '£34.99',
     yearlyPrice: '£29.15',
     yearlyTotal: '£349.90',
-    tagline: 'Complete household protection and accountability.',
-    description: 'Designed for families protecting elderly parents or multiple loved ones.',
+    tagline: 'Complete visibility across multiple care locations.',
+    description: 'Designed for care groups ensuring consistent safeguarding practice across sites.',
     featureGroups: [
       {
-        groupTitle: 'Everything in Guardian, plus',
+        groupTitle: 'Multi-Site Management',
         items: [
-          'Unlimited Reviews (Fair Use Policy)',
-          'Same-Day Priority Handling',
-          'Emergency "Human-Line" Call-Back Window',
-          'Coverage for Up to 5 Family Members',
-          'Annual 1-on-1 Digital Health Review',
+          'Unlimited staff accounts',
+          'Cross-site intelligence views',
+          'Custom severity routing rules',
+          'Compliance & audit API access',
+          'Dedicated account manager',
         ],
       },
       {
-        groupTitle: 'Family Accountability',
+        groupTitle: 'Advanced Reporting',
         items: [
-          'Monthly "Peace of Mind" Summary sent to Family Lead',
-          'Shared Submission Access',
-        ],
-      },
-      {
-        groupTitle: 'Elite Family Kit',
-        items: [
-          'Full Guardian Pack for 5',
-          'Scam Scenario Flash Cards',
+          'Board-level PDF reporting',
+          'Trend and pattern analysis',
         ],
       },
     ],
-    ctaLabel: 'Start with Family Shield',
+    ctaLabel: 'Start with Group Oversight',
     featured: false,
   },
 ];
@@ -927,8 +902,8 @@ export default function App() {
       {/* ── Pricing ──────────────────────────────────────────────────── */}
       <SectionWrapper id="pricing" background="navy">
         <SectionHeading
-          title="Protection Plans"
-          subtitle="Simple, transparent pricing. No long-term commitment required."
+          title="Plans for care providers"
+          subtitle="Simple options for organisations that want clearer safeguarding workflows, stronger oversight, and more confidence in reporting."
           light
         />
 
@@ -976,7 +951,7 @@ export default function App() {
 
         <div className="mt-14 mx-auto max-w-lg text-center space-y-3">
           <p className="text-slate-300 text-sm font-medium tracking-wide">
-            Simple cancellations:
+            Simple cancellation if your organisation no longer needs the service:
           </p>
           <p className="text-slate-400 text-sm leading-relaxed">
             Just email{' '}
@@ -989,7 +964,7 @@ export default function App() {
             {' '}and we'll take care of it for you. Stop anytime.
           </p>
           <p className="text-slate-500 text-xs" style={{ opacity: 0.8 }}>
-            Real human support. No forms. No hassle.
+            Direct support from a real person. No unnecessary friction.
           </p>
           <p className="text-slate-500 text-xs text-center mt-4">
             All plans include a 14-day free trial. · Prices shown in GBP.
@@ -1033,13 +1008,17 @@ export default function App() {
             <div className="feature-card">
               <h4 className="text-white font-bold mb-5 flex items-center gap-2" style={{ fontSize: '1.05rem' }}>
                 <span className="text-[#C9A84C] text-lg" aria-hidden="true">📨</span>
-                Forward-to-Check System
+                Simple concern submission
               </h4>
               <p className="text-slate-400 text-sm mb-5 leading-relaxed font-medium italic" style={{ opacity: 0.92 }}>
-                No portals. No logins. No confusion.
+                No complicated process
               </p>
               <ul className="space-y-3 text-sm text-slate-300" style={{ opacity: 0.92 }}>
-                {['Forward suspicious emails', 'Send WhatsApp screenshots', 'Submit website links'].map((item) => (
+                {[
+                  'Record suspicious emails',
+                  'Log calls, messages, or payment requests',
+                  'Capture links, screenshots, or supporting evidence',
+                ].map((item) => (
                   <li key={item} className="flex items-start gap-2">
                     <span className="text-[#C9A84C] mt-0.5" aria-hidden="true">→</span>
                     {item}
@@ -1047,7 +1026,7 @@ export default function App() {
                 ))}
               </ul>
               <p className="text-slate-400 text-sm mt-6 italic leading-relaxed">
-                &ldquo;If you can forward a message, you can stay safe.&rdquo;
+                If staff can report a concern, they can use Second Look Protect.
               </p>
             </div>
 
@@ -1055,29 +1034,31 @@ export default function App() {
             <div className="feature-card">
               <h4 className="text-white font-bold mb-5 flex items-center gap-2" style={{ fontSize: '1.05rem' }}>
                 <Shield className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
-                Guardian Risk Assessment
+                Clear safeguarding risk guidance
               </h4>
-              <p className="text-slate-400 text-sm mb-6 leading-relaxed" style={{ opacity: 0.92 }}>Every review includes a clear, structured verdict:</p>
+              <p className="text-slate-400 text-sm mb-6 leading-relaxed" style={{ opacity: 0.92 }}>
+                Every recorded concern can be reviewed through a structured risk based process that helps teams decide what needs attention next.
+              </p>
               <ul className="space-y-4 text-sm">
                 <li className="flex items-start gap-3">
                   <span className="risk-dot risk-dot-green text-green-400 text-base mt-0.5" aria-label="Green">&#x1F7E2;</span>
                   <span className="text-slate-200 leading-snug">
-                    <strong className="text-white block">Low Risk</strong>
-                    <span style={{ opacity: 0.85 }}>No immediate warning signs detected</span>
+                    <strong className="text-white block">Low concern</strong>
+                    <span style={{ opacity: 0.85 }}>Some indicators present</span>
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="risk-dot risk-dot-yellow text-yellow-400 text-base mt-0.5" aria-label="Amber">&#x1F7E1;</span>
                   <span className="text-slate-200 leading-snug">
                     <strong className="text-white block">Caution</strong>
-                    <span style={{ opacity: 0.85 }}>Warning indicators present</span>
+                    <span style={{ opacity: 0.85 }}>Warning signs need review</span>
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="risk-dot risk-dot-red text-red-400 text-base mt-0.5" aria-label="Red">&#x1F534;</span>
                   <span className="text-slate-200 leading-snug">
-                    <strong className="text-white block">High Risk</strong>
-                    <span style={{ opacity: 0.85 }}>Strong scam indicators detected</span>
+                    <strong className="text-white block">High concern</strong>
+                    <span style={{ opacity: 0.85 }}>Stronger indicators of risk or harm</span>
                   </span>
                 </li>
               </ul>
@@ -1087,14 +1068,14 @@ export default function App() {
             <div className="feature-card">
               <h4 className="text-white text-base font-bold mb-5 flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
-                Flexible Membership
+                Flexible access for care providers
               </h4>
               <ul className="space-y-3.5 text-sm text-slate-300" style={{ opacity: 0.92 }}>
                 {[
-                  'Monthly rolling — no lock-in',
-                  'Cancel any time from your account',
+                  'Monthly access with no unnecessary lock in',
+                  'Suitable for single services and growing groups',
                   'Save 2 months on annual billing',
-                  'Switch plan at any time',
+                  'Clear option to review plan choice as needs change',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2">
                     <CheckCircle className="w-4 h-4 text-[#C9A84C] shrink-0 mt-0.5" aria-hidden="true" />
@@ -1108,13 +1089,13 @@ export default function App() {
             <div className="feature-card">
               <h4 className="text-white text-base font-bold mb-5 flex items-center gap-2">
                 <Users className="w-5 h-5 text-[#C9A84C]" aria-hidden="true" />
-                Peace of mind for you — and the people who care about you
+                Group Oversight
               </h4>
               <p className="text-slate-400 text-sm leading-relaxed" style={{ opacity: 0.92 }}>
-                Families and loved ones know there's always a calm, trusted second opinion available when something doesn't feel right.
+                For multi-site organisations, maintain visibility across services to monitor pressure, spot repeated targets, and track manager review performance.
               </p>
               <p className="text-slate-400 text-sm leading-relaxed mt-3" style={{ opacity: 0.92 }}>
-                Support without judgement — for you and the people who care about you.
+                Clearer intelligence and support without the administrative burden.
               </p>
             </div>
 
@@ -1260,10 +1241,10 @@ export default function App() {
             variant="primary"
             size="lg"
             onClick={handleGetProtection}
-            aria-label="Get protection — start your fraud check now"
+            aria-label="Request a Walkthrough"
             className="btn-gold-gradient border-0 font-semibold w-full sm:w-auto justify-center"
           >
-            🛡️ Protect Me Now
+            Request a Walkthrough
           </Button>
           <p className="text-slate-500 text-sm mt-4">14-day free trial · Cancel any time</p>
         </div>

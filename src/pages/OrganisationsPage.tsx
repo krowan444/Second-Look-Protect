@@ -459,7 +459,7 @@ export function OrganisationsPage() {
                                         fontWeight: 600,
                                     }}
                                 >
-                                    Digital safeguarding designed for care and supported living environments
+                                    Safeguarding oversight for care organisations
                                 </h1>
 
                                 <p style={{
@@ -479,12 +479,12 @@ export function OrganisationsPage() {
                                     marginBottom: '1.5rem',
                                     maxWidth: '480px',
                                 }}>
-                                    Helping care and supported living environments respond confidently to increasingly sophisticated scams targeting residents.
+                                    Second Look Protect helps care homes and care groups record scam related concerns, review risk consistently, support vulnerable residents, and maintain clearer evidence for governance and inspection.
                                 </p>
 
                                 {/* Micro reassurance badges */}
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '3.5rem' }}>
-                                    {['Supports safeguarding leads and managers', 'Clear case tracking and documentation', 'Designed to fit existing safeguarding workflows'].map((badge) => (
+                                    {['Record concerns in one structured system', 'Support manager review and follow up', 'Track patterns, pressure, and repeated issues', 'Strengthen reporting and inspection readiness'].map((badge) => (
                                         <span key={badge} className="orgs-badge">{badge}</span>
                                     ))}
                                 </div>
@@ -495,18 +495,18 @@ export function OrganisationsPage() {
                                         variant="primary"
                                         size="md"
                                         onClick={() => scrollToId('org-options')}
-                                        aria-label="Explore organisation options"
+                                        aria-label="Book a Demo"
                                     >
-                                        See how this works for your organisation
+                                        Book a Demo
                                     </Button>
                                     <Button
                                         variant="secondary"
                                         size="md"
                                         as="a"
-                                        href="/example-safeguarding-environment"
-                                        aria-label="View example safeguarding environment"
+                                        href="#org-contact"
+                                        aria-label="Speak to Us"
                                     >
-                                        View safeguarding dashboard example
+                                        Speak to Us
                                     </Button>
                                 </div>
                             </div>
@@ -542,62 +542,27 @@ export function OrganisationsPage() {
                             textAlign: 'center',
                             marginBottom: '0.75rem',
                         }}>
-                            Designed specifically for safeguarding workflows
+                            Built for teams responsible for vulnerable people
                         </p>
                         <h2
                             style={{
                                 fontFamily: "'Merriweather', serif",
                                 color: '#0B1E36',
                                 textAlign: 'center',
-                                marginBottom: '3rem',
+                                marginBottom: '1.5rem',
                                 fontSize: 'clamp(1.5rem, 2.8vw, 2.25rem)',
                                 fontWeight: 600,
                             }}
                         >
-                            Designed for safeguarding environments
+                            Built for teams responsible for vulnerable people
                         </h2>
-
-                        <div className="grid sm:grid-cols-2 gap-6" style={{ maxWidth: '900px', margin: '0 auto' }}>
-                            {AUTHORITY_ITEMS.map((item) => (
-                                <div
-                                    key={item.title}
-                                    style={{
-                                        background: '#F9F9F7',
-                                        border: '1px solid #f1f5f9',
-                                        borderRadius: '12px',
-                                        padding: '1.75rem',
-                                    }}
-                                >
-                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-                                        <div
-                                            style={{
-                                                width: '38px', height: '38px', borderRadius: '50%',
-                                                background: 'rgba(201,168,76,0.08)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                flexShrink: 0, marginTop: '2px',
-                                            }}
-                                            aria-hidden="true"
-                                        >
-                                            <CheckCircle style={{ width: '18px', height: '18px', color: '#C9A84C' }} />
-                                        </div>
-                                        <div>
-                                            <h3 style={{
-                                                fontFamily: "'Merriweather', serif",
-                                                color: '#0B1E36',
-                                                fontSize: '0.95rem',
-                                                fontWeight: 600,
-                                                marginBottom: '6px',
-                                                lineHeight: 1.35,
-                                            }}>
-                                                {item.title}
-                                            </h3>
-                                            <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.6 }}>
-                                                {item.description}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                        <div style={{ maxWidth: '680px', margin: '0 auto', textAlign: 'center', marginBottom: '3rem' }}>
+                            <p style={{ color: '#475569', fontSize: '1.1rem', lineHeight: 1.7, marginBottom: '1rem' }}>
+                                Care settings need more than informal reassurance when a suspicious incident is reported. They need a clear process that helps staff raise concern, managers review risk, and leaders maintain oversight.
+                            </p>
+                            <p style={{ color: '#475569', fontSize: '1.1rem', lineHeight: 1.7 }}>
+                                Second Look Protect supports that process with structured case handling, clearer visibility, and reporting that helps organisations evidence action.
+                            </p>
                         </div>
                     </div>
                 </section>
@@ -826,9 +791,6 @@ export function OrganisationsPage() {
                     </div>
                 </section>
 
-                {/* ═══════════════════════════════════════════════════════════════
-            SECTION — WHY ORGANISATIONS USE THIS (Benefits)
-            ═══════════════════════════════════════════════════════════════ */}
                 <section style={{
                     background: '#ffffff',
                     borderTop: '1px solid #e2e8f0',
@@ -839,31 +801,43 @@ export function OrganisationsPage() {
                             fontFamily: "'Merriweather', serif",
                             color: '#0B1E36',
                             textAlign: 'center',
-                            marginBottom: '2.5rem',
+                            marginBottom: '1rem',
                             fontSize: 'clamp(1.5rem, 2.8vw, 2.25rem)',
                             fontWeight: 600,
                         }}>
                             Why organisations use Second Look Protect
                         </h2>
+                        <div style={{ maxWidth: '680px', margin: '0 auto', textAlign: 'center', paddingBottom: '2.5rem' }}>
+                            <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6, marginTop: '1rem' }}>
+                                For growing providers and care groups, Second Look Protect helps leadership teams compare services, spot pressure earlier, and maintain a clearer view of safeguarding risk across multiple sites.
+                            </p>
+                        </div>
 
                         <ul
-                            className="grid sm:grid-cols-2 gap-x-12 gap-y-4"
+                            className="grid sm:grid-cols-2 gap-x-12 gap-y-6"
                             style={{ maxWidth: '680px', margin: '0 auto', listStyle: 'none', padding: 0 }}
                             role="list"
                         >
-                            {BENEFITS.map((benefit) => (
+                            {[
+                                'Clearer safeguarding concern logging',
+                                'More consistent manager review',
+                                'Stronger visibility for compliance and leadership',
+                                'Better evidence for governance and inspection',
+                                'Support for single site and multi site organisations'
+                            ].map((benefit) => (
                                 <li
                                     key={benefit}
                                     style={{
                                         display: 'flex',
                                         alignItems: 'flex-start',
-                                        gap: '10px',
+                                        gap: '12px',
                                         color: '#334155',
-                                        fontSize: '0.95rem',
+                                        fontSize: '1rem',
                                         lineHeight: 1.6,
+                                        fontWeight: 500,
                                     }}
                                 >
-                                    <CheckCircle style={{ width: '18px', height: '18px', color: '#C9A84C', flexShrink: 0, marginTop: '3px' }} aria-hidden="true" />
+                                    <CheckCircle style={{ width: '20px', height: '20px', color: '#C9A84C', flexShrink: 0, marginTop: '2px' }} aria-hidden="true" />
                                     {benefit}
                                 </li>
                             ))}
@@ -913,7 +887,7 @@ export function OrganisationsPage() {
                             as="a"
                             href="mailto:organisation@secondlookprotect.co.uk?subject=Organisation%20safeguarding%20discussion"
                         >
-                            Book a safeguarding discussion
+                            Talk to Us About Your Organisation
                         </Button>
 
                         {/* Secondary contact block */}
