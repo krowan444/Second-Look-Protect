@@ -13,169 +13,71 @@ interface FAQGroup {
 
 const FAQ_GROUPS: FAQGroup[] = [
     {
-        category: 'How It Works',
+        category: 'Platform & Purpose',
         items: [
             {
-                question: 'What exactly is a "Second Look"?',
-                answer: (
-                    <>
-                        It&rsquo;s a moment to pause before you act. When you receive a message, link, call, or invoice that feels uncertain, you forward it to us. We review it carefully, check for warning signs and behind-the-scenes indicators, and provide a clear risk assessment &mdash; along with calm guidance on what to do next.
-                    </>
-                ),
+                question: 'What is Second Look Protect for?',
+                answer: 'Second Look Protect helps care homes and care groups record suspicious incidents, review scam related safeguarding concerns, track actions, and maintain clearer oversight. It is designed to support teams protecting vulnerable residents and to strengthen reporting for governance and inspection.',
             },
             {
-                question: 'How do I send something for review?',
-                answer: (
-                    <>
-                        <p className="mb-3">If you can message a friend, you can use Second Look. Simply:</p>
-                        <ul className="space-y-1 mb-3">
-                            <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">→</span>Forward the email</li>
-                            <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">→</span>Screenshot the message</li>
-                            <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">→</span>Send the link via WhatsApp</li>
-                        </ul>
-                        <p>No complicated portals. No technical setup.</p>
-                    </>
-                ),
+                question: 'Who is the platform designed for?',
+                answer: 'Second Look Protect is designed for care home managers, safeguarding leads, compliance managers, operations leaders, and care groups that need a more structured way to handle scam related safeguarding concerns and maintain oversight.',
             },
             {
-                question: 'What exactly happens when I send something?',
-                answer: (
-                    <>
-                        One of our UK-based fraud specialists reviews the message &mdash; checking sender details, link destinations, technical markers, and language patterns.
-                        <br /><br />
-                        You receive a clear verdict: <strong>Safe or Scam</strong>, plus recommended next steps.
-                    </>
-                ),
-            },
-            {
-                question: 'How quickly will I get a response?',
-                answer: 'Most reviews are returned quickly, often within a short time of submission. Priority response is available for urgent situations.',
+                question: 'Is this only for one care home, or can it support groups?',
+                answer: 'It can support both single site providers and multi site care groups. For larger organisations, the platform can help leadership teams maintain clearer visibility across services and monitor safeguarding pressure more effectively.',
             },
         ],
     },
     {
-        category: 'Trust & Safety',
+        category: 'Recording & Reviewing',
         items: [
             {
-                question: 'Will Second Look Protect ever ask for my passwords or bank details?',
-                answer: (
-                    <>
-                        <p className="mb-3">
-                            <strong>Important:</strong> Second Look Protect will never ask for your passwords, one-time passcodes (OTPs), full banking details, or ask you to move money. We will never pressure you to act urgently.
-                        </p>
-                        <p>
-                            If someone claims to be us and asks for sensitive information, stop immediately and contact us directly via our official website or email at{' '}
-                            <a
-                                href="mailto:hello@secondlookprotect.co.uk"
-                                className="text-[#A8853C] underline underline-offset-2 hover:text-[#C9A84C] transition-colors"
-                            >
-                                hello@secondlookprotect.co.uk
-                            </a>
-                            .
-                        </p>
-                    </>
-                ),
+                question: 'What kinds of concerns can be recorded?',
+                answer: 'Teams can record suspicious calls, emails, text messages, payment requests, impersonation attempts, questionable links, screenshots, and wider financial abuse related concerns. The aim is to create one clear place to log and review issues before risk escalates.',
             },
             {
-                question: 'Is my information kept private?',
-                answer: 'Yes. Anything you send for review is treated confidentially and used solely for assessment purposes. We never sell or share your information.',
+                question: 'How does the workflow support safeguarding teams?',
+                answer: 'The platform supports a clearer safeguarding process by helping staff raise concerns, managers review risk, teams record decisions, and organisations maintain a stronger audit trail. This makes follow up and oversight more consistent.',
             },
             {
-                question: 'Do you guarantee something is 100% safe?',
-                answer: 'No service can offer 100% certainty in an evolving digital world. We provide a professional risk assessment based on clear indicators. If there is any doubt, our advice will always prioritise caution and verification through official channels.',
+                question: 'Can staff use it without complex training?',
+                answer: 'The platform is designed to be clear and practical for real world use. Staff should be able to record concerns in a structured way without needing advanced technical knowledge.',
             },
             {
-                question: 'What if you get it wrong?',
-                answer: 'Scams evolve quickly, which is why we assess risk carefully and explain our reasoning clearly. When in doubt, we err on the side of caution. Our goal is to reduce risk and pressure — not rush decisions.',
-            },
-            {
-                question: 'Do you use artificial intelligence?',
-                answer: 'We use modern tools behind the scenes to help identify warning signs efficiently. Every assessment is reviewed carefully before guidance is given. Our focus is clear, human guidance — not automation.',
+                question: 'What if a concern turns out to be low risk?',
+                answer: 'That still has value. Recording low concern incidents helps organisations show that concerns were reviewed properly, supports pattern tracking, and creates a clearer history if similar issues happen again.',
             },
         ],
     },
     {
-        category: 'Membership & Value',
+        category: 'Governance & Intelligence',
         items: [
             {
-                question: 'Why is there a monthly fee?',
-                answer: 'Scammers don\'t take holidays. For less than £1 a day, you have a trusted second opinion before sending money or personal information. You\'re paying for prevention, clarity, and peace of mind.',
+                question: 'How does this help with inspection readiness?',
+                answer: 'Second Look Protect helps organisations maintain clearer records of concerns, reviews, actions, and reporting. This supports stronger governance and makes it easier to evidence oversight when internal leadership or inspectors need to see how concerns are being managed.',
             },
             {
-                question: 'What if I don\'t use it this month?',
-                answer: 'That\'s good news — it means you stayed safe. Even when you don\'t submit a check, we monitor UK scam trends and provide proactive awareness. Like a smoke alarm, it may stay quiet — but it\'s there when you need it.',
+                question: 'Can this help with repeated targeting or wider patterns?',
+                answer: 'Yes. One of the benefits of structured concern recording is that organisations can build a clearer picture over time, including repeated issues, repeated resident targeting, and wider operational pressure.',
             },
             {
-                question: 'Can I cancel at any time?',
-                answer: 'Yes. There are no long-term contracts and no complicated cancellation process. You can cancel at any time.',
+                question: 'Does the platform replace professional safeguarding judgement?',
+                answer: 'No. Second Look Protect is there to support teams with structure, visibility, and consistency. It does not replace safeguarding judgement, internal procedures, or management decision making. Final decisions remain with the organisation.',
             },
             {
-                question: 'What if I\'ve never been scammed before?',
-                answer: 'Most people who lose money to scams had never been scammed before. This service exists to protect you before a costly mistake happens.',
+                question: 'How is AI used in the platform?',
+                answer: 'AI is used as a supporting layer to help teams review information more clearly and consistently. It is there to assist early assessment and triage, while human oversight and organisational judgement remain in control.',
             },
         ],
     },
     {
-        category: 'Situational Questions',
+        category: 'Support & Next Steps',
         items: [
             {
-                question: 'What if I\'ve already clicked a link or sent money?',
-                answer: (
-                    <>
-                        First &mdash; act quickly. Every member receives access to our <strong>Recovery Blueprint</strong>: a calm, step-by-step checklist covering who to contact, what to say, and how to secure your accounts.
-                        <br /><br />
-                        Quick action makes a difference.
-                    </>
-                ),
+                question: 'How do we get started?',
+                answer: 'The best starting point is a demo. This gives your organisation a practical walkthrough of how the platform works and helps you decide whether it fits your safeguarding and reporting needs.',
             },
-            {
-                question: 'How is this different from my bank\'s fraud team?',
-                answer: 'Banks often step in after money has moved. We help before you act — reviewing suspicious messages, links, and invoices in advance so you can avoid the problem entirely.',
-            },
-            {
-                question: "Can't I just ask a family member or friend?",
-                answer: (
-                    <>
-                        <p className="mb-3">Of course — and many people do.</p>
-                        <p className="mb-3">But we also understand that not everyone feels comfortable asking family or friends about suspicious messages or online concerns. It can sometimes feel embarrassing, or you may worry about bothering someone or being judged.</p>
-                        <p>Second Look Protect provides a calm, impartial second opinion from trained professionals who deal with these situations every day. We're here to reduce pressure, not add to it.</p>
-                    </>
-                ),
-            },
-            {
-                question: 'Is this helpful for family members or carers too?',
-                answer: (
-                    <>
-                        <p className="mb-3">Yes. Many families and carers use Second Look Protect to feel reassured that their loved one has a safe, independent place to check messages, emails, or online situations.</p>
-                        <p>It helps reduce worry while supporting confidence, independence, and peace of mind for everyone involved.</p>
-                    </>
-                ),
-            },
-            {
-                question: 'Why are scams harder to spot now?',
-                answer: (
-                    <>
-                        <p className="mb-3">Because they look real. Modern scams can:</p>
-                        <ul className="space-y-1 mb-3">
-                            <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">→</span>Use perfect English</li>
-                            <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">→</span>Spoof legitimate phone numbers</li>
-                            <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">→</span>Clone voices using AI</li>
-                            <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">→</span>Copy trusted brand websites</li>
-                            <li className="flex items-start gap-2"><span className="text-[#A8853C] mt-1" aria-hidden="true">→</span>Create urgency to pressure quick decisions</li>
-                        </ul>
-                        <p>They are designed to catch people in the moment — not because they lack intelligence, but because they are busy or under pressure.</p>
-                    </>
-                ),
-            },
-            {
-                question: 'Can I use this to protect my parents or a loved one?',
-                answer: 'Yes. Many members join specifically to protect a parent or family member. Family options allow shared access and added peace of mind.',
-            },
-        ],
-    },
-    {
-        category: 'Support & Contact',
-        items: [
             {
                 question: 'I need technical support — how do I get help?',
                 answer: (
@@ -187,7 +89,7 @@ const FAQ_GROUPS: FAQGroup[] = [
                         >
                             support@secondlookprotect.co.uk
                         </a>{' '}
-                        and include your name, the email you signed up with, and a brief description of the issue. We&rsquo;ll get back to you as soon as possible.
+                        and include your name, your organisation, and a brief description of the issue. We&rsquo;ll get back to you as soon as possible.
                     </>
                 ),
             },
@@ -202,7 +104,7 @@ const FAQ_GROUPS: FAQGroup[] = [
                         >
                             hello@secondlookprotect.co.uk
                         </a>
-                        . You can also call us directly — details are shown above.
+                        . You can also call us directly.
                     </>
                 ),
             },

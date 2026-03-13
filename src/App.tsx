@@ -1130,7 +1130,7 @@ export default function App() {
         <div className="max-w-3xl mx-auto">
           <SectionHeading
             title="Frequently Asked Questions"
-            subtitle="Clear answers. No pressure. No jargon."
+            subtitle="Clear answers for care managers, safeguarding leads, and teams responsible for protecting vulnerable residents."
           />
           <FAQAccordion />
         </div>
@@ -1141,10 +1141,10 @@ export default function App() {
         <div className="max-w-2xl mx-auto flex flex-col items-center text-center">
           <p className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase mb-3">Get in Touch</p>
           <h2 className="text-[#0B1E36] mb-3" style={{ fontFamily: "'Merriweather', serif" }}>
-            We're here when you need us
+            Talk to us about your organisation
           </h2>
           <p className="text-slate-600 text-lg mb-10">
-            Call, WhatsApp, or email — whichever works best for you.
+            Whether you want to book a demo, explore a pilot, or understand how Second Look Protect could support your safeguarding process, we would be glad to speak with you.
           </p>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
@@ -1157,9 +1157,10 @@ export default function App() {
               <div className="w-12 h-12 rounded-full bg-[#C9A84C]/10 flex items-center justify-center group-hover:bg-[#C9A84C]/20 transition-colors">
                 <span className="text-xl" aria-hidden="true">📞</span>
               </div>
-              <div>
+              <div className="text-center">
                 <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-1">Office Line</p>
-                <p className="text-[#0B1E36] font-semibold text-base">01604 385888</p>
+                <p className="text-[#0B1E36] font-semibold text-base mb-1">01604 385888</p>
+                <p className="text-slate-400 text-[11px] leading-snug">For general enquiries and organisation discussions</p>
               </div>
             </a>
 
@@ -1172,9 +1173,10 @@ export default function App() {
               <div className="w-12 h-12 rounded-full bg-[#C9A84C]/10 flex items-center justify-center group-hover:bg-[#C9A84C]/20 transition-colors">
                 <span className="text-xl" aria-hidden="true">📱</span>
               </div>
-              <div>
+              <div className="text-center">
                 <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-1">Mobile / WhatsApp</p>
-                <p className="text-[#0B1E36] font-semibold text-base">07907 614821</p>
+                <p className="text-[#0B1E36] font-semibold text-base mb-1">07907 614821</p>
+                <p className="text-slate-400 text-[11px] leading-snug">For quick contact and demo enquiries</p>
               </div>
             </a>
 
@@ -1190,7 +1192,8 @@ export default function App() {
               <div className="text-center">
                 <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-2">General Enquiries</p>
                 <span className="inline-block px-4 py-1.5 rounded-full bg-[#C9A84C]/10 text-[#0B1E36] text-sm font-semibold group-hover:bg-[#C9A84C]/20 transition-colors">Send email</span>
-                <p className="text-slate-400 text-[11px] mt-2 leading-snug">hello@secondlookprotect.co.uk</p>
+                <p className="text-[#0B1E36] font-semibold text-[13px] mt-2 leading-snug">hello@secondlookprotect.co.uk</p>
+                <p className="text-slate-400 text-[11px] mt-1 leading-snug">For questions about the platform and organisation fit</p>
               </div>
             </a>
 
@@ -1206,7 +1209,8 @@ export default function App() {
               <div className="text-center">
                 <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-2">Technical Support</p>
                 <span className="inline-block px-4 py-1.5 rounded-full bg-[#C9A84C]/10 text-[#0B1E36] text-sm font-semibold group-hover:bg-[#C9A84C]/20 transition-colors">Send email</span>
-                <p className="text-slate-400 text-[11px] mt-2 leading-snug">support@secondlookprotect.co.uk</p>
+                <p className="text-[#0B1E36] font-semibold text-[13px] mt-2 leading-snug">support@secondlookprotect.co.uk</p>
+                <p className="text-slate-400 text-[11px] mt-1 leading-snug">For platform support and account help</p>
               </div>
             </a>
           </div>
@@ -1214,10 +1218,9 @@ export default function App() {
 
         {/* Contact footer note — full section width, true center */}
         <div className="flex flex-col items-center justify-center w-full mt-8 text-center" style={{ maxWidth: '56rem', marginLeft: 'auto', marginRight: 'auto' }}>
-          <p className="text-slate-500 text-sm italic">Mon – Sat · 8am – 8pm · We aim to respond within 1 hour.</p>
+          <p className="text-slate-500 text-sm italic">Mon to Sat, 8am to 8pm. We aim to respond promptly to organisation enquiries and support requests.</p>
           <p className="text-slate-400 text-xs mt-3 max-w-2xl">
-            We will never ask for passwords, OTPs, full banking details, or ask you to move money. If unsure, contact us directly via our official website or{' '}
-            <a href="mailto:hello@secondlookprotect.co.uk" className="underline underline-offset-1 hover:text-slate-600 transition-colors">hello@secondlookprotect.co.uk</a>.
+            Second Look Protect supports structured safeguarding concern handling. For urgent internal safeguarding action, organisations should continue to follow their own immediate procedures and escalation routes.
           </p>
         </div>
       </SectionWrapper>
@@ -1231,22 +1234,21 @@ export default function App() {
             </div>
           </div>
           <h2 className="text-white mb-5" style={{ fontFamily: "'Merriweather', serif" }}>
-            Scammers rely on pressure.<br />
-            <span className="text-[#C9A84C]">We give you pause.</span>
+            Clearer safeguarding support when something does not feel right.
           </h2>
           <p className="text-slate-300 text-lg leading-relaxed mb-10">
-            Expert verification, available whenever you need it. Start with a free trial — no pressure, no commitment.
+            Help your team record concerns earlier, review risk more consistently, and maintain stronger oversight across your service.
           </p>
           <Button
             variant="primary"
             size="lg"
             onClick={handleGetProtection}
-            aria-label="Request a Walkthrough"
+            aria-label="Book a Demo"
             className="btn-gold-gradient border-0 font-semibold w-full sm:w-auto justify-center"
           >
-            Request a Walkthrough
+            Book a Demo
           </Button>
-          <p className="text-slate-500 text-sm mt-4">14-day free trial · Cancel any time</p>
+          <p className="text-slate-500 text-sm mt-4">A practical walkthrough for care providers and safeguarding teams.</p>
         </div>
       </SectionWrapper>
 
@@ -1276,7 +1278,7 @@ export default function App() {
               </div>
 
               <p className="text-base leading-relaxed max-w-sm mb-5">
-                UK-based, independent verification service. Not affiliated with any bank, financial institution, or government body.
+                Safeguarding intelligence and oversight platform for care providers. Built to help organisations record concerns, review risk, and maintain clearer evidence for governance and inspection.
               </p>
 
               {/* Contact */}
@@ -1384,8 +1386,7 @@ export default function App() {
               </div>
             </div>
             <p>
-              Second Look Protect Ltd is an independent verification service. We are not authorised or regulated by the Financial Conduct Authority (FCA).
-              We do not provide financial advice. UK-Based. Independent.
+              Second Look Protect supports organisational safeguarding processes. It does not replace internal procedures, leadership judgement, or urgent safeguarding escalation routes.
             </p>
           </div>
         </div>
@@ -1440,9 +1441,9 @@ export default function App() {
         }
       `}</style>
       <div className="home-sticky-bar" aria-label="Quick action">
-        <button onClick={handleGetProtection} aria-label="Get Protection Now">
+        <button onClick={handleGetProtection} aria-label="Book a Demo">
           <Shield className="w-[18px] h-[18px]" aria-hidden="true" />
-          Get Protection Now
+          Book a Demo
         </button>
       </div>
     </div>
