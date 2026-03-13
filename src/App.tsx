@@ -493,7 +493,7 @@ export default function App() {
               <div className="animate-fade-in-up flex items-center gap-3 mb-8">
                 <div className="w-1 h-5 bg-[#C9A84C] rounded-full" aria-hidden="true" />
                 <span className="text-[#C9A84C] text-xs font-semibold tracking-widest uppercase">
-                  Independent · UK-Based · Expert Verification
+                  INDEPENDENT · UK BASED · SAFEGUARDING FOCUSED
                 </span>
               </div>
 
@@ -502,30 +502,28 @@ export default function App() {
                 className="animate-fade-in-up animate-delay-100 text-white mb-6 leading-tight"
                 style={{ fontFamily: "'Merriweather', serif", textShadow: '0px 1px 6px rgba(0,0,0,0.15)' }}
               >
-                <span className="block" style={{ color: '#A8C4DE' }}>Before you click.</span>
-                <span className="block text-[#C9A84C]" style={{ marginTop: '-4px' }}>Get a calm, expert second look.</span>
+                <span className="block" style={{ color: '#A8C4DE' }}>Spot safeguarding risk earlier.</span>
+                <span className="block text-[#C9A84C]" style={{ marginTop: '-4px' }}>Manage every concern clearly. Stay inspection ready.</span>
               </h1>
 
               {/* AI context supporting line */}
-              <p className="animate-fade-in-up animate-delay-150 text-slate-300 text-sm leading-relaxed mb-4 max-w-lg">
-                As AI technology evolves rapidly, scams and online deception are becoming more sophisticated. Second Look Protect gives you a simple, calm way to double-check before you act.
+              <p className="animate-fade-in-up animate-delay-150 text-slate-300 text-lg leading-relaxed mb-4 max-w-lg">
+                Second Look Protect helps care homes and care groups record suspicious incidents, assess scam related safeguarding risk, support vulnerable residents, and maintain clear oversight through one secure platform.
               </p>
 
               {/* Supporting text */}
-              <p className="animate-fade-in-up animate-delay-200 text-slate-300 text-lg leading-relaxed mb-3 max-w-lg">
-                Send us suspicious texts, emails, links, WhatsApp messages, or screenshots<span className="hero-emdash"> —</span> and we&rsquo;ll verify what&rsquo;s real, what&rsquo;s risky, and what to do next.
-              </p>
               <p className="animate-fade-in-up animate-delay-200 text-slate-400 text-sm leading-relaxed mb-3 max-w-lg">
-                Supporting individuals, families, and care environments against increasingly sophisticated scams and AI-driven fraud.
+                From suspicious calls, emails, payment requests, and impersonation attempts to wider financial abuse concerns, teams can log issues quickly, review them consistently, and act with confidence.
               </p>
 
 
               {/* Benefit chips */}
               <div className="animate-fade-in-up animate-delay-300 flex flex-wrap gap-2 mb-10" role="list" aria-label="Key benefits">
                 {[
-                  '✔ Verify links before you open them',
-                  '✔ Spot scams that look real',
-                  '✔ Protect parents & family finances',
+                  '✓ Record safeguarding concerns in one clear place',
+                  '✓ Support vulnerable residents when something feels wrong',
+                  '✓ Strengthen manager oversight and review workflows',
+                  '✓ Build clearer evidence for governance and inspection',
                 ].map((chip) => (
                   <span
                     key={chip}
@@ -543,10 +541,10 @@ export default function App() {
                   variant="primary"
                   size="lg"
                   onClick={handleGetProtection}
-                  aria-label="Get protection — start your fraud check in 60 seconds"
+                  aria-label="Book a Demo"
                   className="btn-gold-gradient border-0 font-semibold w-full sm:w-auto justify-center"
                 >
-                  Get Protection
+                  Book a Demo
                 </Button>
                 <button
                   onClick={handleHowItWorks}
@@ -575,24 +573,24 @@ export default function App() {
               </div>
 
               {/* Sub-CTA stack — full-width, left-aligned below both buttons */}
-              <p className="text-slate-200 text-sm font-medium mb-3">Start in 60 seconds</p>
+              <p className="text-slate-200 text-sm font-medium mb-3">Built for real safeguarding use</p>
 
               <div className="flex flex-col gap-1.5 mb-5">
-                <p className="text-slate-300/85 text-sm">✓ No login or passwords required</p>
-                <p className="text-slate-300/85 text-sm">✓ Reviewed by UK safeguarding specialists</p>
-                <p className="text-slate-300/85 text-sm">✓ Supporting safeguarding decisions</p>
+                <p className="text-slate-300/85 text-sm">✓ Clear concern logging for staff and managers</p>
+                <p className="text-slate-300/85 text-sm">✓ Reviewed through structured safeguarding workflows</p>
+                <p className="text-slate-300/85 text-sm">✓ Supports oversight, audit trail, and inspection readiness</p>
               </div>
 
               {/* Reassurance line */}
               <p className="text-slate-300/80 italic" style={{ fontSize: '13px', letterSpacing: '0.01em' }}>
-                No judgement. No pressure. Just clarity when something doesn&rsquo;t feel right.
+                Calm, structured support when something does not feel right.
               </p>
 
               {/* Care environment trust badge */}
               <div className="mt-6">
                 <span className="inline-flex items-center gap-2 bg-[#C9A84C]/15 border border-[#C9A84C]/50 text-slate-200 text-xs font-medium px-4 py-1.5 rounded-full shadow-sm">
                   <Shield className="w-3.5 h-3.5 text-[#C9A84C] shrink-0" aria-hidden="true" />
-                  Suitable for care environments &amp; safeguarding teams.
+                  Designed for care homes, assisted living teams, and safeguarding focused organisations.
                 </span>
               </div>
 
@@ -603,7 +601,7 @@ export default function App() {
                   className="hero-contact-row text-slate-400 text-sm no-underline"
                   aria-label="Call us on 07907 614821"
                 >
-                  <span className="hero-contact-label">Prefer to talk?</span>
+                  <span className="hero-contact-label">Speak to our team:</span>
                   <span className="hero-contact-value">
                     Call 07907 614821
                   </span>
@@ -613,7 +611,7 @@ export default function App() {
                   className="hero-contact-row text-slate-400 text-sm no-underline"
                   aria-label="Email hello@secondlookprotect.co.uk"
                 >
-                  <span className="hero-contact-label">Prefer email?</span>
+                  <span className="hero-contact-label">Email enquiries:</span>
                   <span className="hero-contact-value hero-contact-value-email">
                     hello@secondlookprotect.co.uk
                   </span>
@@ -637,7 +635,7 @@ export default function App() {
       <SectionWrapper id="how-it-works" background="offwhite" topBorder={false} className="pt-14 md:pt-20 pb-10 md:pb-14">
         <SectionHeading
           title="How It Works"
-          subtitle="A clear, three-step process. Simple to use whenever you need a trusted second opinion."
+          subtitle="A simple, structured process for recording concerns, reviewing risk, and supporting better safeguarding decisions."
         />
 
         <div ref={howItWorksRef} className="grid md:grid-cols-3 gap-14 md:gap-16 max-w-4xl mx-auto relative">
