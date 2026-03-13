@@ -1753,6 +1753,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                     const lookupStatus = intel?.lookup_status || null;
                                     const extLookup = intel?.external_lookup || null;
                                     const extEmailLookup = intel?.external_email_lookup || null;
+                                    const extUrlLookup = intel?.external_url_lookup || null;
                                     const complaints = intel?.complaint_sources || null;
 
                                     // Technical lookup status
