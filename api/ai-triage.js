@@ -358,10 +358,70 @@ Produce your response as JSON with these fields:
 
     console.log('[ai-triage] âœ” AI triage generated and saved successfully for case_id:', case_id, '| triage_id:', triageId);
 
-    /* 7. Automatically run source-backed intelligence if phone number, email, or URL exists */
-    if ((phoneNumber || senderEmail || urlObj) && triageId) {
-      console.log('[ai-triage] Step 5: Observable found, running source-backed intelligence. Phone:', phoneNumber, '| Email:', senderEmail, '| URL:', urlObj);
+    /* 7. Automatically run source-backed intelligence if phone number, email, URL, or OCR text exists */
+    let isOcrEmail = false;
+    let extractedEntities = null;
+
+    if (caseRow.submission_type === 'suspicious_email' && (ocrText || caseRow.meta?.details?.extracted_text_from_screenshot)) {
+      isOcrEmail = true;
+      ocrText = ocrText || caseRow.meta?.details?.extracted_text_from_screenshot;
+      console.log(`[ocr-intel-report] Image attached: yes, OCR text length: ${ocrText?.length || 0}`);
+    }
+
+    if ((phoneNumber || senderEmail || urlObj || isOcrEmail) && triageId) {
+      console.log('[ai-triage] Step 5: Observable/OCR found, running source-backed intelligence. Phone:', phoneNumber, '| Email:', senderEmail, '| URL:', urlObj, '| isOcrEmail:', isOcrEmail);
+
       try {
+        /* 7-pre. If OCR Email, extract entities first to drive targeted research */
+        if (isOcrEmail && ocrText) {
+          console.log('[ocr-intel-report] Starting entity extraction from OCR text...');
+          const extractStart = Date.now();
+          const extractRes = await fetch('https://api.openai.com/v1/responses', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${OPENAI_KEY}`,
+            },
+            body: JSON.stringify({
+              model: MODEL,
+              input: [
+                { role: 'system', content: 'You are a safeguarding data extraction assistant. Extract key entities and suspicious claims from the provided email OCR text to help drive targeted scam research.' },
+                { role: 'user', content: `Extract entities from this OCR text:\n\n${ocrText}` }
+              ],
+              text: {
+                format: {
+                  type: 'json_schema',
+                  name: 'ocr_entities',
+                  strict: true,
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      brands: { type: 'array', items: { type: 'string' }, description: 'Companies or brands mentioned (e.g. PayPal, Netflix, HMRC)' },
+                      claims: { type: 'array', items: { type: 'string' }, description: 'Suspicious claims made (e.g. Account suspended, Invoice due, Unusual login)' },
+                      urgency_cues: { type: 'array', items: { type: 'string' }, description: 'Phrases creating urgency (e.g. Act immediately, Within 24 hours)' }
+                    },
+                    required: ['brands', 'claims', 'urgency_cues'],
+                    additionalProperties: false
+                  }
+                }
+              }
+            })
+          });
+
+          if (extractRes.ok) {
+            const extractData = await extractRes.json();
+            try {
+              const tc = extractData.output?.find((i) => i.type === 'message')?.content?.find((c) => c.type === 'output_text');
+              extractedEntities = JSON.parse(tc?.text || '{}');
+              console.log('[ocr-intel-report] Extracted entities/claims:', JSON.stringify(extractedEntities));
+            } catch (err) {
+              console.error('[ocr-intel-report] Failed to parse extracted entities:', err.message);
+            }
+          } else {
+            console.warn('[ocr-intel-report] Entity extraction API failed:', extractRes.status);
+          }
+        }
+
         const IPQS_KEY = process.env.IPQS_API_KEY;
         let externalLookup = null;
         let externalEmailLookup = null;
@@ -605,6 +665,14 @@ Produce your response as JSON with these fields:
             const cleanUrlHost = (() => { try { return new URL(urlObj).hostname.replace(/^www\./, ''); } catch { return urlObj; } })();
             searchQueriesParts.push(`"${cleanUrlHost}" scam OR fraud OR phishing OR complaint OR malicious`);
           }
+          if (isOcrEmail && extractedEntities) {
+            const brands = extractedEntities.brands?.join(' OR ') || '';
+            const claims = extractedEntities.claims?.join(' OR ') || '';
+            if (brands) {
+              searchQueriesParts.push(`"${brands}" scam OR phishing OR fake email`);
+              if (claims) searchQueriesParts.push(`"${brands}" "${claims}" scam OR phishing`);
+            }
+          }
 
           /* Extract case context keywords for targeted searching. Only run if we actually have observables. */
           const caseDesc = (caseRow.description || '') + ' ' + JSON.stringify(caseRow.meta?.details || '');
@@ -618,11 +686,15 @@ Produce your response as JSON with these fields:
               const cleanUrlHost = (() => { try { return new URL(urlObj).hostname.replace(/^www\./, ''); } catch { return urlObj; } })();
               searchQueriesParts.push(`"${cleanUrlHost}" ${contextHint}`);
             }
+            if (isOcrEmail && extractedEntities) {
+              const brands = extractedEntities.brands?.join(' OR ') || '';
+              if (brands) searchQueriesParts.push(`"${brands}" ${contextHint}`);
+            }
           }
 
           const searchQueries = searchQueriesParts.filter(Boolean).join('\n');
 
-          const primaryObservableText = phoneNumber ? `phone number: ${phoneNumber}` : senderEmail ? `email address: ${senderEmail}` : `URL/website: ${urlObj}`;
+          const primaryObservableText = isOcrEmail ? `reported email screenshot` : phoneNumber ? `phone number: ${phoneNumber}` : senderEmail ? `email address: ${senderEmail}` : `URL/website: ${urlObj}`;
           const searchInputMessage = `Search for public scam reports, fraud reports, complaints, or lookups for the following ${primaryObservableText}. Search using ALL of these formats:
 
 ${searchQueriesParts.map((q, i) => `${i + 1}. ${q}`).join('\n')}
@@ -725,6 +797,12 @@ Do not invent findings. Summarise in 2-3 sentences.`;
               const cleanUrlHost = (() => { try { return new URL(urlObj).hostname.replace(/^www\./, ''); } catch { return urlObj; } })();
               searchContextText = `website or domain: ${cleanUrlHost} (or ${urlObj}).`;
               searchWordsExtract = [cleanUrlHost, urlObj];
+            } else if (isOcrEmail && extractedEntities) {
+              const brands = extractedEntities.brands?.join(' or ') || 'the sender';
+              const claims = extractedEntities.claims?.join(' and ') || 'the claims';
+              searchContextText = `email screenshot claiming to be from ${brands} regarding ${claims}.`;
+              searchWordsExtract = extractedEntities.brands || [];
+              if (extractedEntities.claims) searchWordsExtract.push(...extractedEntities.claims);
             }
 
             const caseDesc = (caseRow.description || '') + ' ' + JSON.stringify(caseRow.meta?.details || '');
@@ -870,11 +948,28 @@ INSTITUTIONAL DOMAIN HANDLING - CRITICAL:
 - Distinguish closely between a deceptive "typosquatting" domain (e.g., hrnc-gov.uk) and the real domain.
 
 EVIDENCE STRENGTH - classify the evidence:
-- "strong_direct": IPQS or web search results explicitly flag THIS EXACT domain/URL as malicious, phishing, or scam.
 - "moderate_related": Web search references related infrastructure or similar scams, but not this exact domain.
 - "weak_generic": Only generic advice pages or general phishing guidance found - NOT domain-specific.
 - "none": No external evidence found beyond technical signals and case context.`
-          : `You are a safeguarding intelligence analyst for UK care homes. You interpret marker data (phone numbers and emails) from multiple sources alongside safeguarding case context, and produce an evidence-weighted scam-likelihood score.
+          : isOcrEmail ? `You are a safeguarding intelligence analyst for UK care homes. You interpret an uploaded suspicious email screenshot containing OCR-extracted text, alongside any targeted research performed based on entities found within that text. Produce a structured, evidence-led operational report.
+
+CRITICAL REPORTING RULES:
+1. Primary Focus: Your report MUST be grounded explicitly in what the extracted OCR text actually says (the claims, the sender, the branding) AND the actual provider findings from Web Search and Gemini.
+2. No Generic Advice: Do not produce a generic educational essay on how to spot phishing. Write a concrete, case-specific safeguarding triage report explaining what THIS specific email appears to be doing.
+3. Open-Source Data is Supporting Only: Make public research supportive. Use it to confirm if this is a known scam pattern.
+4. Structure exact fields as follows:
+   - "number_risk_assessment": Start with "Item reviewed: Reported email screenshot". Then list "Checks performed: OCR text extraction, [list research providers attempted]". Then evaluate the email content itself.
+   - "source_findings_summary": Start with "Context from available checks: ". Provide a factual summary of what the targeted research found regarding the claims/brands in the email.
+   - "ai_assessment": Start with "Safeguarding concern: ". Explain the holistic risk of this email within the case context. Is it trying to steal credentials? Demand payment? 
+   - "limitations": State "Confidence / limitations: " followed by what was checked, what was NOT, and whether the text extraction quality affected the assessment.
+5. Safe Fallbacks: If research yields no results, base your entire assessment purely on the extracted OCR text and case context.
+
+EVIDENCE STRENGTH - classify the evidence:
+- "strong_direct": Research explicitly reports THIS EXACT email campaign/claim as malicious.
+- "moderate_related": Research references similar scams targeting the same brand.
+- "weak_generic": Only general phishing guidance found.
+- "none": No external evidence found; assessment based purely on OCR text analysis.`
+            : `You are a safeguarding intelligence analyst for UK care homes. You interpret marker data (phone numbers and emails) from multiple sources alongside safeguarding case context, and produce an evidence-weighted scam-likelihood score.
 
 SCORING CALIBRATION â€” follow these rules strictly:
 - Score 0-20 (Low concern): Technical signals are benign (fraud_score < 30, no VOIP, no abuse, no spammer flag) AND no complaint-source matches AND no web corroboration AND case context is weak.
@@ -963,7 +1058,35 @@ Respond with JSON matching this exact shape:
   "recommended_actions": ["1-3 next steps. Include safe verification methods."],
   "limitations": "Start with 'Confidence / limitations: '. State what was checked, what was NOT, and whether evidence is direct or indirect."
 }`
-          : `Assess the following reported marker from a safeguarding case. Consider whether this marker may belong to a legitimate institution and whether the incident could involve spoofing or impersonation.
+          : isOcrEmail ? `Assess the following reported email screenshot from a safeguarding case. Generate a structured operational report as instructed, grounded in the extracted text.
+
+Reported details: 
+OCR Extracted Text:
+"""
+${ocrText.slice(0, 1500)}
+"""
+${webDataBlock}
+${geminiDataBlock}
+
+Case context:
+${JSON.stringify({ submission_type: caseRow.submission_type || null, description: caseRow.description || null, meta_details: caseRow.meta?.details || null }, null, 2)}
+
+Respond with JSON matching this exact shape:
+{
+  "scam_likelihood_score": 0,
+  "scam_likelihood_label": "One of: Low concern, Uncertain, Suspicious, High concern, Very high concern",
+  "scam_likelihood_explanation": "2-3 sentences explaining the primary deception mechanism seen in the OCR text and any supporting research.",
+  "evidence_strength": "One of: strong_direct, moderate_related, weak_generic, none",
+  "spoofing_assessment": "not_applicable",
+  "number_risk_assessment": "Start with 'Item reviewed: Reported email screenshot'. Then 'Checks performed: OCR text extraction, Web Search, Gemini'. Then 1-2 sentences on the email's intent.",
+  "source_findings_summary": "Start with 'Context from available checks: '. Summarise research findings regarding the brands/claims.",
+  "ai_assessment": "Start with 'Safeguarding concern: '. Interpret holistic risk of this email.",
+  "risk_indicators": ["Short factual bullet points explicitly listing the deceptive claims, urgency, or suspicious links seen in the text"],
+  "pattern_match": "The specific phishing/scam pattern (e.g., 'Payment failure notification', 'Account verification phishing').",
+  "recommended_actions": ["1-3 next steps. Include safe verification methods."],
+  "limitations": "Start with 'Confidence / limitations: '. Note if the OCR text was partial or if research only found generic matches."
+}`
+            : `Assess the following reported marker from a safeguarding case. Consider whether this marker may belong to a legitimate institution and whether the incident could involve spoofing or impersonation.
 
 Reported details: 
 ${phoneNumber ? `Phone: ${phoneNumber}\n` : ''}${senderEmail ? `Email: ${senderEmail}\n` : ''}
@@ -1060,6 +1183,11 @@ Respond with JSON matching this exact shape:
             const fallbackUsed = intelOutput.evidence_strength === 'none' || intelOutput.evidence_strength === 'weak_generic';
             console.log(`[url-intel-report] Fallback reporting logic used (weak evidence): ${fallbackUsed}`);
             console.log(`[url-intel-report] Providers attempted: IPQS (${externalUrlLookup ? 'Success' : 'Fail/Unavailable'}), Web Search (${webCorroboration.search_performed ? 'Success' : 'Fail/Unavailable'}), Gemini (${geminiCorroboration.search_performed ? 'Success' : 'Fail/Unavailable'})`);
+          }
+
+          if (isOcrEmail && intelOutput) {
+            console.log(`[ocr-intel-report] Provider outputs used in final report (Evidence: ${intelOutput.evidence_strength})`);
+            console.log(`[ocr-intel-report] Contextual narrative included: ${!!intelOutput.ai_assessment}`);
           }
 
           if (intelOutput) {

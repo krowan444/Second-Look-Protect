@@ -176,6 +176,55 @@ function formatLabel(value: string | null | undefined): string {
     return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/**
+ * Safely convert any value to a renderable string.
+ * Prevents React "Objects are not valid as a React child" crash
+ * when AI provider payloads return nested objects instead of strings.
+ */
+function safeString(v: any): string {
+    if (v == null) return '';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    try { return JSON.stringify(v); } catch { return String(v); }
+}
+
+/* ─── Error Boundary for AI Triage Section ────────────────────────────────── */
+
+class TriageSectionBoundary extends React.Component<
+    { children: React.ReactNode },
+    { hasError: boolean; errorMsg: string }
+> {
+    constructor(props: { children: React.ReactNode }) {
+        super(props);
+        this.state = { hasError: false, errorMsg: '' };
+    }
+    static getDerivedStateFromError(error: Error) {
+        return { hasError: true, errorMsg: error?.message || 'Unknown render error' };
+    }
+    componentDidCatch(error: Error, info: React.ErrorInfo) {
+        console.error('[CaseDetailPage] TriageSectionBoundary caught error:', error?.message, '| component stack:', info?.componentStack);
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div style={{ padding: '1rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', margin: '0.5rem 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#dc2626', fontWeight: 600, fontSize: '0.85rem' }}>
+                        ⚠ Report section encountered an error
+                    </div>
+                    <p style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.35rem' }}>
+                        The AI triage report could not be displayed. This does not affect the case record.
+                        Try refreshing the page, or contact support if this persists.
+                    </p>
+                    <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.2rem', fontFamily: 'monospace' }}>
+                        {this.state.errorMsg}
+                    </p>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 /* ─── Component Props ─────────────────────────────────────────────────────── */
 
 interface CaseDetailPageProps {
@@ -1543,7 +1592,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                         )}
 
                         {!aiTriageLoading && aiTriage && (
-                            <>
+                            <TriageSectionBoundary><>
                                 {/* AI Summary */}
                                 {aiTriage.summary && (
                                     <div className="aitriage-field">
@@ -2242,7 +2291,7 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                                         )}
                                     </div>
                                 )}
-                            </>
+                            </></TriageSectionBoundary>
                         )}
                     </div>
 
