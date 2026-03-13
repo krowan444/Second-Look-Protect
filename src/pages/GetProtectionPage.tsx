@@ -48,24 +48,39 @@ export function GetProtectionPage({ onBack }: Props) {
         setIsSubmitting(true);
 
         try {
-            // Build the body of the email
-            const subject = encodeURIComponent(`Demo Request: ${orgNameValue.trim()}`);
+            const supabase = getSupabase();
 
-            const payloadParts = [];
-            payloadParts.push(`Name: ${nameValue.trim()}`);
-            payloadParts.push(`Organisation: ${orgNameValue.trim()}`);
-            payloadParts.push(`Role: ${roleValue.trim() || 'Not provided'}`);
-            payloadParts.push(`Email: ${emailValue.trim()}`);
-            payloadParts.push(`Phone: ${phoneValue.trim()}`);
-            if (orgTypeValue.trim()) payloadParts.push(`Type: ${orgTypeValue.trim()}`);
-            if (noteValue.trim()) payloadParts.push(`\nMessage:\n${noteValue.trim()}`);
+            const { error: insertError } = await supabase
+                .from('demo_requests')
+                .insert({
+                    full_name: nameValue.trim(),
+                    work_email: emailValue.trim(),
+                    phone_number: phoneValue.trim(),
+                    organisation_name: orgNameValue.trim(),
+                    organisation_type: orgTypeValue.trim() || null,
+                    role: roleValue.trim() || null,
+                    message: noteValue.trim() || null,
+                    consent: consentChecked,
+                    source_page: 'book_demo',
+                    status: 'new'
+                });
 
-            const body = encodeURIComponent(payloadParts.join('\n'));
+            if (insertError) {
+                console.error('[SLP] Supabase submission failed:', insertError.message);
+                throw new Error('There was an issue saving your request. Please try again or contact us directly.');
+            }
 
-            // Open mailto link
-            window.location.href = `mailto:hello@secondlookprotect.co.uk?subject=${subject}&body=${body}`;
+            trackEvent('demo_request_submitted', { orgType: orgTypeValue || 'not_provided' });
 
-            trackEvent('demo_request_mailto_opened', { orgType: orgTypeValue || 'not_provided' });
+            setNameValue('');
+            setOrgNameValue('');
+            setRoleValue('');
+            setEmailValue('');
+            setPhoneValue('');
+            setOrgTypeValue('');
+            setNoteValue('');
+            setConsentChecked(false);
+
             setSubmitted(true);
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
@@ -117,13 +132,10 @@ export function GetProtectionPage({ onBack }: Props) {
                             <CheckCircle className="w-10 h-10 text-[#C9A84C]" />
                         </div>
                         <h1 className="text-[#0B1E36] text-2xl mb-3" style={{ fontFamily: "'Merriweather', serif" }}>
-                            Request prepared.
+                            Request received.
                         </h1>
                         <p className="text-slate-500 text-sm leading-relaxed mb-8">
-                            We use your email client to send this request safely. Your details have been drafted automatically. Please hit send when your email app opens, and our team will be in touch shortly to arrange a walkthrough.
-                        </p>
-                        <p className="text-slate-400 text-xs mb-8">
-                            If your email client did not open automatically, you can email us at <strong>hello@secondlookprotect.co.uk</strong> or call us on 01604 385888.
+                            Thank you. Your demo request has been received and our team will be in touch shortly.
                         </p>
                         <Button
                             onClick={onBack}
