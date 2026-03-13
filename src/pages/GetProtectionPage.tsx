@@ -189,27 +189,48 @@ export function GetProtectionPage({ onBack }: Props) {
                         />
                     </div>
 
-                    {/* What the demo covers */}
-                    <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
-                        <h2 className="text-[#0B1E36] font-semibold text-lg mb-5" style={{ fontFamily: "'Merriweather', serif" }}>
-                            What the demo covers
+                    {/* What Second Look Protect helps you do - Benefit Cards */}
+                    <div>
+                        <h2 className="text-[#0B1E36] font-semibold text-lg mb-2" style={{ fontFamily: "'Merriweather', serif" }}>
+                            What Second Look Protect helps you do
                         </h2>
-                        <ul className="space-y-4">
-                            {[
-                                { icon: FileText, text: 'How staff can log safeguarding concerns clearly' },
-                                { icon: ClipboardCheck, text: 'How managers can review and oversee cases' },
-                                { icon: LayoutDashboard, text: 'How trend reporting helps teams stay aware of scam patterns' },
-                                { icon: Shield, text: 'How the platform supports governance and inspection readiness' },
-                                { icon: Building2, text: 'How the system could fit your organisation’s workflow' },
-                            ].map((item, i) => (
-                                <li key={i} className="flex items-start gap-3">
-                                    <div className="w-6 h-6 rounded bg-[#C9A84C]/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <item.icon className="w-3.5 h-3.5 text-[#C9A84C]" />
-                                    </div>
-                                    <span className="text-slate-600 text-sm leading-relaxed">{item.text}</span>
-                                </li>
-                            ))}
-                        </ul>
+                        <p className="text-slate-500 text-sm mb-5">
+                            A clearer way to record concerns, spot patterns, and maintain inspection ready oversight across your service.
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Card 1 */}
+                            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
+                                <h3 className="text-slate-800 font-semibold text-[15px] mb-2">Log concerns clearly</h3>
+                                <p className="text-slate-500 text-sm leading-relaxed">
+                                    Record scam related safeguarding concerns in one structured place without messy follow up.
+                                </p>
+                            </div>
+
+                            {/* Card 2 */}
+                            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
+                                <h3 className="text-slate-800 font-semibold text-[15px] mb-2">Spot patterns earlier</h3>
+                                <p className="text-slate-500 text-sm leading-relaxed">
+                                    See repeated issues, emerging scam trends, and wider risk signals affecting vulnerable residents.
+                                </p>
+                            </div>
+
+                            {/* Card 3 */}
+                            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
+                                <h3 className="text-slate-800 font-semibold text-[15px] mb-2">Strengthen inspection readiness</h3>
+                                <p className="text-slate-500 text-sm leading-relaxed">
+                                    Keep reporting clearer, more consistent, and easier to review when oversight matters most.
+                                </p>
+                            </div>
+
+                            {/* Card 4 */}
+                            <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
+                                <h3 className="text-slate-800 font-semibold text-[15px] mb-2">Give managers better oversight</h3>
+                                <p className="text-slate-500 text-sm leading-relaxed">
+                                    Help leaders review concerns, track actions, and support safer decision making across the team.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Who this is for */}
