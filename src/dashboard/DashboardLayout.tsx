@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { getSupabase } from '../lib/supabaseClient';
 import { Upload, ChevronDown, LogOut, User, Menu } from 'lucide-react';
 import { DashboardSidebar } from './DashboardSidebar';
+import { StapeLeeChat } from './assistant/StapeLeeChat';
 import { NotificationBell } from './components/NotificationBell';
 import type { DashboardUser, Organisation } from './types';
 
@@ -238,6 +239,9 @@ export function DashboardLayout({
         {/* Main content */}
         <main className="dashboard-main">{children}</main>
       </div>
+
+      {/* Stape-Lee floating assistant */}
+      <StapeLeeChat currentPath={currentPath} />
 
       {/* Close user menu on outside click */}
       {userMenuOpen && (
