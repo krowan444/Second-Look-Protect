@@ -80,6 +80,61 @@ function StaplerIconSmall() {
     );
 }
 
+/* ── Animated Stapler Avatar (header‑only) ───────────────────────────────── */
+
+function StaplerAvatar() {
+    return (
+        <div style={{
+            width: '52px',
+            height: '52px',
+            flexShrink: 0,
+            animation: 'stapeleeAvatarEntrance 0.5s ease-out, stapeleeAvatarBob 3s ease-in-out 0.5s infinite',
+        }}>
+            <svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Body — base rail */}
+                <rect x="6" y="38" width="52" height="12" rx="5" fill="#64748b" />
+                <rect x="8" y="40" width="48" height="8" rx="4" fill="#94a3b8" />
+                {/* Subtle grid lines on rail */}
+                <rect x="20" y="42" width="1" height="4" rx="0.5" fill="#7e8fa3" opacity="0.5" />
+                <rect x="26" y="42" width="1" height="4" rx="0.5" fill="#7e8fa3" opacity="0.5" />
+                <rect x="32" y="42" width="1" height="4" rx="0.5" fill="#7e8fa3" opacity="0.5" />
+                <rect x="38" y="42" width="1" height="4" rx="0.5" fill="#7e8fa3" opacity="0.5" />
+                <rect x="44" y="42" width="1" height="4" rx="0.5" fill="#7e8fa3" opacity="0.5" />
+
+                {/* Top jaw / head */}
+                <path d="M10 38 L10 24 Q10 18 16 18 L52 18 Q58 18 58 24 L58 38" fill="#1e293b" />
+                <path d="M12 36 L12 25 Q12 20 17 20 L55 20 Q57 20 57 25 L57 36" fill="#334155" />
+
+                {/* Subtle head highlight */}
+                <path d="M14 24 Q14 21 18 21 L54 21 Q56 21 56 24" stroke="#475569" strokeWidth="0.6" fill="none" opacity="0.4" />
+
+                {/* Hinge / pivot */}
+                <circle cx="10" cy="38" r="4.5" fill="#0f172a" />
+                <circle cx="10" cy="38" r="2.8" fill="#475569" />
+                <circle cx="10" cy="38" r="1.2" fill="#64748b" />
+
+                {/* Eyes — whites (animate via class) */}
+                <ellipse className="stapeleeEyeL" cx="29" cy="29" rx="4.5" ry="5" fill="white" />
+                <ellipse className="stapeleeEyeR" cx="43" cy="29" rx="4.5" ry="5" fill="white" />
+
+                {/* Eyes — pupils */}
+                <ellipse cx="30" cy="30" rx="2.2" ry="2.8" fill="#0f172a" />
+                <ellipse cx="44" cy="30" rx="2.2" ry="2.8" fill="#0f172a" />
+
+                {/* Eye highlights */}
+                <circle cx="28.5" cy="28" r="1.3" fill="white" opacity="0.9" />
+                <circle cx="42.5" cy="28" r="1.3" fill="white" opacity="0.9" />
+
+                {/* Friendly smile */}
+                <path d="M33 35 Q36 38.5 39 35" stroke="#94a3b8" strokeWidth="1.4" strokeLinecap="round" fill="none" />
+
+                {/* Staple slot */}
+                <rect x="22" y="43" width="20" height="2" rx="1" fill="#475569" />
+            </svg>
+        </div>
+    );
+}
+
 /* ── Typing indicator ────────────────────────────────────────────────────── */
 
 function TypingDots() {
@@ -259,6 +314,24 @@ const SLIDE_STYLES = `
     @keyframes stapeleeTabPulse {
         0%, 100% { box-shadow: -1px 1px 6px rgba(0,0,0,0.06); }
         50% { box-shadow: -1px 1px 10px rgba(30,41,59,0.12); }
+    }
+    @keyframes stapeleeAvatarEntrance {
+        from { transform: scale(0.85) translateY(4px); opacity: 0.4; }
+        to   { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    @keyframes stapeleeAvatarBob {
+        0%, 100% { transform: translateY(0); }
+        50%      { transform: translateY(-1.5px); }
+    }
+    @keyframes stapeleeAvatarBlink {
+        0%, 42%, 48%, 100% { ry: 5; }
+        45%                 { ry: 1; }
+    }
+    .stapeleeEyeL, .stapeleeEyeR {
+        animation: stapeleeAvatarBlink 4s ease-in-out infinite;
+    }
+    .stapeleeEyeR {
+        animation-delay: 0.08s;
     }
 `;
 
@@ -745,7 +818,7 @@ export function StapeLeeChat({ currentPath }: Props) {
                         flexShrink: 0,
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                            <StaplerIcon size={30} />
+                            <StaplerAvatar />
                             <div>
                                 <div style={{ fontSize: '0.82rem', fontWeight: 700, letterSpacing: '0.01em' }}>Stape-Lee</div>
                                 <div style={{ fontSize: '0.6rem', opacity: 0.6 }}>Dashboard Operator</div>
