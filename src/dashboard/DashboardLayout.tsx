@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getSupabase } from '../lib/supabaseClient';
-import { Upload, ChevronDown, LogOut, User, Menu } from 'lucide-react';
+import { Upload, LogOut, User, Menu } from 'lucide-react';
 import { DashboardSidebar } from './DashboardSidebar';
 import { StapeLeeChat } from './assistant/StapeLeeChat';
 import { NotificationBell } from './components/NotificationBell';
@@ -151,10 +151,10 @@ export function DashboardLayout({
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 aria-expanded={userMenuOpen}
                 aria-haspopup="true"
+                aria-label="Account menu"
+                style={{ padding: '4px' }}
               >
                 <div className="dashboard-user-avatar">{initials}</div>
-                <span className="dashboard-user-btn-name">{user.full_name ?? user.email}</span>
-                <ChevronDown size={14} />
               </button>
 
               {userMenuOpen && (
