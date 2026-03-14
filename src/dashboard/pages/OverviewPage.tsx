@@ -407,46 +407,6 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (path: string) => vo
             .slice(0, 5);
     }, [casesAll]);
 
-    /* ── Publish data for Stape-Lee ────────────────────────────────── */
-    const { publishPageData, clearPageData } = usePublishPageData();
-    useEffect(() => {
-        if (loading || error || noOrg) return;
-        publishPageData({
-            section: 'overview',
-            updatedAt: Date.now(),
-            organisationName: orgName || undefined,
-            kpis: [
-                { label: 'Overall Health', value: `${kpi.overallPct}%`, status: kpi.overallStatus },
-                { label: 'Queue', value: kpi.queueDepth, status: kpi.queueStatus },
-                { label: 'Triage', value: `${kpi.triagePct}%`, status: kpi.triageStatus },
-                { label: 'Documented', value: `${kpi.docPct}%`, status: kpi.docStatus },
-                { label: 'Closure', value: `${kpi.closurePct}%`, status: kpi.closureStatus },
-                { label: 'Cases This Month', value: casesMonth.length, status: 'neutral' },
-                { label: 'High Risk', value: metrics.highRisk, status: metrics.highRisk > 0 ? 'danger' : 'good' },
-                { label: 'Overdue', value: metrics.overdue, status: metrics.overdue > 0 ? 'danger' : 'good' },
-                { label: 'Awaiting Review', value: panels.awaitingReview.length, status: panels.awaitingReview.length > 5 ? 'danger' : panels.awaitingReview.length > 0 ? 'warn' : 'good' },
-            ],
-            alerts: execAlerts.map(ea => ({
-                severity: ea.severity,
-                title: ea.title || ea.event_type.replace(/_/g, ' '),
-                description: ea.description,
-            })),
-            tableRows: panels.awaitingReview.slice(0, 5).map(c => ({
-                label: `Case ${c.id.slice(0, 8)}`,
-                status: c.status ?? 'unknown',
-                risk: c.risk_level ?? 'unknown',
-                type: c.category ?? 'unknown',
-                submitted: c.submitted_at ? new Date(c.submitted_at).toLocaleDateString() : 'N/A',
-            })),
-            insights: [
-                insight,
-                sysStatusLabel !== 'All Clear' ? `System status: ${sysStatusLabel}` : null,
-                residentsAttention.length > 0 ? `${residentsAttention.length} resident${residentsAttention.length > 1 ? 's' : ''} with repeat incidents` : null,
-            ].filter(Boolean) as string[],
-        });
-        return () => clearPageData();
-    }, [loading, error, noOrg, kpi, metrics, panels, execAlerts, insight, sysStatusLabel, residentsAttention, orgName]);
-
     /* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     if (loading) {
         return (
@@ -633,6 +593,46 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (path: string) => vo
     const sysBandC = sysStatusBand === 'red' ? { bg: '#fef2f2', fg: '#991b1b', border: '#fecaca' }
         : sysStatusBand === 'amber' ? { bg: '#fffbeb', fg: '#92400e', border: '#fde68a' }
             : { bg: '#ecfdf5', fg: '#065f46', border: '#a7f3d0' };
+
+    /* ── Publish data for Stape-Lee ────────────────────────────────── */
+    const { publishPageData, clearPageData } = usePublishPageData();
+    useEffect(() => {
+        if (loading || error || noOrg) return;
+        publishPageData({
+            section: 'overview',
+            updatedAt: Date.now(),
+            organisationName: orgName || undefined,
+            kpis: [
+                { label: 'Overall Health', value: `${kpi.overallPct}%`, status: kpi.overallStatus },
+                { label: 'Queue', value: kpi.queueDepth, status: kpi.queueStatus },
+                { label: 'Triage', value: `${kpi.triagePct}%`, status: kpi.triageStatus },
+                { label: 'Documented', value: `${kpi.docPct}%`, status: kpi.docStatus },
+                { label: 'Closure', value: `${kpi.closurePct}%`, status: kpi.closureStatus },
+                { label: 'Cases This Month', value: casesMonth.length, status: 'neutral' },
+                { label: 'High Risk', value: metrics.highRisk, status: metrics.highRisk > 0 ? 'danger' : 'good' },
+                { label: 'Overdue', value: metrics.overdue, status: metrics.overdue > 0 ? 'danger' : 'good' },
+                { label: 'Awaiting Review', value: panels.awaitingReview.length, status: panels.awaitingReview.length > 5 ? 'danger' : panels.awaitingReview.length > 0 ? 'warn' : 'good' },
+            ],
+            alerts: execAlerts.map(ea => ({
+                severity: ea.severity,
+                title: ea.title || ea.event_type.replace(/_/g, ' '),
+                description: ea.description,
+            })),
+            tableRows: panels.awaitingReview.slice(0, 5).map(c => ({
+                label: `Case ${c.id.slice(0, 8)}`,
+                status: c.status ?? 'unknown',
+                risk: c.risk_level ?? 'unknown',
+                type: c.category ?? 'unknown',
+                submitted: c.submitted_at ? new Date(c.submitted_at).toLocaleDateString() : 'N/A',
+            })),
+            insights: [
+                insight,
+                sysStatusLabel !== 'All Clear' ? `System status: ${sysStatusLabel}` : null,
+                residentsAttention.length > 0 ? `${residentsAttention.length} resident${residentsAttention.length > 1 ? 's' : ''} with repeat incidents` : null,
+            ].filter(Boolean) as string[],
+        });
+        return () => clearPageData();
+    }, [loading, error, noOrg, kpi, metrics, panels, execAlerts, insight, sysStatusLabel, residentsAttention, orgName]);
 
     /* â”€â”€ Age helper for Awaiting Review â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const ageLabel = (iso: string) => {
