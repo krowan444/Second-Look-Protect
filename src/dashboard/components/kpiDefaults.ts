@@ -4,10 +4,10 @@
 
 // ── Status colour tokens (soft, premium, safeguarding-appropriate) ──────
 export const KPI_COLORS = {
-    green:  { ring: '#10b981', bg: '#ecfdf5', fg: '#065f46', label: 'On Track' },
-    amber:  { ring: '#f59e0b', bg: '#fffbeb', fg: '#92400e', label: 'Needs Attention' },
-    red:    { ring: '#ef4444', bg: '#fef2f2', fg: '#991b1b', label: 'Behind Target' },
-    track:  '#e2e8f0',  // ring background track
+    green:  { ring: '#34d399', bg: '#f0fdf4', fg: '#166534', label: 'On Track' },
+    amber:  { ring: '#fbbf24', bg: '#fefce8', fg: '#854d0e', label: 'Needs Attention' },
+    red:    { ring: '#f87171', bg: '#fef2f2', fg: '#991b1b', label: 'Behind Target' },
+    track:  '#f1f5f9',  // ring background track
 } as const;
 
 export type KpiStatus = 'green' | 'amber' | 'red';

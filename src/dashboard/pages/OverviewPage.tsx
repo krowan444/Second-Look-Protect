@@ -605,277 +605,246 @@ export function OverviewPage() {
     const ageBandBg = (b: string) => b === 'red' ? '#fef2f2' : b === 'amber' ? '#fffbeb' : '#ecfdf5';
 
     return (
-        <div>
-            {/* Header */}
-            <div className="dashboard-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div style={{ maxWidth: '960px' }}>
+            {/* ── A. Header ──────────────────────────────────────────────── */}
+            <div className="dashboard-page-header">
                 <div>
                     {orgName && (
-                        <p style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 500, letterSpacing: '0.02em', marginBottom: '0.15rem' }}>
+                        <p style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500, letterSpacing: '0.02em', marginBottom: '0.1rem' }}>
                             {orgName}
                         </p>
                     )}
                     <h1 className="dashboard-page-title">Safeguarding Overview</h1>
-                    <p className="dashboard-page-subtitle">
-                        Your organisation&apos;s activity this month at a glance.
+                    <p className="dashboard-page-subtitle" style={{ color: '#94a3b8' }}>
+                        Your organisation&apos;s safeguarding health at a glance.
                     </p>
                 </div>
-                {/* ── Mode toggle ────────────────────────────────────── */}
+            </div>
+
+            {/* ── A. Status Strip ─────────────────────────────────────────── */}
+            <div style={{
+                background: sysStatusBand === 'red' ? '#fef2f2' : sysStatusBand === 'amber' ? '#fefce8' : '#f0fdf4',
+                border: `1px solid ${sysStatusBand === 'red' ? '#fecaca' : sysStatusBand === 'amber' ? '#fef08a' : '#bbf7d0'}`,
+                borderRadius: '10px',
+                padding: '0.55rem 1rem',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.5rem',
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <ShieldCheck size={15} style={{ color: sysStatusBand === 'red' ? '#f87171' : sysStatusBand === 'amber' ? '#fbbf24' : '#34d399' }} />
+                    <span style={{
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        color: sysStatusBand === 'red' ? '#991b1b' : sysStatusBand === 'amber' ? '#854d0e' : '#166534',
+                    }}>
+                        {sysStatusLabel}
+                    </span>
+                </div>
+                <span style={{
+                    fontSize: '0.68rem',
+                    color: '#94a3b8',
+                    fontWeight: 500,
+                }}>{casesMonth.length} case{casesMonth.length !== 1 ? 's' : ''} this month</span>
+            </div>
+
+            {/* ── B. Health Overview ──────────────────────────────────────── */}
+            <div style={{
+                background: '#ffffff',
+                border: '1px solid #e8ecf4',
+                borderRadius: '14px',
+                padding: '2rem 2rem 1.5rem',
+                marginBottom: '1.5rem',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            }}>
                 <div style={{
                     display: 'flex',
-                    background: '#f1f5f9',
-                    borderRadius: '8px',
-                    padding: '3px',
-                    gap: '2px',
-                    alignSelf: 'center',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    marginBottom: '1.5rem',
                 }}>
-                    {([['standard', Eye, 'Standard'], ['visual', BarChart3, 'Visual']] as const).map(([mode, Icon, label]) => (
-                        <button
-                            key={mode}
-                            onClick={() => toggleMode(mode)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                padding: '5px 12px',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                border: 'none',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease',
-                                background: viewMode === mode ? '#ffffff' : 'transparent',
-                                color: viewMode === mode ? '#1e293b' : '#94a3b8',
-                                boxShadow: viewMode === mode ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                            }}
-                        >
-                            <Icon size={14} />
-                            {label}
-                        </button>
-                    ))}
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>Safeguarding Health</span>
+                    <span style={{ fontSize: '0.68rem', color: '#94a3b8', marginLeft: 'auto' }}>This month vs targets</span>
                 </div>
-            </div>
 
-            {/* â”€â”€ System Status Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            <div style={{ background: sysBandC.bg, border: `1px solid ${sysBandC.border}`, borderRadius: '10px', padding: '0.6rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.25rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <ShieldCheck size={16} style={{ color: sysBandC.fg }} />
-                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: sysBandC.fg }}>System Status</span>
-                </div>
-                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: sysBandC.fg, background: `${sysBandC.fg}14`, padding: '2px 10px', borderRadius: '20px' }}>{sysStatusLabel}</span>
-            </div>
-
-            {/* â”€â”€ Executive Safeguarding Alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">
-                        <AlertTriangle size={16} className="dashboard-panel-title-icon" />
-                        Executive Safeguarding Alerts
-                    </h2>
-                    <span className="dashboard-panel-count">{execAlerts.length}</span>
-                </div>
-                <p style={{ padding: '0 1rem', margin: '0 0 0.75rem', fontSize: '0.75rem', color: '#94a3b8' }}>
-                    Automated safeguarding intelligence â€” updated continuously.
-                </p>
-                {execAlerts.length === 0 ? (
-                    <div className="dashboard-panel-empty" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <ShieldCheck size={14} style={{ color: '#10b981' }} />
-                        <span>No executive alerts currently triggered.</span>
-                    </div>
-                ) : (
-                    <div style={{ padding: '0 1rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {execAlerts.map((ea) => {
-                            const sc = sevColour(ea.severity);
-                            return (
-                                <div key={ea.id} style={{ background: sc.bg, border: `1px solid ${sc.border}`, borderLeft: `4px solid ${sc.dot}`, borderRadius: '8px', padding: '0.65rem 0.85rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: sc.dot, flexShrink: 0 }} />
-                                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: sc.fg }}>{ea.title || plainEventType(ea.event_type)}</span>
-                                        <span style={{ fontSize: '0.62rem', fontWeight: 600, color: sc.fg, background: `${sc.fg}14`, padding: '1px 7px', borderRadius: '10px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{ea.severity ?? 'info'}</span>
-                                    </div>
-                                    <p style={{ margin: '0 0 0.15rem', fontSize: '0.78rem', color: '#334155', lineHeight: 1.45, paddingLeft: '1.1rem' }}>{ea.description}</p>
-                                    {ea.recommendation && (
-                                        <p style={{ margin: 0, fontSize: '0.72rem', color: '#64748b', paddingLeft: '1.1rem' }}>â†³ {ea.recommendation}</p>
-                                    )}
-                                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem', paddingLeft: '1.1rem' }}>
-                                        {typeof ea.meta?.count === 'number' && (
-                                            <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{ea.meta.count} cases detected (7-day window)</span>
-                                        )}
-                                        <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Last triggered: {fmtDate(ea.last_triggered_at ?? ea.sent_at ?? '')}</span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-
-            {/* ── KPI Section (mode-dependent) ──────────────────────────── */}
-            {viewMode === 'visual' ? (
-                /* ── Visual Mode: Ring KPI Cards ───────────────────────── */
                 <div style={{
-                    background: '#ffffff',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    padding: '1.25rem 1.5rem',
-                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '3rem',
+                    flexWrap: 'wrap',
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                        <BarChart3 size={16} style={{ color: '#64748b' }} />
-                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>Performance Health</span>
-                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', marginLeft: 'auto' }}>This month vs default targets</span>
-                    </div>
+                    {/* Main health ring */}
+                    <KpiRingChart
+                        percent={kpi.overallPct}
+                        status={kpi.overallStatus}
+                        label={`${kpi.overallPct}%`}
+                        sublabel="Overall Health"
+                        size={140}
+                    />
+
+                    {/* Supporting rings */}
                     <div style={{
                         display: 'flex',
+                        gap: '2rem',
                         flexWrap: 'wrap',
                         justifyContent: 'center',
-                        gap: '1.5rem',
                     }}>
-                        <KpiRingChart
-                            percent={kpi.overallPct}
-                            status={kpi.overallStatus}
-                            label={`${kpi.overallPct}%`}
-                            sublabel="Overall Health"
-                            size={110}
-                        />
                         <KpiRingChart
                             percent={kpi.closurePct}
                             status={kpi.closureStatus}
                             label={`${kpi.closurePct}%`}
-                            sublabel="Closure on Target"
+                            sublabel="Closure"
+                            size={85}
                         />
                         <KpiRingChart
                             percent={kpi.triagePct}
                             status={kpi.triageStatus}
                             label={`${kpi.triagePct}%`}
-                            sublabel="Triage on Target"
+                            sublabel="Triage"
+                            size={85}
                         />
                         <KpiRingChart
                             percent={kpi.docPct}
                             status={kpi.docStatus}
                             label={`${kpi.docPct}%`}
-                            sublabel="Documentation"
-                        />
-                        <KpiRingChart
-                            percent={100 - kpi.scamPct}
-                            status={kpi.scamPct > 50 ? 'red' : kpi.scamPct > 25 ? 'amber' : 'green'}
-                            label={`${kpi.scamPct}%`}
-                            sublabel="Scam Rate"
+                            sublabel="Documented"
+                            size={85}
                         />
                         <KpiRingChart
                             percent={kpi.queuePct}
                             status={kpi.queueStatus}
                             label={`${kpi.queueDepth}`}
-                            sublabel="Review Queue"
+                            sublabel="Queue"
+                            size={85}
                         />
                     </div>
                 </div>
-            ) : (
-                /* ── Standard Mode: Original stat cards (unchanged) ──── */
-                <div className="dashboard-overview-cards">
-                    {/* Total Cases */}
-                    <div className="dashboard-stat-card">
-                        <div className="dashboard-stat-card-accent accent-blue" />
-                        <div className="dashboard-stat-card-body">
-                            <div className="dashboard-stat-icon blue"><LayoutDashboard size={20} /></div>
-                            <div className="dashboard-stat-value">{metrics.total}</div>
-                            <div className="dashboard-stat-label">Total Cases</div>
-                            <div className="dashboard-stat-period">This month</div>
-                        </div>
-                    </div>
 
-                    {/* High Risk */}
-                    <div className="dashboard-stat-card" style={{ borderLeft: metrics.highRisk > 0 ? '3px solid #dc2626' : undefined }}>
-                        <div className="dashboard-stat-card-accent accent-red" />
-                        <div className="dashboard-stat-card-body">
-                            <div className="dashboard-stat-icon red"><AlertTriangle size={20} /></div>
-                            <div className="dashboard-stat-value" style={{ color: metrics.highRisk > 0 ? '#dc2626' : undefined }}>{metrics.highRisk}</div>
-                            <div className="dashboard-stat-label">High Risk</div>
-                            <div className="dashboard-stat-period" style={{ color: metrics.highRisk > 0 ? '#dc2626' : undefined }}>
-                                {metrics.highRisk === 0 ? 'None this month' : metrics.highRisk === 1 ? 'Requires attention' : `${metrics.highRisk} require attention`}
-                            </div>
-                        </div>
-                    </div>
+                {/* Calm insight line */}
+                {insight && (
+                    <p style={{
+                        marginTop: '1.25rem',
+                        padding: '0.5rem 0.75rem',
+                        background: '#f8fafc',
+                        borderRadius: '8px',
+                        fontSize: '0.75rem',
+                        color: '#64748b',
+                        lineHeight: 1.5,
+                        textAlign: 'center',
+                    }}>
+                        {insight}
+                    </p>
+                )}
+            </div>
 
-                    {/* Scam vs Not Scam */}
-                    <div className="dashboard-stat-card">
-                        <div className="dashboard-stat-card-accent accent-gold" />
-                        <div className="dashboard-stat-card-body">
-                            <div className="dashboard-stat-icon gold"><ShieldCheck size={20} /></div>
-                            <div className="dashboard-stat-value">
-                                {metrics.decisionTotal > 0
-                                    ? `${metrics.scamPct}% / ${metrics.legitPct}%`
-                                    : '–'}
-                            </div>
-                            <div className="dashboard-stat-label">Scam vs Not Scam</div>
-                            {metrics.decisionTotal > 0 && (
-                                <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', marginTop: '4px', background: '#e2e8f0' }}>
-                                    <div style={{ width: `${metrics.scamPct}%`, background: '#dc2626', transition: 'width 0.5s ease' }} />
-                                    <div style={{ width: `${metrics.legitPct}%`, background: '#10b981', transition: 'width 0.5s ease' }} />
+            {/* ── Executive Alerts (only when present) ────────────────────── */}
+            {execAlerts.length > 0 && (
+                <div style={{
+                    background: '#ffffff',
+                    border: '1px solid #e8ecf4',
+                    borderRadius: '12px',
+                    padding: '1rem 1.25rem',
+                    marginBottom: '1.5rem',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        marginBottom: '0.75rem',
+                    }}>
+                        <AlertTriangle size={14} style={{ color: '#94a3b8' }} />
+                        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>Safeguarding Alerts</span>
+                        <span style={{
+                            fontSize: '0.62rem',
+                            fontWeight: 600,
+                            color: '#94a3b8',
+                            background: '#f1f5f9',
+                            padding: '1px 7px',
+                            borderRadius: '10px',
+                            marginLeft: 'auto',
+                        }}>{execAlerts.length}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        {execAlerts.map((ea) => {
+                            const sc = sevColour(ea.severity);
+                            return (
+                                <div key={ea.id} style={{
+                                    background: sc.bg,
+                                    border: `1px solid ${sc.border}`,
+                                    borderLeft: `3px solid ${sc.dot}`,
+                                    borderRadius: '8px',
+                                    padding: '0.55rem 0.75rem',
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.15rem' }}>
+                                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: sc.dot, flexShrink: 0 }} />
+                                        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: sc.fg }}>{ea.title || plainEventType(ea.event_type)}</span>
+                                    </div>
+                                    <p style={{ margin: 0, fontSize: '0.72rem', color: '#475569', lineHeight: 1.4, paddingLeft: '1rem' }}>
+                                        {ea.description}
+                                    </p>
+                                    {ea.recommendation && (
+                                        <p style={{ margin: '0.15rem 0 0', fontSize: '0.68rem', color: '#94a3b8', paddingLeft: '1rem' }}>
+                                            ↳ {ea.recommendation}
+                                        </p>
+                                    )}
                                 </div>
-                            )}
-                            <div className="dashboard-stat-period" style={{ marginTop: '2px' }}>
-                                {metrics.decisionTotal > 0
-                                    ? `${metrics.decisionTotal} decided`
-                                    : 'No decisions yet'}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Awaiting Review */}
-                    <div className="dashboard-stat-card" style={{ borderLeft: metrics.awaiting > 3 ? '3px solid #f59e0b' : undefined }}>
-                        <div className="dashboard-stat-card-accent accent-amber" />
-                        <div className="dashboard-stat-card-body">
-                            <div className="dashboard-stat-icon amber"><Clock size={20} /></div>
-                            <div className="dashboard-stat-value">{metrics.awaiting}</div>
-                            <div className="dashboard-stat-label">Awaiting Review</div>
-                            <div className="dashboard-stat-period" style={{ color: metrics.awaiting > 3 ? '#92400e' : undefined }}>
-                                {metrics.awaiting === 0 ? 'Queue clear' : metrics.awaiting <= 3 ? 'On track' : 'Building up'}
-                            </div>
-                        </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
 
-            {/* â”€â”€ Insight Box â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            {insight && (
-                <div className="dashboard-insight-box">
-                    <Info size={16} className="dashboard-insight-icon" />
-                    <span>{insight}</span>
-                </div>
-            )}
+            {/* ── C. Action Layer ─────────────────────────────────────────── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-            {/* â”€â”€ Residents Needing Attention â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">
-                        <Users size={16} className="dashboard-panel-title-icon" />
-                        Residents Needing Attention
-                    </h2>
-                    <span className="dashboard-panel-count">{residentsAttention.length}</span>
-                </div>
-                <p style={{ padding: '0 1rem', margin: '0 0 0.5rem', fontSize: '0.72rem', color: '#94a3b8' }}>
-                    Residents with two or more reported incidents across all time.
-                </p>
-                {residentsAttention.length === 0 ? (
-                    <div className="dashboard-panel-empty" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <ShieldCheck size={14} style={{ color: '#10b981' }} />
-                        <span>No repeated resident incidents detected.</span>
-                    </div>
-                ) : (
-                    <div style={{ padding: '0 1rem 1rem' }}>
+                {/* Residents Needing Attention */}
+                {residentsAttention.length > 0 && (
+                    <div style={{
+                        background: '#ffffff',
+                        border: '1px solid #e8ecf4',
+                        borderRadius: '12px',
+                        padding: '1rem 1.25rem',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            marginBottom: '0.65rem',
+                        }}>
+                            <Users size={14} style={{ color: '#94a3b8' }} />
+                            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>Residents Needing Attention</span>
+                            <span style={{
+                                fontSize: '0.62rem',
+                                fontWeight: 600,
+                                color: '#94a3b8',
+                                background: '#f1f5f9',
+                                padding: '1px 7px',
+                                borderRadius: '10px',
+                                marginLeft: 'auto',
+                            }}>{residentsAttention.length}</span>
+                        </div>
+                        <p style={{ margin: '0 0 0.5rem', fontSize: '0.68rem', color: '#94a3b8' }}>
+                            Residents with two or more reported incidents.
+                        </p>
                         {(() => {
                             const maxCount = Math.max(...residentsAttention.map(([, n]) => n), 1);
                             return residentsAttention.map(([ref, count]) => {
                                 const pct = Math.max(8, (count / maxCount) * 100);
-                                const barColour = count >= 5 ? '#dc2626' : count >= 3 ? '#f59e0b' : '#3b82f6';
-                                const barBg = count >= 5 ? '#fef2f2' : count >= 3 ? '#fffbeb' : '#eff6ff';
+                                // Softer bar colours
+                                const barColour = count >= 5 ? '#f87171' : count >= 3 ? '#fbbf24' : '#93c5fd';
+                                const barBg = '#f8fafc';
                                 return (
-                                    <div key={ref} style={{ marginBottom: '0.4rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
-                                            <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#1e293b' }}>{ref}</span>
-                                            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: barColour }}>{count} incident{count !== 1 ? 's' : ''}</span>
+                                    <div key={ref} style={{ marginBottom: '0.35rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
+                                            <span style={{ fontWeight: 600, fontSize: '0.78rem', color: '#334155' }}>{ref}</span>
+                                            <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#64748b' }}>{count} incident{count !== 1 ? 's' : ''}</span>
                                         </div>
-                                        <div style={{ height: '6px', background: barBg, borderRadius: '3px', overflow: 'hidden' }}>
+                                        <div style={{ height: '5px', background: barBg, borderRadius: '3px', overflow: 'hidden' }}>
                                             <div style={{ height: '100%', width: `${pct}%`, background: barColour, borderRadius: '3px', transition: 'width 0.5s ease' }} />
                                         </div>
                                     </div>
@@ -884,29 +853,43 @@ export function OverviewPage() {
                         })()}
                     </div>
                 )}
-            </div>
 
-            {/* â”€â”€ Panels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            <div className="dashboard-overview-panels">
                 {/* Cases Awaiting Review */}
-                <div className="dashboard-panel">
-                    <div className="dashboard-panel-header">
-                        <h2 className="dashboard-panel-title">
-                            <Clock size={16} className="dashboard-panel-title-icon" />
-                            Cases Awaiting Review
-                        </h2>
-                        <span className="dashboard-panel-count">{panels.awaitingReview.length}</span>
+                <div style={{
+                    background: '#ffffff',
+                    border: '1px solid #e8ecf4',
+                    borderRadius: '12px',
+                    padding: '1rem 1.25rem',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        marginBottom: '0.65rem',
+                    }}>
+                        <Clock size={14} style={{ color: '#94a3b8' }} />
+                        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>Cases Awaiting Review</span>
+                        <span style={{
+                            fontSize: '0.62rem',
+                            fontWeight: 600,
+                            color: '#94a3b8',
+                            background: '#f1f5f9',
+                            padding: '1px 7px',
+                            borderRadius: '10px',
+                            marginLeft: 'auto',
+                        }}>{panels.awaitingReview.length}</span>
                     </div>
-                    <p style={{ padding: '0 1rem', margin: '0 0 0.35rem', fontSize: '0.72rem', color: '#94a3b8' }}>
+                    <p style={{ margin: '0 0 0.5rem', fontSize: '0.68rem', color: '#94a3b8' }}>
                         Open cases that still need an admin decision.
                     </p>
                     {panels.awaitingReview.length === 0 ? (
-                        <div className="dashboard-panel-empty" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <ShieldCheck size={14} style={{ color: '#10b981' }} />
-                            <span>No cases awaiting review â€” great work.</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0.5rem 0', fontSize: '0.75rem', color: '#64748b' }}>
+                            <ShieldCheck size={14} style={{ color: '#34d399' }} />
+                            <span>No cases awaiting review — great work.</span>
                         </div>
                     ) : (
-                        <div className="dashboard-panel-table-wrap">
+                        <div style={{ overflowX: 'auto' }}>
                             <table className="dashboard-panel-table">
                                 <thead>
                                     <tr>
@@ -924,9 +907,16 @@ export function OverviewPage() {
                                             <tr key={c.id}>
                                                 <td>{fmtDate(c.submitted_at)}</td>
                                                 <td>
-                                                    <span style={{ fontSize: '0.72rem', fontWeight: 600, color: ageBandC(age.band), background: ageBandBg(age.band), padding: '1px 7px', borderRadius: '8px' }}>{age.text}</span>
+                                                    <span style={{
+                                                        fontSize: '0.68rem',
+                                                        fontWeight: 500,
+                                                        color: ageBandC(age.band),
+                                                        background: ageBandBg(age.band),
+                                                        padding: '1px 7px',
+                                                        borderRadius: '8px',
+                                                    }}>{age.text}</span>
                                                 </td>
-                                                <td>{c.submission_type ? plainEventType(c.submission_type) : 'â€”'}</td>
+                                                <td>{c.submission_type ? plainEventType(c.submission_type) : '–'}</td>
                                                 <td>
                                                     <span className={`dashboard-status-badge status-${statusClass(c.status)}`}>
                                                         {statusLabel(c.status)}
@@ -934,7 +924,7 @@ export function OverviewPage() {
                                                 </td>
                                                 <td>
                                                     <span className={`dashboard-risk-badge risk-${riskClass(c.risk_level)}`}>
-                                                        {c.risk_level ?? 'â€”'}
+                                                        {c.risk_level ?? '–'}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -945,154 +935,8 @@ export function OverviewPage() {
                         </div>
                     )}
                 </div>
-
-                {/* High-Risk Queue */}
-                <div className="dashboard-panel" style={{ borderLeft: panels.highRiskQueue.length > 0 ? '3px solid #dc2626' : undefined }}>
-                    <div className="dashboard-panel-header">
-                        <h2 className="dashboard-panel-title">
-                            <AlertTriangle size={16} className="dashboard-panel-title-icon" style={{ color: '#dc2626' }} />
-                            High-Risk Queue
-                        </h2>
-                        <span className="dashboard-panel-count" style={{ background: panels.highRiskQueue.length > 0 ? '#fef2f2' : undefined, color: panels.highRiskQueue.length > 0 ? '#991b1b' : undefined }}>
-                            {panels.highRiskQueue.length}
-                        </span>
-                    </div>
-                    <p style={{ padding: '0 1rem', margin: '0 0 0.35rem', fontSize: '0.72rem', color: '#94a3b8' }}>
-                        Open cases assessed as high risk or critical.
-                    </p>
-                    {panels.highRiskQueue.length === 0 ? (
-                        <div className="dashboard-panel-empty" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <ShieldCheck size={14} style={{ color: '#10b981' }} />
-                            <span>No high-risk cases open â€” looking good.</span>
-                        </div>
-                    ) : (
-                        <div className="dashboard-panel-table-wrap">
-                            <table className="dashboard-panel-table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Type</th>
-                                        <th>Status</th>
-                                        <th>Category</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {panels.highRiskQueue.map((c) => (
-                                        <tr key={c.id}>
-                                            <td>{fmtDate(c.submitted_at)}</td>
-                                            <td>{c.submission_type ? plainEventType(c.submission_type) : 'â€”'}</td>
-                                            <td>
-                                                <span className={`dashboard-status-badge status-${statusClass(c.status)}`}>
-                                                    {statusLabel(c.status)}
-                                                </span>
-                                            </td>
-                                            <td>{c.category ? plainEventType(c.category) : 'â€”'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-
-                {/* Recent Cases â€“ calmer styling */}
-                <div className="dashboard-panel" style={{ opacity: 0.85 }}>
-                    <div className="dashboard-panel-header">
-                        <h2 className="dashboard-panel-title" style={{ color: '#64748b' }}>
-                            <TrendingUp size={16} className="dashboard-panel-title-icon" style={{ color: '#94a3b8' }} />
-                            Recent Cases
-                        </h2>
-                        <span className="dashboard-panel-count">{panels.recentCases.length}</span>
-                    </div>
-                    <p style={{ padding: '0 1rem', margin: '0 0 0.35rem', fontSize: '0.72rem', color: '#94a3b8' }}>
-                        Latest submissions for reference.
-                    </p>
-                    {panels.recentCases.length === 0 ? (
-                        <div className="dashboard-panel-empty">No cases submitted yet.</div>
-                    ) : (
-                        <div className="dashboard-panel-table-wrap">
-                            <table className="dashboard-panel-table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Type</th>
-                                        <th>Status</th>
-                                        <th>Risk</th>
-                                        <th>Category</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {panels.recentCases.map((c) => (
-                                        <tr key={c.id}>
-                                            <td>{fmtDate(c.submitted_at)}</td>
-                                            <td>{c.submission_type ? plainEventType(c.submission_type) : 'â€”'}</td>
-                                            <td>
-                                                <span className={`dashboard-status-badge status-${statusClass(c.status)}`}>
-                                                    {statusLabel(c.status)}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className={`dashboard-risk-badge risk-${riskClass(c.risk_level)}`}>
-                                                    {c.risk_level ?? 'â€”'}
-                                                </span>
-                                            </td>
-                                            <td>{c.category ? plainEventType(c.category) : 'â€”'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* â”€â”€ Safeguarding Alert Log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            <div className="dashboard-panel" style={{ marginTop: '1.5rem', opacity: 0.85 }}>
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title" style={{ color: '#64748b' }}>
-                        <Bell size={16} className="dashboard-panel-title-icon" style={{ color: '#94a3b8' }} />
-                        Alert Log (Last 14 Days)
-                    </h2>
-                    <span className="dashboard-panel-count">{alerts.length}</span>
-                </div>
-                {alerts.length === 0 ? (
-                    <div className="dashboard-panel-empty" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <ShieldCheck size={14} style={{ color: '#10b981' }} />
-                        <span>No recent alerts.</span>
-                    </div>
-                ) : (
-                    <div className="dashboard-panel-table-wrap">
-                        <table className="dashboard-panel-table">
-                            <thead>
-                                <tr>
-                                    <th>Event</th>
-                                    <th>Entity</th>
-                                    <th>Severity</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {alerts.map((a) => (
-                                    <tr key={a.id}>
-                                        <td>{plainEventType(a.event_type)}</td>
-                                        <td>{a.entity_type ? plainEventType(a.entity_type) : 'â€”'}</td>
-                                        <td>
-                                            {a.severity ? (
-                                                <span className={`dashboard-risk-badge risk-${severityRiskClass(a.severity)}`}>
-                                                    {a.severity}
-                                                </span>
-                                            ) : 'â€”'}
-                                        </td>
-                                        <td>{fmtDate(a.sent_at)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
             </div>
 
         </div>
     );
 }
-
