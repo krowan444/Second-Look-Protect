@@ -31,6 +31,50 @@ export default async function handler(req, res) {
         return { ok: r.ok, status: r.status, json, text };
     }
 
+    /**
+     * Convert a raw DB key (underscore_separated) into a clean title-case label.
+     * e.g. "suspicious_phone_call" → "Suspicious Phone Call"
+     *      "not_scam" → "Not Scam"
+     */
+    function fmtLabel(v) {
+        if (!v || typeof v !== 'string') return v ?? '';
+        return v.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    /**
+     * Sanitise a string for jsPDF output:
+     * - Decode any HTML entities that may have been stored in the DB
+     * - Strip any remaining HTML tags
+     * - Replace Unicode characters jsPDF's Latin-1 subset cannot render
+     *   (jsPDF default font is Helvetica which uses WinAnsi/Latin-1)
+     */
+    function sanitisePdfText(text) {
+        if (!text) return '';
+        return String(text)
+            // HTML entity decode (common cases from textarea storage)
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&apos;/g, "'")
+            .replace(/&nbsp;/g, ' ')
+            // Strip any stray HTML tags
+            .replace(/<[^>]*>/g, '')
+            // Replace Unicode checkmarks / emojis with ASCII equivalents safe for Latin-1
+            .replace(/✅/g, '[x]')
+            .replace(/✓/g, '[x]')
+            .replace(/☑/g, '[x]')
+            .replace(/❌/g, '[-]')
+            .replace(/⚠️/g, '[!]')
+            .replace(/⚠/g, '[!]')
+            .replace(/🔒/g, '[locked]')
+            .replace(/📝/g, '[draft]')
+            // Replace any remaining non-Latin-1 characters with a safe placeholder
+            .replace(/[^\x00-\xFF]/g, '?')
+            .trim();
+    }
+
     /* ── Auth check ──────────────────────────────────────────────────────── */
 
     const authHeader = req.headers.authorization;
@@ -39,7 +83,6 @@ export default async function handler(req, res) {
     }
     const userToken = authHeader.replace('Bearer ', '');
 
-    // Verify user via Supabase auth
     const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
         headers: {
             apikey: SERVICE_KEY,
@@ -58,7 +101,6 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'No user ID in session' });
     }
 
-    // Fetch profile to verify org access
     const profileRes = await supabaseRest(
         `profiles?select=role,organisation_id&id=eq.${userId}&limit=1`
     );
@@ -77,13 +119,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing required fields: reportId, organisationId, periodStart, periodEnd' });
     }
 
-    // Verify org permission
     if (profile.role !== 'super_admin' && profile.organisation_id !== organisationId) {
         return res.status(403).json({ error: 'Forbidden: organisation mismatch' });
     }
 
     try {
-        /* ── Fetch report ─────────────────────────────────────────────────── */
+        /* ── Fetch report (canonical source of truth) ─────────────────────── */
 
         const reportRes = await supabaseRest(
             `reports?select=*&id=eq.${reportId}&limit=1`
@@ -102,33 +143,44 @@ export default async function handler(req, res) {
         );
         const orgName = orgRes.json?.[0]?.name ?? 'Organisation';
 
+        /* ── Extract metrics from saved snapshot ──────────────────────────── */
+        // The metrics snapshot is the canonical source — same data the page showed
+        // when the report was saved or approved.
+        const m = report.metrics || {};
+        const byStatus = m.byStatus || {};
+        const outcomeMap = m.outcomeMap || {};
+        const riskMap = m.riskMap || {};
+
+        // SLA overdue: stored as slaOverdueNow in the metrics snapshot.
+        // Fall back to legacy key slaOverdue for older saved reports.
+        const slaOverdue = m.slaOverdueNow ?? m.slaOverdue ?? '—';
+
         /* ── Build PDF ────────────────────────────────────────────────────── */
 
-        const m = report.metrics || {};
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
         let y = 20;
-        const lm = 15; // left margin
+        const lm = 15;  // left margin
         const pw = 180; // printable width
 
-        // --- Header ---
+        // ── Header ──────────────────────────────────────────────────────────
         doc.setFontSize(18);
         doc.setFont('helvetica', 'bold');
         doc.text('Safeguarding Monthly Report', lm, y);
         y += 8;
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
-        doc.text(`${orgName}`, lm, y);
+        doc.text(sanitisePdfText(orgName), lm, y);
         y += 6;
         doc.text(`Period: ${periodStart} to ${periodEnd}`, lm, y);
         y += 6;
-        doc.text(`Status: ${report.status ?? 'draft'}`, lm, y);
+        doc.text(`Status: ${fmtLabel(report.status ?? 'draft')}`, lm, y);
         y += 3;
         doc.setDrawColor(200);
         doc.line(lm, y, lm + pw, y);
         y += 8;
 
-        // --- Key Metrics ---
+        // ── Key Metrics ──────────────────────────────────────────────────────
         doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
         doc.text('Key Metrics', lm, y);
@@ -137,34 +189,43 @@ export default async function handler(req, res) {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
 
-        const byStatus = m.byStatus || {};
-        const outcomeMap = m.outcomeMap || {};
-
         const metricLines = [
-            `Total Cases: ${m.total ?? '—'}`,
-            `New: ${byStatus.new ?? '—'}  |  In Review: ${byStatus.in_review ?? '—'}  |  Closed: ${byStatus.closed ?? '—'}`,
-            `High/Critical Risk: ${m.highRisk ?? '—'}`,
-            `Scam Confirmed: ${m.scamConfirmed ?? '—'}`,
-            `Prevented: ${outcomeMap.prevented ?? '—'}  |  Lost: ${outcomeMap.lost ?? '—'}  |  Escalated: ${outcomeMap.escalated ?? '—'}`,
+            `Total Cases: ${m.total ?? '0'}`,
+            `New: ${byStatus.new ?? '0'}  |  In Review: ${byStatus.in_review ?? '0'}  |  Closed: ${byStatus.closed ?? '0'}`,
+            `High/Critical Risk: ${m.highRisk ?? '0'}`,
+            `Scam Confirmed: ${m.scamConfirmed ?? '0'}`,
+            `Prevented: ${outcomeMap.prevented ?? '0'}  |  Lost: ${outcomeMap.lost ?? '0'}  |  Escalated: ${outcomeMap.escalated ?? '0'}`,
             `Avg Time to Review: ${m.avgReview ?? '—'}`,
             `Avg Time to Close: ${m.avgClose ?? '—'}`,
-            `SLA Overdue (>3 days): ${m.slaOverdue ?? '—'}`,
+            `SLA Overdue (>3 days): ${slaOverdue}`,
         ];
 
         for (const line of metricLines) {
             if (y > 270) { doc.addPage(); y = 20; }
-            doc.text(line, lm, y);
+            doc.text(sanitisePdfText(line), lm, y);
             y += 5.5;
         }
         y += 4;
 
-        // --- Helper: render simple table ---
+        // ── Helper: render a breakdown table ────────────────────────────────
         function renderTable(title, entries, headers = ['Name', 'Count']) {
-            if (!entries || entries.length === 0) return;
+            if (!entries || entries.length === 0) {
+                // Render section with a clean fallback instead of silently omitting
+                if (y > 255) { doc.addPage(); y = 20; }
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text(sanitisePdfText(title), lm, y);
+                y += 6;
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.text('No data recorded for this period.', lm, y);
+                y += 8;
+                return;
+            }
             if (y > 250) { doc.addPage(); y = 20; }
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
-            doc.text(title, lm, y);
+            doc.text(sanitisePdfText(title), lm, y);
             y += 6;
             doc.setFontSize(9);
             doc.setFont('helvetica', 'bold');
@@ -174,10 +235,11 @@ export default async function handler(req, res) {
             doc.setFont('helvetica', 'normal');
             for (const entry of entries) {
                 if (y > 275) { doc.addPage(); y = 20; }
-                const name = Array.isArray(entry) ? entry[0] : entry.name ?? String(entry);
+                const name = Array.isArray(entry) ? entry[0] : (entry.name ?? String(entry));
                 const count = Array.isArray(entry) ? String(entry[1]) : String(entry.count ?? '');
-                doc.text(capitalize(String(name)), lm, y);
-                doc.text(count, lm + 100, y);
+                // Apply full title-case formatting (handles underscores in category/channel names)
+                doc.text(sanitisePdfText(fmtLabel(String(name))), lm, y);
+                doc.text(sanitisePdfText(count), lm + 100, y);
                 y += 4.5;
             }
             y += 4;
@@ -190,27 +252,30 @@ export default async function handler(req, res) {
         renderTable('Submission Channels', m.channels);
 
         // Risk distribution
-        if (m.riskMap) {
+        if (riskMap && Object.keys(riskMap).length > 0) {
             renderTable(
                 'Risk Distribution',
-                Object.entries(m.riskMap).map(([k, v]) => [k, v])
+                Object.entries(riskMap).map(([k, v]) => [k, v])
             );
+        } else {
+            renderTable('Risk Distribution', []);
         }
 
         // Decisions
         renderTable('Decisions Distribution', m.decisions);
 
-        // --- Text sections ---
-        function renderTextSection(title, text) {
-            if (!text) return;
+        // ── Helper: render a text section ───────────────────────────────────
+        function renderTextSection(title, text, fallback) {
             if (y > 250) { doc.addPage(); y = 20; }
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
-            doc.text(title, lm, y);
+            doc.text(sanitisePdfText(title), lm, y);
             y += 6;
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            const lines = doc.splitTextToSize(text, pw);
+
+            const content = sanitisePdfText(text) || fallback || 'No content recorded.';
+            const lines = doc.splitTextToSize(content, pw);
             for (const line of lines) {
                 if (y > 275) { doc.addPage(); y = 20; }
                 doc.text(line, lm, y);
@@ -219,11 +284,23 @@ export default async function handler(req, res) {
             y += 4;
         }
 
-        renderTextSection('Executive Summary', report.ai_summary);
-        renderTextSection('Key Trends This Month', m.keyTrends);
-        renderTextSection('Recommendations', report.recommendations);
+        renderTextSection(
+            'Executive Summary',
+            report.ai_summary,
+            'No executive summary was provided for this period.'
+        );
+        renderTextSection(
+            'Key Trends This Month',
+            m.keyTrends,
+            'No key trends were recorded for this period.'
+        );
+        renderTextSection(
+            'Recommendations',
+            report.recommendations,
+            'No recommendations were recorded for this period.'
+        );
 
-        // Inspection-ready notes
+        // ── Inspection Ready Notes ───────────────────────────────────────────
         if (y > 250) { doc.addPage(); y = 20; }
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
@@ -231,13 +308,15 @@ export default async function handler(req, res) {
         y += 6;
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
+
+        // ASCII-safe checkmarks — jsPDF Helvetica (Latin-1) cannot render Unicode
         const inspectionNotes = [
-            '✓ All case submissions contain timestamped evidence in case_actions',
-            '✓ Audit timeline shows chronological actions + reviews per case',
-            '✓ Row-level security enforced — users cannot access data outside their organisation',
-            '✓ Compliance notes are append-only and immutable',
-            '✓ Reports can be locked to prevent post-hoc editing',
-            '✓ All case statuses and reviews traceable via case_reviews',
+            '[x] All case submissions contain timestamped evidence in case_actions',
+            '[x] Audit timeline shows chronological actions + reviews per case',
+            '[x] Row-level security enforced — users cannot access data outside their organisation',
+            '[x] Compliance notes are append-only and immutable',
+            '[x] Reports can be locked to prevent post-hoc editing',
+            '[x] All case statuses and reviews traceable via case_reviews',
         ];
         for (const note of inspectionNotes) {
             if (y > 275) { doc.addPage(); y = 20; }
@@ -245,14 +324,14 @@ export default async function handler(req, res) {
             y += 4.5;
         }
 
-        // --- Footer ---
+        // ── Footer on every page ─────────────────────────────────────────────
         const pageCount = doc.internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
             doc.setFontSize(8);
             doc.setTextColor(150);
             doc.text(
-                `Generated ${new Date().toISOString().slice(0, 10)} — Page ${i} of ${pageCount}`,
+                `Generated ${new Date().toISOString().slice(0, 10)} | ${sanitisePdfText(orgName)} | Period: ${periodStart} to ${periodEnd} | Page ${i} of ${pageCount}`,
                 lm, 290
             );
             doc.setTextColor(0);
@@ -305,8 +384,4 @@ export default async function handler(req, res) {
         console.error('PDF generation error:', err);
         return res.status(500).json({ error: err.message ?? 'Internal server error' });
     }
-}
-
-function capitalize(s) {
-    return s.charAt(0).toUpperCase() + s.slice(1);
 }

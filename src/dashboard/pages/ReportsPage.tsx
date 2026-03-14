@@ -511,19 +511,30 @@ export function ReportsPage() {
 
     /* ── Load a saved report ─────────────────────────────────────────────── */
     function loadReport(r: SavedReport) {
+        // Restore all fields from the canonical saved snapshot so the page,
+        // PDF, and history all agree on exactly what this report contained.
         setReportId(r.id);
         setReportStatus(r.status as 'draft' | 'locked' | 'approved');
         setReportLocked(!!r.locked);
         setReportPdfUrl(r.pdf_url ?? null);
         setExecSummary(r.ai_summary ?? '');
         setRecommendations(r.recommendations ?? '');
-        if (r.metrics?.keyTrends) setKeyTrends(r.metrics.keyTrends);
+        // Always restore keyTrends — use empty string so the field doesn't
+        // re-generate auto bullets from a different month's live data.
+        setKeyTrends(r.metrics?.keyTrends ?? '');
+        // Restore the SLA overdue count that was snapshotted with this report.
+        // Falls back to legacy key name for older saved reports.
+        setSlaOverdueNow(r.metrics?.slaOverdueNow ?? r.metrics?.slaOverdue ?? 0);
 
+        // Switch the month selector to match this report's period so the header
+        // and all date-dependent UI stay in sync with the loaded data.
         const d = new Date(r.period_start);
         const monthVal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         setSelectedMonth(monthVal);
 
         setSaveMsg(`Loaded report from ${fmtDate(r.period_start)}`);
+        // Scroll to top so the updated period label is immediately visible
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     /* ── Approve Report (RPC) ────────────────────────────────────────────── */
@@ -932,7 +943,7 @@ export function ReportsPage() {
                                         <thead><tr><th>Decision</th><th>Count</th></tr></thead>
                                         <tbody>
                                             {metrics.decisions.map(([dec, count]) => (
-                                                <tr key={dec}><td>{capitalize(dec)}</td><td>{count}</td></tr>
+                                                <tr key={dec}><td>{dec.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</td><td>{count}</td></tr>
                                             ))}
                                         </tbody>
                                     </table>
@@ -1254,7 +1265,7 @@ export function ReportsPage() {
                             <tbody>
                                 {auditLogs.map(log => (
                                     <tr key={log.id}>
-                                        <td>{capitalize(log.action)}</td>
+                                        <td>{log.action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</td>
                                         <td>{log.actor_type ?? '—'}</td>
                                         <td>{new Date(log.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
                                     </tr>
