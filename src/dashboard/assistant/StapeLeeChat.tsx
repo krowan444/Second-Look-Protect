@@ -84,52 +84,108 @@ function StaplerIconSmall() {
 
 function StaplerAvatar() {
     return (
-        <div style={{
-            width: '52px',
-            height: '52px',
+        <div className="stapeleeAvatarWrap" style={{
+            position: 'relative',
+            width: '56px',
+            height: '56px',
             flexShrink: 0,
-            animation: 'stapeleeAvatarEntrance 0.5s ease-out, stapeleeAvatarBob 3s ease-in-out 0.5s infinite',
         }}>
-            <svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Body — base rail */}
-                <rect x="6" y="38" width="52" height="12" rx="5" fill="#64748b" />
-                <rect x="8" y="40" width="48" height="8" rx="4" fill="#94a3b8" />
-                {/* Subtle grid lines on rail */}
-                <rect x="20" y="42" width="1" height="4" rx="0.5" fill="#7e8fa3" opacity="0.5" />
-                <rect x="26" y="42" width="1" height="4" rx="0.5" fill="#7e8fa3" opacity="0.5" />
-                <rect x="32" y="42" width="1" height="4" rx="0.5" fill="#7e8fa3" opacity="0.5" />
-                <rect x="38" y="42" width="1" height="4" rx="0.5" fill="#7e8fa3" opacity="0.5" />
-                <rect x="44" y="42" width="1" height="4" rx="0.5" fill="#7e8fa3" opacity="0.5" />
+            <svg width="56" height="56" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    {/* Metallic head gradient */}
+                    <linearGradient id="slHeadGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#475569" />
+                        <stop offset="50%" stopColor="#334155" />
+                        <stop offset="100%" stopColor="#1e293b" />
+                    </linearGradient>
+                    {/* Body gradient — warm metallic */}
+                    <linearGradient id="slBodyGrad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#64748b" />
+                        <stop offset="50%" stopColor="#94a3b8" />
+                        <stop offset="100%" stopColor="#64748b" />
+                    </linearGradient>
+                    {/* Subtle glow behind head */}
+                    <radialGradient id="slHeadGlow" cx="0.5" cy="0.5" r="0.5">
+                        <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.12" />
+                        <stop offset="100%" stopColor="#60a5fa" stopOpacity="0" />
+                    </radialGradient>
+                    {/* Shield gradient */}
+                    <linearGradient id="slShieldGrad" x1="0.5" y1="0" x2="0.5" y2="1">
+                        <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.6" />
+                        <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.3" />
+                    </linearGradient>
+                    {/* Online status glow */}
+                    <radialGradient id="slStatusGlow" cx="0.5" cy="0.5" r="0.5">
+                        <stop offset="0%" stopColor="#34d399" stopOpacity="0.9" />
+                        <stop offset="70%" stopColor="#34d399" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
+                    </radialGradient>
+                </defs>
 
-                {/* Top jaw / head */}
-                <path d="M10 38 L10 24 Q10 18 16 18 L52 18 Q58 18 58 24 L58 38" fill="#1e293b" />
-                <path d="M12 36 L12 25 Q12 20 17 20 L55 20 Q57 20 57 25 L57 36" fill="#334155" />
+                {/* Ambient head glow */}
+                <circle cx="40" cy="32" r="24" fill="url(#slHeadGlow)" />
 
-                {/* Subtle head highlight */}
-                <path d="M14 24 Q14 21 18 21 L54 21 Q56 21 56 24" stroke="#475569" strokeWidth="0.6" fill="none" opacity="0.4" />
+                {/* === BODY / BASE RAIL === */}
+                <rect x="8" y="50" width="64" height="14" rx="6" fill="url(#slBodyGrad)" />
+                {/* Rail highlight stripe */}
+                <rect x="12" y="52" width="56" height="3" rx="1.5" fill="white" opacity="0.08" />
+                {/* Staple channel */}
+                <rect x="24" y="56" width="32" height="3" rx="1.5" fill="#475569" />
+                {/* Tiny notch details */}
+                <rect x="28" y="57" width="2" height="1" rx="0.5" fill="#334155" />
+                <rect x="34" y="57" width="2" height="1" rx="0.5" fill="#334155" />
+                <rect x="40" y="57" width="2" height="1" rx="0.5" fill="#334155" />
+                <rect x="46" y="57" width="2" height="1" rx="0.5" fill="#334155" />
+                {/* Base shadow */}
+                <rect x="10" y="62" width="60" height="2" rx="1" fill="#0f172a" opacity="0.15" />
 
-                {/* Hinge / pivot */}
-                <circle cx="10" cy="38" r="4.5" fill="#0f172a" />
-                <circle cx="10" cy="38" r="2.8" fill="#475569" />
-                <circle cx="10" cy="38" r="1.2" fill="#64748b" />
+                {/* === TOP JAW / HEAD === */}
+                <path d="M12 50 L12 28 Q12 18 22 18 L58 18 Q68 18 68 28 L68 50" fill="url(#slHeadGrad)" />
+                {/* Inner face panel */}
+                <path d="M16 48 L16 30 Q16 22 24 22 L56 22 Q64 22 64 30 L64 48" fill="#334155" />
+                {/* Top edge highlight */}
+                <path d="M20 26 Q20 22 26 22 L54 22 Q60 22 60 26" stroke="#64748b" strokeWidth="0.8" fill="none" opacity="0.5" />
+                {/* Left brow accent */}
+                <path d="M26 30 L33 28" stroke="#64748b" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
+                {/* Right brow accent */}
+                <path d="M54 30 L47 28" stroke="#64748b" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
 
-                {/* Eyes — whites (animate via class) */}
-                <ellipse className="stapeleeEyeL" cx="29" cy="29" rx="4.5" ry="5" fill="white" />
-                <ellipse className="stapeleeEyeR" cx="43" cy="29" rx="4.5" ry="5" fill="white" />
+                {/* === HINGE / PIVOT === */}
+                <circle cx="12" cy="50" r="6" fill="#0f172a" />
+                <circle cx="12" cy="50" r="4" fill="#475569" />
+                <circle cx="12" cy="50" r="2" fill="#64748b" />
+                <circle cx="11" cy="49" r="0.8" fill="#94a3b8" opacity="0.5" />
 
-                {/* Eyes — pupils */}
-                <ellipse cx="30" cy="30" rx="2.2" ry="2.8" fill="#0f172a" />
-                <ellipse cx="44" cy="30" rx="2.2" ry="2.8" fill="#0f172a" />
+                {/* === EYES (animated via class) === */}
+                {/* Eye whites */}
+                <ellipse className="stapeleeEyeL" cx="33" cy="36" rx="6" ry="6.5" fill="white" />
+                <ellipse className="stapeleeEyeR" cx="51" cy="36" rx="6" ry="6.5" fill="white" />
+                {/* Iris — dark blue-grey */}
+                <ellipse cx="34.2" cy="37" rx="3.5" ry="4" fill="#1e293b" />
+                <ellipse cx="52.2" cy="37" rx="3.5" ry="4" fill="#1e293b" />
+                {/* Pupils */}
+                <circle cx="34.5" cy="37.5" r="1.8" fill="#020617" />
+                <circle cx="52.5" cy="37.5" r="1.8" fill="#020617" />
+                {/* Primary catchlights */}
+                <circle cx="32.5" cy="35" r="1.6" fill="white" opacity="0.95" />
+                <circle cx="50.5" cy="35" r="1.6" fill="white" opacity="0.95" />
+                {/* Secondary catchlights */}
+                <circle cx="35.5" cy="38.5" r="0.7" fill="white" opacity="0.5" />
+                <circle cx="53.5" cy="38.5" r="0.7" fill="white" opacity="0.5" />
 
-                {/* Eye highlights */}
-                <circle cx="28.5" cy="28" r="1.3" fill="white" opacity="0.9" />
-                <circle cx="42.5" cy="28" r="1.3" fill="white" opacity="0.9" />
+                {/* === FRIENDLY SMILE === */}
+                <path d="M37 45 Q42 49 47 45" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                {/* Subtle dimples */}
+                <circle cx="36" cy="44.5" r="0.6" fill="#64748b" opacity="0.25" />
+                <circle cx="48" cy="44.5" r="0.6" fill="#64748b" opacity="0.25" />
 
-                {/* Friendly smile */}
-                <path d="M33 35 Q36 38.5 39 35" stroke="#94a3b8" strokeWidth="1.4" strokeLinecap="round" fill="none" />
+                {/* === SHIELD EMBLEM (safeguarding accent) === */}
+                <path d="M58 22 L58 28 Q58 32 54 34 L58 22Z" fill="url(#slShieldGrad)" opacity="0.5" />
 
-                {/* Staple slot */}
-                <rect x="22" y="43" width="20" height="2" rx="1" fill="#475569" />
+                {/* === ONLINE STATUS INDICATOR === */}
+                <circle cx="64" cy="18" r="6" fill="url(#slStatusGlow)" className="stapeleeStatusPulse" />
+                <circle cx="64" cy="18" r="3" fill="#34d399" className="stapeleeStatusPulse" />
+                <circle cx="63" cy="17" r="1" fill="white" opacity="0.5" />
             </svg>
         </div>
     );
@@ -315,23 +371,41 @@ const SLIDE_STYLES = `
         0%, 100% { box-shadow: -1px 1px 6px rgba(0,0,0,0.06); }
         50% { box-shadow: -1px 1px 10px rgba(30,41,59,0.12); }
     }
-    @keyframes stapeleeAvatarEntrance {
-        from { transform: scale(0.85) translateY(4px); opacity: 0.4; }
-        to   { transform: scale(1) translateY(0); opacity: 1; }
+
+    /* ── Stape-Lee Avatar Animations ────────────── */
+    @keyframes stapeleeEntrance {
+        0%   { transform: scale(0.7) translateY(6px) rotate(-3deg); opacity: 0; }
+        60%  { transform: scale(1.03) translateY(-1px) rotate(0.5deg); opacity: 1; }
+        80%  { transform: scale(0.98) translateY(0.5px) rotate(0deg); }
+        100% { transform: scale(1) translateY(0) rotate(0deg); opacity: 1; }
     }
-    @keyframes stapeleeAvatarBob {
-        0%, 100% { transform: translateY(0); }
-        50%      { transform: translateY(-1.5px); }
+    @keyframes stapeleeBreath {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50%      { transform: translateY(-1.5px) scale(1.008); }
     }
-    @keyframes stapeleeAvatarBlink {
-        0%, 42%, 48%, 100% { ry: 5; }
-        45%                 { ry: 1; }
+    @keyframes stapeleeBlink {
+        0%, 38%, 44%, 100% { transform: scaleY(1); }
+        41%                 { transform: scaleY(0.08); }
+    }
+    @keyframes stapeleeStatusPulse {
+        0%, 100% { opacity: 0.7; }
+        50%      { opacity: 1; }
+    }
+
+    .stapeleeAvatarWrap {
+        animation: stapeleeEntrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                   stapeleeBreath 3.5s ease-in-out 0.6s infinite;
     }
     .stapeleeEyeL, .stapeleeEyeR {
-        animation: stapeleeAvatarBlink 4s ease-in-out infinite;
+        transform-origin: center;
+        transform-box: fill-box;
+        animation: stapeleeBlink 4.5s ease-in-out infinite;
     }
     .stapeleeEyeR {
-        animation-delay: 0.08s;
+        animation-delay: 0.06s;
+    }
+    .stapeleeStatusPulse {
+        animation: stapeleeStatusPulse 2.5s ease-in-out infinite;
     }
 `;
 
@@ -877,74 +951,74 @@ export function StapeLeeChat({ currentPath }: Props) {
                             const isLatestStreaming = msg.role === 'assistant' && msg.streaming &&
                                 !messages.slice(idx + 1).some(m => m.role === 'assistant' && m.streaming);
                             return (
-                            <div key={msg.id} ref={isLatestStreaming ? latestMsgRef : undefined} style={{
-                                alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                                maxWidth: '88%',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '2px',
-                            }}>
-                                {/* Sender label */}
-                                <div style={{
-                                    fontSize: '0.58rem',
-                                    fontWeight: 600,
-                                    color: msg.role === 'user' ? '#64748b' : '#475569',
-                                    textAlign: msg.role === 'user' ? 'right' : 'left',
-                                    paddingLeft: msg.role === 'assistant' ? '2px' : 0,
-                                    paddingRight: msg.role === 'user' ? '2px' : 0,
+                                <div key={msg.id} ref={isLatestStreaming ? latestMsgRef : undefined} style={{
+                                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                                    maxWidth: '88%',
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '3px',
-                                    justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                                    flexDirection: 'column',
+                                    gap: '2px',
                                 }}>
-                                    {msg.role === 'assistant' && <StaplerIconSmall />}
-                                    {msg.role === 'user' ? 'You' : 'Stape-Lee'}
-                                    <span style={{ fontWeight: 400, opacity: 0.5 }}>· {fmtTime(msg.timestamp)}</span>
-                                </div>
-                                {/* Bubble */}
-                                <div style={{
-                                    padding: '0.5rem 0.7rem',
-                                    borderRadius: msg.role === 'user' ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
-                                    background: msg.role === 'user'
-                                        ? 'linear-gradient(135deg, #1e293b, #334155)'
-                                        : '#ffffff',
-                                    color: msg.role === 'user' ? '#f1f5f9' : '#1e293b',
-                                    fontSize: '0.76rem',
-                                    lineHeight: 1.55,
-                                    border: msg.role === 'assistant' ? '1px solid #e8ecf1' : 'none',
-                                    boxShadow: msg.role === 'assistant'
-                                        ? '0 1px 3px rgba(0,0,0,0.03)'
-                                        : '0 1px 4px rgba(0,0,0,0.08)',
-                                    whiteSpace: 'pre-wrap',
-                                    wordBreak: 'break-word',
-                                }}>
-                                    {msg.role === 'assistant' && msg.streaming ? (
-                                        <ProgressiveText
-                                            key={msg.id}
-                                            text={msg.text}
-                                            onComplete={() => markStreamComplete(msg.id)}
+                                    {/* Sender label */}
+                                    <div style={{
+                                        fontSize: '0.58rem',
+                                        fontWeight: 600,
+                                        color: msg.role === 'user' ? '#64748b' : '#475569',
+                                        textAlign: msg.role === 'user' ? 'right' : 'left',
+                                        paddingLeft: msg.role === 'assistant' ? '2px' : 0,
+                                        paddingRight: msg.role === 'user' ? '2px' : 0,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '3px',
+                                        justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                                    }}>
+                                        {msg.role === 'assistant' && <StaplerIconSmall />}
+                                        {msg.role === 'user' ? 'You' : 'Stape-Lee'}
+                                        <span style={{ fontWeight: 400, opacity: 0.5 }}>· {fmtTime(msg.timestamp)}</span>
+                                    </div>
+                                    {/* Bubble */}
+                                    <div style={{
+                                        padding: '0.5rem 0.7rem',
+                                        borderRadius: msg.role === 'user' ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
+                                        background: msg.role === 'user'
+                                            ? 'linear-gradient(135deg, #1e293b, #334155)'
+                                            : '#ffffff',
+                                        color: msg.role === 'user' ? '#f1f5f9' : '#1e293b',
+                                        fontSize: '0.76rem',
+                                        lineHeight: 1.55,
+                                        border: msg.role === 'assistant' ? '1px solid #e8ecf1' : 'none',
+                                        boxShadow: msg.role === 'assistant'
+                                            ? '0 1px 3px rgba(0,0,0,0.03)'
+                                            : '0 1px 4px rgba(0,0,0,0.08)',
+                                        whiteSpace: 'pre-wrap',
+                                        wordBreak: 'break-word',
+                                    }}>
+                                        {msg.role === 'assistant' && msg.streaming ? (
+                                            <ProgressiveText
+                                                key={msg.id}
+                                                text={msg.text}
+                                                onComplete={() => markStreamComplete(msg.id)}
+                                            />
+                                        ) : (
+                                            renderMarkdownLight(msg.text)
+                                        )}
+                                    </div>
+                                    {/* Feedback send/discard buttons */}
+                                    {msg.role === 'assistant' && msg.showFeedbackButtons && !msg.streaming && feedbackDraft && (
+                                        <FeedbackButtons
+                                            onSend={handleFeedbackSend}
+                                            onDiscard={handleFeedbackDiscard}
+                                            sending={feedbackSending}
                                         />
-                                    ) : (
-                                        renderMarkdownLight(msg.text)
+                                    )}
+                                    {/* Recommendation chips (shown after streaming completes) */}
+                                    {msg.role === 'assistant' && msg.chips && !msg.streaming && !msg.showFeedbackButtons && (
+                                        <RecommendationChips
+                                            chips={msg.chips}
+                                            onSelect={handleChipClick}
+                                            disabled={isThinking}
+                                        />
                                     )}
                                 </div>
-                                {/* Feedback send/discard buttons */}
-                                {msg.role === 'assistant' && msg.showFeedbackButtons && !msg.streaming && feedbackDraft && (
-                                    <FeedbackButtons
-                                        onSend={handleFeedbackSend}
-                                        onDiscard={handleFeedbackDiscard}
-                                        sending={feedbackSending}
-                                    />
-                                )}
-                                {/* Recommendation chips (shown after streaming completes) */}
-                                {msg.role === 'assistant' && msg.chips && !msg.streaming && !msg.showFeedbackButtons && (
-                                    <RecommendationChips
-                                        chips={msg.chips}
-                                        onSelect={handleChipClick}
-                                        disabled={isThinking}
-                                    />
-                                )}
-                            </div>
                             );
                         })}
 
