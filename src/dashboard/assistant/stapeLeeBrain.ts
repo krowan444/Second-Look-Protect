@@ -30,14 +30,31 @@ export interface StapeLeeResponse {
 
 /* ── Session memory ──────────────────────────────────────────────────────── */
 
+export type ActiveTask =
+    | 'page_explain' | 'next_step' | 'tips' | 'workflow' | 'lifecycle'
+    | 'case_summary' | 'resident_guidance' | 'triage_explain'
+    | 'status_lookup' | 'risk_lookup' | 'health' | 'value'
+    | 'feedback' | 'prioritise' | 'find_case' | 'filters'
+    | 'product' | 'simple_explain' | '';
+
 export class SessionMemory {
+    /* What Stape-Lee was last doing */
+    activeTask: ActiveTask = '';
     lastIntent: string = '';
     lastTopic: string = '';
+    lastResponseText: string = '';
+
+    /* Feedback flow state */
     feedbackInProgress: boolean = false;
     feedbackClarified: boolean = false;
+
+    /* Conversation depth */
     questionsAsked: number = 0;
-    currentGoal: string = '';
     topicsDiscussed: string[] = [];
+
+    /* Page & case binding for the current conversation thread */
+    boundPage: string = '';
+    boundCaseId: string = '';
 
     recordIntent(intent: string, topic: string) {
         this.lastIntent = intent;
@@ -48,14 +65,30 @@ export class SessionMemory {
         }
     }
 
+    recordTask(task: ActiveTask) {
+        this.activeTask = task;
+    }
+
+    recordResponse(text: string) {
+        this.lastResponseText = text;
+    }
+
+    bindContext(page: string, caseId?: string) {
+        this.boundPage = page;
+        if (caseId) this.boundCaseId = caseId;
+    }
+
     reset() {
+        this.activeTask = '';
         this.lastIntent = '';
         this.lastTopic = '';
+        this.lastResponseText = '';
         this.feedbackInProgress = false;
         this.feedbackClarified = false;
         this.questionsAsked = 0;
-        this.currentGoal = '';
         this.topicsDiscussed = [];
+        this.boundPage = '';
+        this.boundCaseId = '';
     }
 }
 
@@ -86,33 +119,180 @@ function followUpChips(topic: string, ctx: PageContext): string[] {
     }
 }
 
-/* ── Main function ───────────────────────────────────────────────────────── */
+/* ── Follow-up detection ─────────────────────────────────────────────────── */
+
+function detectFollowUp(q: string, mem: SessionMemory, ctx: PageContext): StapeLeeResponse | null {
+    // Only activate if there's an active conversation history
+    if (!mem.lastIntent && !mem.activeTask) return null;
+
+    // ── "Make it shorter / simpler" — rewrite the last response ─────
+    if (/^(make it |)(shorter|simpler|briefer|more concise|less wordy|trim it|shorten)/.test(q)) {
+        if (mem.lastResponseText) {
+            // Produce a condensed version of the last response
+            const condensed = condenseResponse(mem.lastResponseText);
+            mem.recordIntent('simplify', mem.lastTopic);
+            return {
+                text: condensed,
+                type: 'answer',
+                chips: mem.activeTask === 'case_summary'
+                    ? ['Draft resident guidance', 'What should I do next?', 'Send feedback']
+                    : pageChips(ctx).slice(0, 3),
+            };
+        }
+    }
+
+    // ── "Explain more simply / in plain english" — ELI5 the last topic ──
+    if (/^(explain|say|put).*(simpl|plain|basic|easy|clearer)/.test(q) || q === 'eli5') {
+        if (mem.lastTopic || mem.activeTask) {
+            mem.recordIntent('simple', mem.lastTopic || ctx.section);
+            return simpleExplanation(ctx);
+        }
+    }
+
+    // ── "Continue / go on / what next / and then?" — advance the task ──
+    if (/^(continue|go on|and then|what next|what('s| is) next|next|carry on|keep going)\b/.test(q)) {
+        mem.recordIntent('continue', mem.lastTopic);
+
+        // After a page explanation → next steps
+        if (mem.activeTask === 'page_explain' || mem.activeTask === 'tips') {
+            return smartNextStep(ctx);
+        }
+        // After next steps → tips
+        if (mem.activeTask === 'next_step') {
+            return contextualTips(ctx);
+        }
+        // After case summary → what to do next on the case
+        if (mem.activeTask === 'case_summary' || mem.activeTask === 'triage_explain') {
+            return smartNextStep(ctx);
+        }
+        // After workflow guide → next logical workflow
+        if (mem.activeTask === 'workflow') {
+            if (mem.lastTopic === 'submitCase') return workflowAnswer('reviewCase', ctx);
+            if (mem.lastTopic === 'reviewCase') return workflowAnswer('closeCase', ctx);
+            return smartNextStep(ctx);
+        }
+        // After lifecycle → how to submit
+        if (mem.activeTask === 'lifecycle') {
+            return workflowAnswer('submitCase', ctx);
+        }
+        // Generic fallback for continue
+        return smartNextStep(ctx);
+    }
+
+    // ── "Turn into / draft resident guidance" after case summary ─────
+    if (/resident.*guidance|turn.*guidance|guidance/.test(q) && mem.activeTask === 'case_summary') {
+        mem.recordIntent('resident_guidance', 'case');
+        // Re-route to resident guidance handler
+        return null; // Let the main pattern matcher handle it
+    }
+
+    // ── "What should I look at" — after any explanation ──────────────
+    if (/^what.*(look|check|focus)/.test(q) && mem.activeTask) {
+        mem.recordIntent('priority', ctx.section);
+        return whatToLookAt(ctx);
+    }
+
+    // ── "Explain more / tell me more / go deeper" ───────────────────
+    if (/^(explain|tell).*(more|detail|deeper|further)|^more (detail|info)|^go deeper/.test(q)) {
+        if (mem.activeTask === 'page_explain') {
+            // Show actions after page explanation
+            return contextualActions(ctx);
+        }
+        if (mem.activeTask === 'case_summary' || mem.activeTask === 'triage_explain') {
+            return {
+                text: '**Going deeper on this case:**\n\nHere\'s what to examine more closely:\n\n**Evidence** — Open each attachment and look for scam indicators: urgency language, impersonation, suspicious URLs/domains, QR codes, or requests for personal/financial info.\n\n**Number Intelligence** — If this is a phone case, check the intelligence report for carrier info, spam reports, and known associations.\n\n**Audit Timeline** — Review the full history of actions taken. This is what inspectors will look at.\n\n**Triage Accuracy** — Compare the AI\'s risk assessment with your own judgement. Adjust if needed — the AI is a starting point, not a final answer.',
+                type: 'answer',
+                chips: ['Draft resident guidance', 'How do I close this case?', 'Send feedback'],
+            };
+        }
+        if (mem.activeTask === 'value') {
+            // Show another value angle
+            const unseen = Object.keys(valuePropositions).filter(k => !mem.topicsDiscussed.includes(k));
+            const key = unseen.length > 0 ? unseen[0] : 'oversight';
+            mem.recordIntent('value', key);
+            return valueAnswer(key, ctx);
+        }
+        return null; // No specific follow-up, let main matchers handle
+    }
+
+    return null; // Not a follow-up — let regular pattern matching proceed
+}
+
+/* ── Condense a response (for "make it shorter") ─────────────────────────── */
+
+function condenseResponse(text: string): string {
+    // Split into lines, keep bold headers and first sentence of each section
+    const lines = text.split('\n').filter(l => l.trim());
+    const condensed: string[] = [];
+    let sectionCount = 0;
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        // Keep headers/bold lines
+        if (trimmed.startsWith('**') || trimmed.startsWith('#') || trimmed.startsWith('🔴') || trimmed.startsWith('🟡') || trimmed.startsWith('🟢') || trimmed.startsWith('🔵') || trimmed.startsWith('📍')) {
+            condensed.push(trimmed);
+            sectionCount++;
+        }
+        // Keep bullet points but truncate long ones
+        else if (trimmed.startsWith('•') || trimmed.startsWith('-') || /^\*\*\d/.test(trimmed)) {
+            if (trimmed.length > 80) {
+                condensed.push(trimmed.slice(0, 77) + '…');
+            } else {
+                condensed.push(trimmed);
+            }
+        }
+        // Keep first line if it's the opening sentence
+        else if (sectionCount === 0 && condensed.length === 0) {
+            const firstSentence = trimmed.split(/\.\s/)[0];
+            condensed.push(firstSentence + (firstSentence.endsWith('.') ? '' : '.'));
+        }
+    }
+
+    return condensed.length > 0 ? condensed.join('\n') : text.split('\n').slice(0, 3).join('\n') + '\n\n_(Shortened)_';
+}
+
 
 export function askStapeLee(message: string, context: PageContext, memory?: SessionMemory): StapeLeeResponse {
     const q = message.toLowerCase().trim();
     const mem = memory ?? new SessionMemory();
 
+    // Bind page/case context every turn
+    mem.bindContext(context.section, context.caseId);
+
+    // ── Reply wrapper: records task + response into session memory ────
+    function reply(resp: StapeLeeResponse, task?: ActiveTask): StapeLeeResponse {
+        if (task) mem.recordTask(task);
+        mem.recordResponse(resp.text);
+        return resp;
+    }
+
+    // ── 0. Follow-up detection ──────────────────────────────────────────
+    // Intercept short continuations that only make sense in context of the
+    // previous turn. Must come before all pattern matchers.
+    const followUp = detectFollowUp(q, mem, context);
+    if (followUp) return reply(followUp, mem.activeTask);
+
     // ── 1. Greeting ─────────────────────────────────────────────────────
     if (/^(hi|hello|hey|good morning|good afternoon|good evening|yo|hiya)\b/.test(q)) {
         mem.recordIntent('greeting', 'greeting');
         const guide = pageGuides[context.section];
-        return {
+        return reply({
             text: `Hey! You're on **${context.pageName}**.${context.caseId ? ` Viewing case \`${context.caseId.slice(0, 8)}…\`` : ''}\n\nI know this dashboard inside out — I can explain what's here, guide you through tasks, answer questions about statuses and workflows, or help draft feedback for the dev team.`,
             type: 'answer',
             chips: pageChips(context),
-        };
+        });
     }
 
     // ── 2. "What is this page?" / "Where am I?" ────────────────────────
     if (/what.*(this page|page is this)|where am i|explain this page|what am i looking at|what.*(here|this)/.test(q)) {
         mem.recordIntent('page_explain', context.section);
-        return deepPageExplanation(context);
+        return reply(deepPageExplanation(context), 'page_explain');
     }
 
     // ── 3. "What can I do here?" ────────────────────────────────────────
     if (/what can i do|what actions|what.*(available|possible)|help me with this/.test(q) && !/submit|send|feedback/.test(q)) {
         mem.recordIntent('actions', context.section);
-        return contextualActions(context);
+        return reply(contextualActions(context), 'page_explain');
     }
 
     // ── 4. Status / risk / decision glossary ────────────────────────────
@@ -163,19 +343,19 @@ export function askStapeLee(message: string, context: PageContext, memory?: Sess
     // ── 6. Workflow guides ──────────────────────────────────────────────
     if (/how.*(submit|create|report|raise|make).*(case|incident)|submit a case/.test(q)) {
         mem.recordIntent('workflow', 'submitCase');
-        return workflowAnswer('submitCase', context);
+        return reply(workflowAnswer('submitCase', context), 'workflow');
     }
     if (/how.*(review|triage|assess).*(case|incident)|review a case|triage/.test(q)) {
         mem.recordIntent('workflow', 'reviewCase');
-        return workflowAnswer('reviewCase', context);
+        return reply(workflowAnswer('reviewCase', context), 'workflow');
     }
     if (/how.*(close|resolve|finish|complete).*(case|incident)|close a case/.test(q)) {
         mem.recordIntent('workflow', 'closeCase');
-        return workflowAnswer('closeCase', context);
+        return reply(workflowAnswer('closeCase', context), 'workflow');
     }
     if (/how.*(generate|create|run|make).*(report|inspection|pack)/.test(q)) {
         mem.recordIntent('workflow', 'generateReport');
-        return workflowAnswer('generateReport', context);
+        return reply(workflowAnswer('generateReport', context), 'workflow');
     }
 
     // ── 7. Case lifecycle ──────────────────────────────────────────────
@@ -184,19 +364,19 @@ export function askStapeLee(message: string, context: PageContext, memory?: Sess
         const currentStep = context.section === 'submit' ? 'You\'re at **Step 1** right now — submitting a case.' :
             context.section === 'cases/detail' ? 'You\'re viewing a case detail page — typically **Steps 3–6** happen here.' :
                 context.section === 'review-queue' ? 'The review queue is where **Step 3 (Admin Review)** happens.' : '';
-        return {
+        return reply({
             text: '**Case Lifecycle**\n\n' +
                 caseLifecycle.map(s => `**${s.step}.** ${s.title} — ${s.description}`).join('\n\n') +
                 (currentStep ? `\n\n📍 ${currentStep}` : ''),
             type: 'answer',
             chips: followUpChips('lifecycle', context),
-        };
+        }, 'lifecycle');
     }
 
     // ── 8. "What should I do next?" ────────────────────────────────────
     if (/what.*(should|do).*(next|now)|next step|what now|what.*(first|priority)/.test(q)) {
         mem.recordIntent('next_step', context.section);
-        return smartNextStep(context);
+        return reply(smartNextStep(context), 'next_step');
     }
 
     // ── 9. Product overview & value questions ──────────────────────────
@@ -212,84 +392,84 @@ export function askStapeLee(message: string, context: PageContext, memory?: Sess
     // ── 9b. Value proposition questions ─────────────────────────────────
     if (/oversight|operational value|why.*(dashboard|this)/.test(q)) {
         mem.recordIntent('value', 'oversight');
-        return valueAnswer('oversight', context);
+        return reply(valueAnswer('oversight', context), 'value');
     }
     if (/inspection|regulator|compliance|audit/.test(q) && !/pack|report|generate/.test(q)) {
         mem.recordIntent('value', 'inspection');
-        return valueAnswer('inspection', context);
+        return reply(valueAnswer('inspection', context), 'value');
     }
     if (/workflow value|how.*(help|work).*(team|staff|organisation)|why.*structure/.test(q)) {
         mem.recordIntent('value', 'workflow');
-        return valueAnswer('workflow', context);
+        return reply(valueAnswer('workflow', context), 'value');
     }
     if (/protect|resident|vulnerable|safe/.test(q) && !/second look/.test(q)) {
         mem.recordIntent('value', 'protection');
-        return valueAnswer('protection', context);
+        return reply(valueAnswer('protection', context), 'value');
     }
     if (/intelligence|ai|triage value|smart|pattern/.test(q) && !/triage report|explain.*triage/.test(q)) {
         mem.recordIntent('value', 'intelligence');
-        return valueAnswer('intelligence', context);
+        return reply(valueAnswer('intelligence', context), 'value');
     }
     if (/how.*connect|how.*pages.*work.*together|connection|flow between/.test(q)) {
         mem.recordIntent('value', 'connection');
-        return valueAnswer('connection', context);
+        return reply(valueAnswer('connection', context), 'value');
     }
     if (/another angle|different angle|show.*more/.test(q)) {
         // Show a value angle the user hasn't seen yet
         const unseen = Object.keys(valuePropositions).filter(k => !mem.topicsDiscussed.includes(k));
         const key = unseen.length > 0 ? unseen[0] : 'oversight';
         mem.recordIntent('value', key);
-        return valueAnswer(key, context);
+        return reply(valueAnswer(key, context), 'value');
     }
 
     // ── 10. Developer feedback ─────────────────────────────────────────
     if (/feedback|bug report|feature request|feature idea|suggestion|report.*(issue|problem|bug)|something.*(wrong|broken)|send.*(dev|developer|team)/.test(q)) {
         mem.recordIntent('feedback', 'start');
         mem.feedbackInProgress = true;
-        return {
+        return reply({
             text: `I can draft structured feedback for the dev team. I'll auto-fill the page you're on (**${context.pageName}**) and detect the type from your description.\n\nDescribe the issue, suggestion, or idea and I'll prepare a clear draft for you to review before sending.`,
             type: 'feedback_draft',
             action: 'start_feedback',
             chips: ['Bug Report', 'Feature Request', 'UX Feedback'],
-        };
+        }, 'feedback');
     }
 
     // ── 11. Tips for current page ──────────────────────────────────────
     if (/tip|advice|hint|best practice|pro tip|efficient|faster/.test(q)) {
         mem.recordIntent('tips', context.section);
-        return contextualTips(context);
+        return reply(contextualTips(context), 'tips');
     }
 
     // ── 12. Explain simply / ELI5 ──────────────────────────────────────
     if (/explain.*(simply|easy|basic|plain)|eli5|in simple terms|dumb it down/.test(q)) {
         mem.recordIntent('simple', context.section);
-        return simpleExplanation(context);
+        return reply(simpleExplanation(context), 'simple_explain');
     }
 
     // ── 13. "Look at first" / priority ─────────────────────────────────
     if (/what.*(look|check|focus|priorit)|most important|where.*(start|begin)/.test(q)) {
         mem.recordIntent('priority', context.section);
-        return whatToLookAt(context);
+        return reply(whatToLookAt(context), 'next_step');
     }
 
     // ── 14. Summarise case ─────────────────────────────────────────────
     if (/summarise|summary|sum up|key facts|brief/.test(q) && (context.section === 'cases/detail' || context.caseId)) {
         mem.recordIntent('summarise', 'case');
-        return {
+        return reply({
             text: `To summarise this case:\n\n**1.** Check the **Case Summary** card at the top — it has the key facts.\n**2.** The **AI Triage Report** gives the risk assessment and pattern analysis.\n**3.** Look at **Evidence** for any attachments.\n**4.** The **Audit Timeline** shows the full history.\n\nI can't read the case data directly, but these sections give you everything at a glance.`,
             type: 'answer',
             chips: ['What should I check first?', 'Explain the triage report', 'How do I close this case?'],
-        };
+        }, 'case_summary');
     }
 
     // ── 15. Triage report questions ────────────────────────────────────
     if (/triage report|ai report|ai triage|explain.*triage/.test(q)) {
         mem.recordIntent('triage_explain', 'triage');
-        return {
+        return reply({
             text: '**AI Triage Report**\n\nThe triage report is generated automatically when a case is submitted. It analyses the details you provided and assigns:\n\n• **Risk Level** — how urgent the concern is (Low → Critical)\n• **Category** — what type of concern (phone scam, email phishing, etc.)\n• **Pattern Notes** — any indicators the AI detected\n\nFor phone cases, it also runs **number intelligence** — checking the phone number against known databases.\n\nThe triage is a starting point — admins should always verify and adjust if needed.',
             type: 'answer',
             chips: ['What do risk levels mean?', 'How do I review a case?', 'Send feedback'],
-        };
+        }, 'triage_explain');
     }
 
     // ── 16. "How healthy" / organisation health ────────────────────────
@@ -385,21 +565,21 @@ export function askStapeLee(message: string, context: PageContext, memory?: Sess
     // ── 19g. Draft resident guidance ──────────────────────────────────
     if (/draft.*resident|resident.*guidance|guidance.*resident|write.*guidance|resident.*advice/.test(q)) {
         mem.recordIntent('resident_guidance', 'case');
-        return {
+        return reply({
             text: '**Drafting Resident Guidance**\n\nBased on the case details, here\'s a framework for resident-facing guidance:\n\n**1. Acknowledge** — Confirm you\'re aware of the concern and taking it seriously.\n**2. Advise** — Give clear, simple advice on what the resident should do next:\n  • Do not respond to the suspicious contact\n  • Do not share personal or financial information\n  • Report any further contact to staff immediately\n**3. Reassure** — Let them know the situation is being handled and their safety is the priority.\n**4. Document** — Record the guidance given in the case notes for the audit trail.\n\nAdapt the specifics based on the triage report and evidence for this case.',
             type: 'answer',
             chips: ['Summarise this case', 'What should I do next?', 'Send feedback'],
-        };
+        }, 'resident_guidance');
     }
 
     // ── 19h. Help prioritise ─────────────────────────────────────────
     if (/help.*prioriti|prioriti|how.*prioriti/.test(q)) {
         mem.recordIntent('prioritise', context.section);
-        return {
+        return reply({
             text: '**Prioritising Cases**\n\nUse this framework to decide what needs attention first:\n\n🔴 **Immediate** — Critical or High risk cases that are unreviewed\n🟡 **Soon** — Medium risk cases and cases waiting more than 24 hours\n🟢 **Routine** — Low risk cases and cases already in review\n\n**Queue health tip:** If your Awaiting Review count is above 5, focus on clearing the queue before other tasks. Response time is one of the key metrics inspectors look at.\n\nThe Review Queue auto-sorts by priority — working top to bottom is usually the best approach.',
             type: 'answer',
             chips: ['What should I review first?', 'Explain this page', 'Send feedback'],
-        };
+        }, 'prioritise');
     }
 
     // ── 19i. Awaiting review meaning ─────────────────────────────────
