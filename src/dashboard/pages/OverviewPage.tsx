@@ -1,9 +1,15 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     LayoutDashboard, AlertTriangle, ShieldCheck, Clock,
     TrendingUp, Loader2, Info, Bell, Users, Globe,
+    Eye, BarChart3,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { KpiRingChart } from '../components/KpiRingChart';
+import {
+    KPI_COLORS, DEFAULTS,
+    getStatusHigherBetter, getStatusLowerBetter,
+} from '../components/kpiDefaults';
 
 /* â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
@@ -99,6 +105,16 @@ export function OverviewPage() {
     const [noOrg, setNoOrg] = useState(false);
     const [orgName, setOrgName] = useState<string>('');
     const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+    // ── View mode toggle (Standard / Visual) ─────────────────────────────
+    const [viewMode, setViewMode] = useState<'standard' | 'visual'>(() => {
+        try { return (localStorage.getItem('slp_overview_mode') as any) || 'standard'; }
+        catch { return 'standard'; }
+    });
+    const toggleMode = (m: 'standard' | 'visual') => {
+        setViewMode(m);
+        try { localStorage.setItem('slp_overview_mode', m); } catch {}
+    };
 
     // Canonical source of truth: CASES
     const [casesMonth, setCasesMonth] = useState<CaseRow[]>([]);
@@ -304,7 +320,65 @@ export function OverviewPage() {
         return { awaitingReview, highRiskQueue, recentCases };
     }, [casesAll]);
 
-    /* â”€â”€ Calm insight â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Extended KPI metrics (for Visual mode rings) ──────────────────── */
+    const kpi = useMemo(() => {
+        const total = casesMonth.length;
+        const closed = casesMonth.filter(c => c.status?.toLowerCase() === 'closed');
+        const now = Date.now();
+
+        // 1. Closure within target: % of closed cases where (closed_at - submitted_at) <= target days
+        // We approximate closed_at ≈ now for recently-closed cases since we don't have closed_at column
+        const closedWithin = closed.filter(c => {
+            const age = (now - new Date(c.submitted_at).getTime()) / 86_400_000;
+            return age <= DEFAULTS.closureWithinTargetDays;
+        }).length;
+        const closurePct = closed.length > 0 ? Math.round((closedWithin / closed.length) * 100) : 100;
+        const closureStatus = getStatusHigherBetter(closurePct, 80, 50);
+
+        // 2. Triage within target: % of cases that moved past 'new' within target hours
+        const notNew = casesMonth.filter(c => c.status?.toLowerCase() !== 'new');
+        const triagedFast = notNew.filter(c => {
+            const age = (now - new Date(c.submitted_at).getTime()) / 3_600_000;
+            return age <= DEFAULTS.triageWithinTargetHours || c.status?.toLowerCase() !== 'new';
+        }).length;
+        const triagePct = total > 0 ? Math.round((triagedFast / total) * 100) : 100;
+        const triageStatus = getStatusHigherBetter(triagePct, 80, 50);
+
+        // 3. Documentation completeness: % of all cases with a decision set
+        const withDecision = casesMonth.filter(c => (c.decision ?? '').trim() !== '').length;
+        const docPct = total > 0 ? Math.round((withDecision / total) * 100) : 100;
+        const docStatus = getStatusHigherBetter(docPct, DEFAULTS.docCompletenessGreen, DEFAULTS.docCompletenessAmber);
+
+        // 4. Scam proportion (informational, not target-based)
+        const decided = casesMonth.filter(c => (c.decision ?? '').trim() !== '');
+        const scamCount = decided.filter(c => c.decision?.toLowerCase() === 'scam').length;
+        const scamPct = decided.length > 0 ? Math.round((scamCount / decided.length) * 100) : 0;
+
+        // 5. Review queue health
+        const AWAITING = ['new', 'submitted', 'in_review'];
+        const queueDepth = casesAll.filter(c => c.status && AWAITING.includes(c.status.toLowerCase()) && c.status.toLowerCase() !== 'closed').length;
+        const queueStatus = getStatusLowerBetter(queueDepth, DEFAULTS.reviewQueueGreen, DEFAULTS.reviewQueueAmber);
+        const queuePct = queueDepth <= DEFAULTS.reviewQueueGreen ? 100
+            : queueDepth <= DEFAULTS.reviewQueueAmber ? Math.round(((DEFAULTS.reviewQueueAmber - queueDepth) / (DEFAULTS.reviewQueueAmber - DEFAULTS.reviewQueueGreen)) * 50 + 50)
+            : Math.max(10, Math.round(30 - queueDepth));
+
+        // 6. Overall health (weighted average)
+        const weights = [0.25, 0.2, 0.2, 0.15, 0.2];
+        const scores = [closurePct, triagePct, docPct, 100 - scamPct, queuePct];
+        const overallPct = Math.round(scores.reduce((s, v, i) => s + v * weights[i], 0));
+        const overallStatus = getStatusHigherBetter(overallPct, 75, 50);
+
+        return {
+            closurePct, closureStatus,
+            triagePct, triageStatus,
+            docPct, docStatus,
+            scamPct,
+            queueDepth, queueStatus, queuePct,
+            overallPct, overallStatus,
+        };
+    }, [casesMonth, casesAll]);
+
+    /* ── Calm insight ────────────────────────────────────────────────── */
     const insight = useMemo(() => {
         if (casesMonth.length === 0) return null;
 
@@ -533,16 +607,52 @@ export function OverviewPage() {
     return (
         <div>
             {/* Header */}
-            <div className="dashboard-page-header">
-                {orgName && (
-                    <p style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 500, letterSpacing: '0.02em', marginBottom: '0.15rem' }}>
-                        {orgName}
+            <div className="dashboard-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div>
+                    {orgName && (
+                        <p style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 500, letterSpacing: '0.02em', marginBottom: '0.15rem' }}>
+                            {orgName}
+                        </p>
+                    )}
+                    <h1 className="dashboard-page-title">Safeguarding Overview</h1>
+                    <p className="dashboard-page-subtitle">
+                        Your organisation&apos;s activity this month at a glance.
                     </p>
-                )}
-                <h1 className="dashboard-page-title">Safeguarding Overview</h1>
-                <p className="dashboard-page-subtitle">
-                    Your organisation&apos;s activity this month at a glance.
-                </p>
+                </div>
+                {/* ── Mode toggle ────────────────────────────────────── */}
+                <div style={{
+                    display: 'flex',
+                    background: '#f1f5f9',
+                    borderRadius: '8px',
+                    padding: '3px',
+                    gap: '2px',
+                    alignSelf: 'center',
+                }}>
+                    {([['standard', Eye, 'Standard'], ['visual', BarChart3, 'Visual']] as const).map(([mode, Icon, label]) => (
+                        <button
+                            key={mode}
+                            onClick={() => toggleMode(mode)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                padding: '5px 12px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                                background: viewMode === mode ? '#ffffff' : 'transparent',
+                                color: viewMode === mode ? '#1e293b' : '#94a3b8',
+                                boxShadow: viewMode === mode ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                            }}
+                        >
+                            <Icon size={14} />
+                            {label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* â”€â”€ System Status Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
@@ -599,70 +709,132 @@ export function OverviewPage() {
                 )}
             </div>
 
-            {/* â”€â”€ KPI Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            <div className="dashboard-overview-cards">
-                {/* Total Cases */}
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-card-accent accent-blue" />
-                    <div className="dashboard-stat-card-body">
-                        <div className="dashboard-stat-icon blue"><LayoutDashboard size={20} /></div>
-                        <div className="dashboard-stat-value">{metrics.total}</div>
-                        <div className="dashboard-stat-label">Total Cases</div>
-                        <div className="dashboard-stat-period">This month</div>
+            {/* ── KPI Section (mode-dependent) ──────────────────────────── */}
+            {viewMode === 'visual' ? (
+                /* ── Visual Mode: Ring KPI Cards ───────────────────────── */
+                <div style={{
+                    background: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '1.25rem 1.5rem',
+                    marginBottom: '1rem',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <BarChart3 size={16} style={{ color: '#64748b' }} />
+                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>Performance Health</span>
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', marginLeft: 'auto' }}>This month vs default targets</span>
+                    </div>
+                    <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        justifyContent: 'center',
+                        gap: '1.5rem',
+                    }}>
+                        <KpiRingChart
+                            percent={kpi.overallPct}
+                            status={kpi.overallStatus}
+                            label={`${kpi.overallPct}%`}
+                            sublabel="Overall Health"
+                            size={110}
+                        />
+                        <KpiRingChart
+                            percent={kpi.closurePct}
+                            status={kpi.closureStatus}
+                            label={`${kpi.closurePct}%`}
+                            sublabel="Closure on Target"
+                        />
+                        <KpiRingChart
+                            percent={kpi.triagePct}
+                            status={kpi.triageStatus}
+                            label={`${kpi.triagePct}%`}
+                            sublabel="Triage on Target"
+                        />
+                        <KpiRingChart
+                            percent={kpi.docPct}
+                            status={kpi.docStatus}
+                            label={`${kpi.docPct}%`}
+                            sublabel="Documentation"
+                        />
+                        <KpiRingChart
+                            percent={100 - kpi.scamPct}
+                            status={kpi.scamPct > 50 ? 'red' : kpi.scamPct > 25 ? 'amber' : 'green'}
+                            label={`${kpi.scamPct}%`}
+                            sublabel="Scam Rate"
+                        />
+                        <KpiRingChart
+                            percent={kpi.queuePct}
+                            status={kpi.queueStatus}
+                            label={`${kpi.queueDepth}`}
+                            sublabel="Review Queue"
+                        />
                     </div>
                 </div>
-
-                {/* High Risk */}
-                <div className="dashboard-stat-card" style={{ borderLeft: metrics.highRisk > 0 ? '3px solid #dc2626' : undefined }}>
-                    <div className="dashboard-stat-card-accent accent-red" />
-                    <div className="dashboard-stat-card-body">
-                        <div className="dashboard-stat-icon red"><AlertTriangle size={20} /></div>
-                        <div className="dashboard-stat-value" style={{ color: metrics.highRisk > 0 ? '#dc2626' : undefined }}>{metrics.highRisk}</div>
-                        <div className="dashboard-stat-label">High Risk</div>
-                        <div className="dashboard-stat-period" style={{ color: metrics.highRisk > 0 ? '#dc2626' : undefined }}>
-                            {metrics.highRisk === 0 ? 'None this month' : metrics.highRisk === 1 ? 'Requires attention' : `${metrics.highRisk} require attention`}
+            ) : (
+                /* ── Standard Mode: Original stat cards (unchanged) ──── */
+                <div className="dashboard-overview-cards">
+                    {/* Total Cases */}
+                    <div className="dashboard-stat-card">
+                        <div className="dashboard-stat-card-accent accent-blue" />
+                        <div className="dashboard-stat-card-body">
+                            <div className="dashboard-stat-icon blue"><LayoutDashboard size={20} /></div>
+                            <div className="dashboard-stat-value">{metrics.total}</div>
+                            <div className="dashboard-stat-label">Total Cases</div>
+                            <div className="dashboard-stat-period">This month</div>
                         </div>
                     </div>
-                </div>
 
-                {/* Scam vs Not Scam â€” with mini stacked bar */}
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-card-accent accent-gold" />
-                    <div className="dashboard-stat-card-body">
-                        <div className="dashboard-stat-icon gold"><ShieldCheck size={20} /></div>
-                        <div className="dashboard-stat-value">
-                            {metrics.decisionTotal > 0
-                                ? `${metrics.scamPct}% / ${metrics.legitPct}%`
-                                : 'â€”'}
-                        </div>
-                        <div className="dashboard-stat-label">Scam vs Not Scam</div>
-                        {metrics.decisionTotal > 0 && (
-                            <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', marginTop: '4px', background: '#e2e8f0' }}>
-                                <div style={{ width: `${metrics.scamPct}%`, background: '#dc2626', transition: 'width 0.5s ease' }} />
-                                <div style={{ width: `${metrics.legitPct}%`, background: '#10b981', transition: 'width 0.5s ease' }} />
+                    {/* High Risk */}
+                    <div className="dashboard-stat-card" style={{ borderLeft: metrics.highRisk > 0 ? '3px solid #dc2626' : undefined }}>
+                        <div className="dashboard-stat-card-accent accent-red" />
+                        <div className="dashboard-stat-card-body">
+                            <div className="dashboard-stat-icon red"><AlertTriangle size={20} /></div>
+                            <div className="dashboard-stat-value" style={{ color: metrics.highRisk > 0 ? '#dc2626' : undefined }}>{metrics.highRisk}</div>
+                            <div className="dashboard-stat-label">High Risk</div>
+                            <div className="dashboard-stat-period" style={{ color: metrics.highRisk > 0 ? '#dc2626' : undefined }}>
+                                {metrics.highRisk === 0 ? 'None this month' : metrics.highRisk === 1 ? 'Requires attention' : `${metrics.highRisk} require attention`}
                             </div>
-                        )}
-                        <div className="dashboard-stat-period" style={{ marginTop: '2px' }}>
-                            {metrics.decisionTotal > 0
-                                ? `${metrics.decisionTotal} decided`
-                                : 'No decisions yet'}
                         </div>
                     </div>
-                </div>
 
-                {/* Awaiting Review */}
-                <div className="dashboard-stat-card" style={{ borderLeft: metrics.awaiting > 3 ? '3px solid #f59e0b' : undefined }}>
-                    <div className="dashboard-stat-card-accent accent-amber" />
-                    <div className="dashboard-stat-card-body">
-                        <div className="dashboard-stat-icon amber"><Clock size={20} /></div>
-                        <div className="dashboard-stat-value">{metrics.awaiting}</div>
-                        <div className="dashboard-stat-label">Awaiting Review</div>
-                        <div className="dashboard-stat-period" style={{ color: metrics.awaiting > 3 ? '#92400e' : undefined }}>
-                            {metrics.awaiting === 0 ? 'Queue clear' : metrics.awaiting <= 3 ? 'On track' : 'Building up'}
+                    {/* Scam vs Not Scam */}
+                    <div className="dashboard-stat-card">
+                        <div className="dashboard-stat-card-accent accent-gold" />
+                        <div className="dashboard-stat-card-body">
+                            <div className="dashboard-stat-icon gold"><ShieldCheck size={20} /></div>
+                            <div className="dashboard-stat-value">
+                                {metrics.decisionTotal > 0
+                                    ? `${metrics.scamPct}% / ${metrics.legitPct}%`
+                                    : '–'}
+                            </div>
+                            <div className="dashboard-stat-label">Scam vs Not Scam</div>
+                            {metrics.decisionTotal > 0 && (
+                                <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', marginTop: '4px', background: '#e2e8f0' }}>
+                                    <div style={{ width: `${metrics.scamPct}%`, background: '#dc2626', transition: 'width 0.5s ease' }} />
+                                    <div style={{ width: `${metrics.legitPct}%`, background: '#10b981', transition: 'width 0.5s ease' }} />
+                                </div>
+                            )}
+                            <div className="dashboard-stat-period" style={{ marginTop: '2px' }}>
+                                {metrics.decisionTotal > 0
+                                    ? `${metrics.decisionTotal} decided`
+                                    : 'No decisions yet'}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Awaiting Review */}
+                    <div className="dashboard-stat-card" style={{ borderLeft: metrics.awaiting > 3 ? '3px solid #f59e0b' : undefined }}>
+                        <div className="dashboard-stat-card-accent accent-amber" />
+                        <div className="dashboard-stat-card-body">
+                            <div className="dashboard-stat-icon amber"><Clock size={20} /></div>
+                            <div className="dashboard-stat-value">{metrics.awaiting}</div>
+                            <div className="dashboard-stat-label">Awaiting Review</div>
+                            <div className="dashboard-stat-period" style={{ color: metrics.awaiting > 3 ? '#92400e' : undefined }}>
+                                {metrics.awaiting === 0 ? 'Queue clear' : metrics.awaiting <= 3 ? 'On track' : 'Building up'}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* â”€â”€ Insight Box â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             {insight && (
