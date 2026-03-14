@@ -276,17 +276,16 @@ export function StapeLeeChat({ currentPath }: Props) {
     const sessionMemory = useRef(new SessionMemory());
     const latestMsgRef = useRef<HTMLDivElement>(null);
     const userScrolledUp = useRef(false);
+    const anchoredMsgId = useRef<string>('');
 
     /* ── Panel width (resizable, persisted) ──────────────────────────── */
     const [panelWidth, setPanelWidth] = useState(() => {
         try {
             const stored = localStorage.getItem(STORAGE_KEY);
             const w = stored ? parseInt(stored, 10) : DEFAULT_PANEL_WIDTH;
-            return (w >= MIN_PANEL_WIDTH && w <= MAX_PANEL_WIDTH) ? w : DEFAULT_PANEL_WIDTH;
+            return Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, w));
         } catch { return DEFAULT_PANEL_WIDTH; }
     });
-    const isDragging = useRef(false);
-
     const ctx = usePageContext(currentPath);
 
     /* ── Persist panel width ─────────────────────────────────────────── */
@@ -294,16 +293,27 @@ export function StapeLeeChat({ currentPath }: Props) {
         try { localStorage.setItem(STORAGE_KEY, String(panelWidth)); } catch { /* noop */ }
     }, [panelWidth]);
 
-    /* ── Smart auto-scroll: bring start of new message into view ────── */
+    /* ── Anchor-once scroll: pin to top of new reply bubble ──────────── */
     useEffect(() => {
         if (userScrolledUp.current) return;
-        // Scroll the latest assistant message's top into view, not the bottom
-        if (latestMsgRef.current) {
-            requestAnimationFrame(() => {
-                latestMsgRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-            });
-        } else if (scrollRef.current) {
-            // Fallback for typing indicator / user messages
+
+        // Find the latest streaming assistant message
+        const streamingMsg = [...messages].reverse().find(m => m.role === 'assistant' && m.streaming);
+
+        if (streamingMsg) {
+            // Only anchor ONCE when this streaming message first appears
+            if (anchoredMsgId.current !== streamingMsg.id) {
+                anchoredMsgId.current = streamingMsg.id;
+                requestAnimationFrame(() => {
+                    latestMsgRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                });
+            }
+            // While streaming, do NOT scroll — let the bubble grow downward
+            return;
+        }
+
+        // For non-streaming updates (user messages, typing indicator), scroll to bottom
+        if (scrollRef.current) {
             requestAnimationFrame(() => {
                 if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
             });
