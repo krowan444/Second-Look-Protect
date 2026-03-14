@@ -120,12 +120,13 @@ function ProgressiveText({ text, onComplete }: { text: string; onComplete: () =>
     useEffect(() => {
         setChars(0);
         const total = text.length;
-        const baseSpeed = 12;
+        const baseSpeed = 18; // calmer pace
         let frame: number;
         let current = 0;
 
         const tick = () => {
-            const chunkSize = current > 120 ? 4 : current > 80 ? 3 : current > 40 ? 2 : 1;
+            // Gentle acceleration: 1 char → 2 chars after 100 → 3 after 200
+            const chunkSize = current > 200 ? 3 : current > 100 ? 2 : 1;
             current = Math.min(current + chunkSize, total);
             setChars(current);
             if (current < total) {
@@ -135,7 +136,8 @@ function ProgressiveText({ text, onComplete }: { text: string; onComplete: () =>
             }
         };
 
-        frame = window.setTimeout(tick, 60);
+        // Slightly longer pause before text starts — lets the eye settle
+        frame = window.setTimeout(tick, 150);
         return () => clearTimeout(frame);
     }, [text]);
 
@@ -272,6 +274,8 @@ export function StapeLeeChat({ currentPath }: Props) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const sessionMemory = useRef(new SessionMemory());
+    const latestMsgRef = useRef<HTMLDivElement>(null);
+    const userScrolledUp = useRef(false);
 
     /* ── Panel width (resizable, persisted) ──────────────────────────── */
     const [panelWidth, setPanelWidth] = useState(() => {
@@ -290,14 +294,33 @@ export function StapeLeeChat({ currentPath }: Props) {
         try { localStorage.setItem(STORAGE_KEY, String(panelWidth)); } catch { /* noop */ }
     }, [panelWidth]);
 
-    /* ── Auto-scroll on new message / streaming ──────────────────────── */
+    /* ── Smart auto-scroll: bring start of new message into view ────── */
     useEffect(() => {
-        if (scrollRef.current) {
+        if (userScrolledUp.current) return;
+        // Scroll the latest assistant message's top into view, not the bottom
+        if (latestMsgRef.current) {
+            requestAnimationFrame(() => {
+                latestMsgRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            });
+        } else if (scrollRef.current) {
+            // Fallback for typing indicator / user messages
             requestAnimationFrame(() => {
                 if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
             });
         }
     }, [messages, isThinking]);
+
+    /* ── Detect user scroll-away to stop auto-scroll ──────────────── */
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const handleScroll = () => {
+            const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+            userScrolledUp.current = !atBottom;
+        };
+        el.addEventListener('scroll', handleScroll, { passive: true });
+        return () => el.removeEventListener('scroll', handleScroll);
+    }, [open]);
 
     /* ── Focus input when opened ─────────────────────────────────────── */
     useEffect(() => {
@@ -378,6 +401,8 @@ export function StapeLeeChat({ currentPath }: Props) {
     /* ── Handle chip click ───────────────────────────────────────────── */
     const handleChipClick = useCallback((chip: string) => {
         if (isThinking) return;
+        // Resume auto-scroll when user clicks a chip
+        userScrolledUp.current = false;
         // Add as user message then process
         setMessages(prev => [...prev, {
             id: `u-${Date.now()}`,
@@ -407,6 +432,9 @@ export function StapeLeeChat({ currentPath }: Props) {
     const handleSend = useCallback(() => {
         const text = input.trim();
         if (!text || isThinking) return;
+
+        // Resume auto-scroll when user sends a new message
+        userScrolledUp.current = false;
 
         setMessages(prev => [...prev, {
             id: `u-${Date.now()}`,
@@ -732,8 +760,12 @@ export function StapeLeeChat({ currentPath }: Props) {
                             background: '#f8fafc',
                         }}
                     >
-                        {messages.map(msg => (
-                            <div key={msg.id} style={{
+                        {messages.map((msg, idx) => {
+                            // Attach ref to the last streaming assistant message so scroll goes to its top
+                            const isLatestStreaming = msg.role === 'assistant' && msg.streaming &&
+                                !messages.slice(idx + 1).some(m => m.role === 'assistant' && m.streaming);
+                            return (
+                            <div key={msg.id} ref={isLatestStreaming ? latestMsgRef : undefined} style={{
                                 alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                                 maxWidth: '88%',
                                 display: 'flex',
@@ -801,7 +833,8 @@ export function StapeLeeChat({ currentPath }: Props) {
                                     />
                                 )}
                             </div>
-                        ))}
+                            );
+                        })}
 
                         {isThinking && <TypingDots />}
 
