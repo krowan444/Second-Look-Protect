@@ -252,6 +252,94 @@ function condenseResponse(text: string): string {
 }
 
 
+/* ── Cross-page topic detection ──────────────────────────────────────────── */
+
+interface TopicMatch {
+    section: string;           // key into pageGuides
+    label: string;             // human-friendly name
+}
+
+const TOPIC_PATTERNS: [RegExp, TopicMatch][] = [
+    // Overview
+    [/\b(overview|safeguarding overview|overview page|dashboard overview|main dashboard|health overview)\b/,
+     { section: 'overview', label: 'Safeguarding Overview' }],
+    // Submit
+    [/\b(submit|submit.*case|submit.*page|submission page|report.*concern|raise.*case|make.*case)\b/,
+     { section: 'submit', label: 'Submit a Case' }],
+    // Cases list
+    [/\b(cases list|cases page|all cases|case list|browse cases|case table)\b/,
+     { section: 'cases', label: 'Cases' }],
+    // Case detail
+    [/\b(case detail|case view|single case|case page|detail page|case breakdown|full case)\b/,
+     { section: 'cases/detail', label: 'Case Detail' }],
+    // My Cases
+    [/\b(my cases|my submissions)\b/,
+     { section: 'my-cases', label: 'My Cases' }],
+    // Review Queue
+    [/\b(review queue|review.*queue|queue|needs review|admin queue|triage queue)\b/,
+     { section: 'review-queue', label: 'Review Queue' }],
+    // Reports
+    [/\b(reports?|monthly report|inspection pack|safeguarding report|compliance report|generate.*report|report page)\b/,
+     { section: 'reports', label: 'Reports' }],
+    // Settings
+    [/\b(settings|notification settings|preferences|email settings|notification preferences|settings page)\b/,
+     { section: 'settings', label: 'Settings' }],
+    // Inspection mode
+    [/\b(inspection mode|inspector view|regulator view)\b/,
+     { section: 'inspection', label: 'Inspection Mode' }],
+    // Org users
+    [/\b(users|team members|org users|manage users|user management|staff list)\b/,
+     { section: 'org-users', label: 'Organisation Users' }],
+    // Group Dashboard
+    [/\b(group dashboard|multi.*org|super admin|global view|all organi[sz]ations)\b/,
+     { section: 'group-dashboard', label: 'Group Dashboard' }],
+];
+
+/**
+ * Detect whether the user is asking about a different area of the dashboard.
+ * Returns the matched section key if the topic differs from the current page,
+ * or null if the question is about the current page / no specific topic detected.
+ */
+function detectCrossPageTopic(q: string, currentSection: string): TopicMatch | null {
+    for (const [pattern, match] of TOPIC_PATTERNS) {
+        if (pattern.test(q) && match.section !== currentSection) {
+            return match;
+        }
+    }
+    return null;
+}
+
+/**
+ * Build a rich cross-page answer using the knowledge base for the target section.
+ */
+function crossPageAnswer(target: TopicMatch, currentPageName: string, ctx: PageContext): StapeLeeResponse {
+    const guide = pageGuides[target.section];
+    if (!guide) {
+        return {
+            text: `I know about **${target.label}**, but I don't have a detailed guide for it yet. Ask me anything else!`,
+            type: 'answer',
+            chips: pageChips(ctx).slice(0, 3),
+        };
+    }
+
+    const contextNote = `You're currently on **${currentPageName}**, but here's how **${guide.name}** works:\n\n`;
+    const actions = guide.actions.length > 0
+        ? `\n\n**What you can do there:**\n${guide.actions.map(a => `• ${a}`).join('\n')}`
+        : '';
+    const tips = guide.tips.length > 0
+        ? `\n\n**Tips:**\n${guide.tips.map(t => `• ${t}`).join('\n')}`
+        : '';
+
+    return {
+        text: `${contextNote}${guide.description}\n\n**Why it matters:** ${guide.value}${actions}${tips}`,
+        type: 'answer',
+        chips: [
+            ...guide.chips.slice(0, 2),
+            'Send feedback',
+        ],
+    };
+}
+
 export function askStapeLee(message: string, context: PageContext, memory?: SessionMemory): StapeLeeResponse {
     const q = message.toLowerCase().trim();
     const mem = memory ?? new SessionMemory();
@@ -271,6 +359,22 @@ export function askStapeLee(message: string, context: PageContext, memory?: Sess
     // previous turn. Must come before all pattern matchers.
     const followUp = detectFollowUp(q, mem, context);
     if (followUp) return reply(followUp, mem.activeTask);
+
+    // ── 0b. Cross-page topic detection ──────────────────────────────────
+    // If the user is explicitly asking about a different area of the dashboard,
+    // answer that topic directly instead of falling back to the current page.
+    // Only activate for questions that feel like "tell me about X" / "what is X" /
+    // "how does X work" — not for short keywords that happen to match.
+    if (
+        /tell me about|what is|how does|explain|how do i|what.*(page|section)|show me|describe/.test(q) ||
+        q.length > 12  // longer questions are more likely to be intentional topic queries
+    ) {
+        const crossTopic = detectCrossPageTopic(q, context.section);
+        if (crossTopic) {
+            mem.recordIntent('cross_page', crossTopic.section);
+            return reply(crossPageAnswer(crossTopic, context.pageName, context), 'page_explain');
+        }
+    }
 
     // ── 1. Greeting ─────────────────────────────────────────────────────
     if (/^(hi|hello|hey|good morning|good afternoon|good evening|yo|hiya)\b/.test(q)) {
@@ -523,7 +627,7 @@ export function askStapeLee(message: string, context: PageContext, memory?: Sess
     }
 
     // ── 19c. System status ────────────────────────────────────────────
-    if (/system status|explain.*status.*system|explain system/.test(q) && context.section === 'overview') {
+    if (/system status|explain.*status.*system|explain system/.test(q)) {
         mem.recordIntent('system_status', 'overview');
         return {
             text: '**System Status**\n\nThe Overview page shows your organisation\'s safeguarding system health through several indicators:\n\n**KPI Cards** — Current month numbers for cases, risk levels, and queue depth.\n**Executive Alerts** — Auto-generated warnings when things need attention.\n**Residents Needing Attention** — Individuals with repeat incidents.\n**Cases Awaiting Review** — Your active workload.\n\nIf all indicators are green, your system is running healthily. Amber or red signals mean specific areas need action.',
@@ -543,7 +647,7 @@ export function askStapeLee(message: string, context: PageContext, memory?: Sess
     }
 
     // ── 19e. Explain filters ──────────────────────────────────────────
-    if (/explain.*filter|filter|how.*filter/.test(q) && (context.section === 'cases' || context.section === 'review-queue')) {
+    if (/explain.*filter|filter|how.*filter/.test(q)) {
         mem.recordIntent('filters', context.section);
         return {
             text: '**Case Filters**\n\nFilters help you narrow the case list to find what you need:\n\n• **Status** — Show only New, In Review, or Closed cases\n• **Risk Level** — Filter by Low, Medium, High, or Critical\n• **Category** — Filter by case type (phone scam, email, URL, etc.)\n\nFilters combine together — for example, you can show only High Risk + In Review cases.\n\nTip: Start with "Needs Review" to see your immediate workload.',
@@ -866,19 +970,31 @@ function simpleExplanation(ctx: PageContext): StapeLeeResponse {
 /* ── Contextual fallback ─────────────────────────────────────────────────── */
 
 function contextualFallback(ctx: PageContext, mem: SessionMemory): StapeLeeResponse {
+    // Last-resort cross-page attempt — maybe the user mentioned a topic loosely
+    const looseMatch = detectCrossPageTopic(mem.lastIntent || '', ctx.section);
+    if (looseMatch) {
+        return crossPageAnswer(looseMatch, ctx.pageName, ctx);
+    }
+
     const guide = pageGuides[ctx.section];
     const pageHint = guide
         ? `You're on **${guide.name}** — ${guide.description.split('.')[0]}.`
         : `You're on **${ctx.pageName}**.`;
 
-    // If user has asked several questions, be more helpful
+    // If user has asked several questions, expand the help offer
     const extraContext = mem.questionsAsked > 2
         ? `\n\nWe've covered a few topics this session. Would you like a specific workflow guide, or would you like to send feedback about something?`
         : '';
 
     return {
-        text: `I'm not quite sure what you mean. ${pageHint}${extraContext}`,
+        text: `I'm not entirely sure what you're asking. ${pageHint}\n\nI can help with any part of the dashboard — **Overview**, **Cases**, **Reports**, **Review Queue**, **Settings**, workflows, statuses, and more. Just ask!${extraContext}`,
         type: 'unknown',
-        chips: pageChips(ctx),
+        chips: [
+            'Explain Overview',
+            'Tell me about Reports',
+            'How does the Review Queue work?',
+            ...pageChips(ctx).slice(0, 2),
+            'Send feedback',
+        ],
     };
 }
