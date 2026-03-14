@@ -326,6 +326,10 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
     const [aiHumanNotes, setAiHumanNotes] = useState('');
     const [aiMsg, setAiMsg] = useState<string | null>(null);
 
+
+    // Rerun AI Triage state
+    const [aiRerunning, setAiRerunning] = useState(false);
+    const [aiRerunMsg, setAiRerunMsg] = useState<string | null>(null);
     // Number Intelligence state
     const [numberIntelLoading, setNumberIntelLoading] = useState(false);
     const [numberIntelMsg, setNumberIntelMsg] = useState<string | null>(null);
@@ -956,6 +960,44 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
             setAiMsg(`Error: ${err?.message ?? 'Failed to accept AI triage'}`);
         } finally {
             setAiAccepting(false);
+        }
+    }
+
+    /* -- Rerun AI Triage (admin / super_admin only, server-side rate limited) -- */
+    async function handleRerunAiTriage() {
+        if (!caseData) return;
+        const isAdmin = userRole === 'org_admin' || userRole === 'super_admin';
+        if (!isAdmin) { setAiRerunMsg('Permission denied.'); return; }
+        setAiRerunning(true);
+        setAiRerunMsg(null);
+        try {
+            const supabase = getSupabase();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) throw new Error('Not authenticated');
+            const res = await fetch('/api/ai-triage-rerun', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    case_id: caseData.id,
+                    organisation_id: caseData.organisation_id,
+                    user_token: session.access_token,
+                }),
+            });
+            const data = await res.json();
+            if (res.status === 429) {
+                setAiRerunMsg(data.error ?? 'Rate limited. Please wait before retrying.');
+                return;
+            }
+            if (!res.ok) {
+                setAiRerunMsg(data.error ?? 'Rerun failed. Please try again.');
+                return;
+            }
+            setAiRerunMsg('AI triage is regenerating — refreshing in a moment...');
+            setTimeout(() => { fetchData(); setAiRerunMsg(null); }, 3000);
+        } catch (err: any) {
+            setAiRerunMsg(err?.message ?? 'Rerun failed. Please try again.');
+        } finally {
+            setAiRerunning(false);
         }
     }
 
@@ -1738,6 +1780,41 @@ export function CaseDetailPage({ caseId, onNavigate, userRole }: CaseDetailPageP
                             <AlertTriangle size={13} />
                             AI suggestions are advisory only and require human review.
                         </div>
+
+                        {/* Rerun AI Triage -- admin and super_admin only */}
+                        {(userRole === 'org_admin' || userRole === 'super_admin') && (
+                            <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                <button
+                                    type="button"
+                                    onClick={handleRerunAiTriage}
+                                    disabled={aiRerunning}
+                                    style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        padding: '6px 12px',
+                                        fontSize: '0.78rem',
+                                        fontWeight: 600,
+                                        background: aiRerunning ? '#e2e8f0' : '#f1f5f9',
+                                        color: aiRerunning ? '#94a3b8' : '#374151',
+                                        border: '1px solid #cbd5e1',
+                                        borderRadius: '7px',
+                                        cursor: aiRerunning ? 'default' : 'pointer',
+                                        transition: 'all 0.15s',
+                                    }}
+                                >
+                                    {aiRerunning
+                                        ? <><Bot size={13} style={{ animation: 'spin 1s linear infinite' }} /> Regenerating…</>
+                                        : <><Bot size={13} /> Rerun AI Triage</>
+                                    }
+                                </button>
+                                {aiRerunMsg && (
+                                    <span style={{ fontSize: '0.76rem', color: aiRerunMsg.startsWith('AI triage is regen') ? '#16a34a' : '#dc2626', lineHeight: 1.4 }}>
+                                        {aiRerunMsg}
+                                    </span>
+                                )}
+                            </div>
+                        )}
 
                         {aiTriageLoading && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.82rem', padding: '0.5rem 0' }}>
