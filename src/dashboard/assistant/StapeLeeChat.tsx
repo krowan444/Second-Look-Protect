@@ -439,6 +439,43 @@ export function StapeLeeChat({ currentPath }: Props) {
                     animation: 'stapeleeSlideIn 0.25s ease-out',
                 }}>
 
+                    {/* ── Collapse tab (outside left edge of open panel) ─── */}
+                    <button
+                        onClick={() => setOpen(false)}
+                        aria-label="Collapse Stape-Lee"
+                        style={{
+                            position: 'absolute',
+                            left: '-22px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            zIndex: 11,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '22px',
+                            padding: '0.5rem 0',
+                            background: 'linear-gradient(180deg, #1e293b 0%, #334155 100%)',
+                            color: '#f1f5f9',
+                            border: 'none',
+                            borderRadius: '8px 0 0 8px',
+                            cursor: 'pointer',
+                            transition: 'width 0.15s ease, opacity 0.15s',
+                            opacity: 0.85,
+                        }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.width = '28px';
+                            e.currentTarget.style.left = '-28px';
+                            e.currentTarget.style.opacity = '1';
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.width = '22px';
+                            e.currentTarget.style.left = '-22px';
+                            e.currentTarget.style.opacity = '0.85';
+                        }}
+                    >
+                        <StaplerIcon size={14} />
+                    </button>
+
                     {/* ── Resize handle (left edge) ──────────────────────── */}
                     <div
                         onMouseDown={startResize}
