@@ -6,6 +6,8 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import type { PageContext } from './usePageContext';
+import type { PageDataSnapshot } from './StapeLeeDataContext';
+import { findMetricDef } from './metricDefinitions';
 import {
     productOverview,
     valuePropositions,
@@ -340,7 +342,7 @@ function crossPageAnswer(target: TopicMatch, currentPageName: string, ctx: PageC
     };
 }
 
-export function askStapeLee(message: string, context: PageContext, memory?: SessionMemory): StapeLeeResponse {
+export function askStapeLee(message: string, context: PageContext, memory?: SessionMemory, pageData?: PageDataSnapshot | null): StapeLeeResponse {
     const q = message.toLowerCase().trim();
     const mem = memory ?? new SessionMemory();
 
@@ -391,6 +393,13 @@ export function askStapeLee(message: string, context: PageContext, memory?: Sess
     if (/what.*(this page|page is this)|where am i|explain this page|what am i looking at|what.*(here|this)/.test(q)) {
         mem.recordIntent('page_explain', context.section);
         return reply(deepPageExplanation(context), 'page_explain');
+    }
+
+    // ── 2b. DATA-GROUNDED answers (live page data) ────────────────────
+    const dataAnswer = tryDataGroundedAnswer(q, context, pageData ?? null);
+    if (dataAnswer) {
+        mem.recordIntent('data_query', context.section);
+        return reply(dataAnswer, 'data_query');
     }
 
     // ── 3. "What can I do here?" ────────────────────────────────────────
@@ -718,6 +727,177 @@ export function askStapeLee(message: string, context: PageContext, memory?: Sess
     // ── 20. Fallback ───────────────────────────────────────────────────
     mem.recordIntent('unknown', '');
     return contextualFallback(context, mem);
+}
+
+/* ── Data-grounded answer engine ────────────────────────────────────────── */
+
+function fmtKpis(kpis: { label: string; value: string | number; status?: string }[]): string {
+    return kpis.map(k => {
+        const indicator = k.status === 'danger' ? '🔴' : k.status === 'warn' ? '🟡' : k.status === 'good' ? '🟢' : '•';
+        return `${indicator} **${k.label}:** ${k.value}`;
+    }).join('\n');
+}
+
+function tryDataGroundedAnswer(q: string, ctx: PageContext, data: PageDataSnapshot | null): StapeLeeResponse | null {
+    if (!data || data.section !== ctx.section) return null;
+
+    const kpis = data.kpis ?? [];
+    const alerts = data.alerts ?? [];
+    const rows = data.tableRows ?? [];
+    const insights = data.insights ?? [];
+
+    // ── "How many" / "What's the" / number questions ────────────────────
+    if (/how many|what.*(the |current |total )?(number|count|figure|amount)|tell me.*(numbers?|stats|figures|data)/.test(q)) {
+        if (kpis.length === 0) return null;
+        const orgLine = data.organisationName ? `\n\n*Viewing: ${data.organisationName}*` : '';
+        const filterLine = data.activeFilters ? `\n*Filters: ${data.activeFilters}*` : '';
+        return {
+            text: `**Current numbers on ${ctx.pageName}:**\n\n${fmtKpis(kpis)}${orgLine}${filterLine}`,
+            type: 'answer',
+            chips: ['What needs attention?', 'Explain these metrics', 'Send feedback'],
+        };
+    }
+
+    // ── Summarise / what's showing / overview of this page's data ─────
+    if (/summar|what.*(show|display)|give me.*(overview|rundown|breakdown)|data.*(summary|overview)|page.*(summary|data)/.test(q)) {
+        const parts: string[] = [];
+        if (kpis.length > 0) parts.push(`**Key metrics:**\n${fmtKpis(kpis)}`);
+        if (alerts.length > 0) {
+            const alertLines = alerts.slice(0, 5).map(a => {
+                const sev = a.severity === 'critical' || a.severity === 'high' ? '🔴' : a.severity === 'medium' ? '🟡' : '🔵';
+                return `${sev} ${a.title}${a.description ? ` — ${a.description}` : ''}`;
+            }).join('\n');
+            parts.push(`**Alerts (${alerts.length}):**\n${alertLines}`);
+        }
+        if (rows.length > 0) {
+            const topRows = rows.slice(0, 5).map(r => `• **${r.label}**`).join('\n');
+            parts.push(`**Top items (${rows.length} total):**\n${topRows}`);
+        }
+        if (insights.length > 0) parts.push(`**Insights:** ${insights.join(' ')}`);
+        if (parts.length === 0) return null;
+        const orgLine = data.organisationName ? `\n\n*Viewing: ${data.organisationName}*` : '';
+        return {
+            text: `**Summary of ${ctx.pageName}:**\n\n${parts.join('\n\n')}${orgLine}`,
+            type: 'answer',
+            chips: ['What needs attention?', 'Explain a metric', 'Send feedback'],
+        };
+    }
+
+    // ── Health / performance / how are we doing ───────────────────────
+    if (/how healthy|health|how.*(doing|performing)|organisation.*(status|state)|how.*we/.test(q)) {
+        if (kpis.length === 0) return null;
+        const dangerKpis = kpis.filter(k => k.status === 'danger');
+        const warnKpis = kpis.filter(k => k.status === 'warn');
+        const goodKpis = kpis.filter(k => k.status === 'good');
+
+        let assessment = '';
+        if (dangerKpis.length > 0) {
+            assessment = `🔴 **Needs attention.** ${dangerKpis.length} metric${dangerKpis.length > 1 ? 's are' : ' is'} in the red zone:\n${dangerKpis.map(k => `  • ${k.label}: ${k.value}`).join('\n')}`;
+        } else if (warnKpis.length > 0) {
+            assessment = `🟡 **Monitoring needed.** ${warnKpis.length} metric${warnKpis.length > 1 ? 's are' : ' is'} in amber:\n${warnKpis.map(k => `  • ${k.label}: ${k.value}`).join('\n')}`;
+        } else if (goodKpis.length > 0) {
+            assessment = `🟢 **Looking healthy.** All key metrics are in the green zone.`;
+        } else {
+            assessment = `Current metrics:\n${fmtKpis(kpis)}`;
+        }
+
+        return {
+            text: `**Health Assessment (${ctx.pageName}):**\n\n${assessment}\n\n${fmtKpis(kpis)}`,
+            type: 'answer',
+            chips: ['What should I do next?', 'Explain a metric', 'Send feedback'],
+        };
+    }
+
+    // ── Summarise alerts ─────────────────────────────────────────────
+    if (/alert|warning|issue|flag|concern/.test(q) && alerts.length > 0) {
+        const alertLines = alerts.map(a => {
+            const sev = a.severity === 'critical' || a.severity === 'high' ? '🔴' : a.severity === 'medium' ? '🟡' : '🔵';
+            return `${sev} **${a.title}**${a.description ? `\n  ${a.description}` : ''}`;
+        }).join('\n');
+        return {
+            text: `**Active Alerts (${alerts.length}):**\n\n${alertLines}`,
+            type: 'answer',
+            chips: ['What should I do first?', 'Explain these metrics', 'Send feedback'],
+        };
+    }
+
+    // ── Compare homes / which home ───────────────────────────────────
+    if (/which home|compar|best|worst|most|least|highest|lowest|top home|bottom home/.test(q) && rows.length > 0) {
+        const topRows = rows.slice(0, 5).map((r, i) => {
+            const vals = Object.entries(r).filter(([k]) => k !== 'label').map(([k, v]) => `${k}: ${v}`).join(', ');
+            return `**${i + 1}. ${r.label}** — ${vals}`;
+        }).join('\n');
+        return {
+            text: `**Home Comparison (${ctx.pageName}):**\n\n${topRows}${rows.length > 5 ? `\n\n_…and ${rows.length - 5} more homes_` : ''}`,
+            type: 'answer',
+            chips: ['Show me the numbers', 'What needs attention?', 'Send feedback'],
+        };
+    }
+
+    // ── Explain a specific metric ────────────────────────────────────
+    if (/what.*(mean|is|does)|explain|define|describe/.test(q)) {
+        // Try to find a KPI that matches the question
+        const matchedKpi = kpis.find(k => q.includes(k.label.toLowerCase()));
+        const metricDef = findMetricDef(q);
+        if (matchedKpi && metricDef) {
+            const statusHint = matchedKpi.status === 'danger'
+                ? `\n\n🔴 **Current status:** This is in the red zone. ${metricDef.bad}`
+                : matchedKpi.status === 'warn'
+                    ? `\n\n🟡 **Current status:** This is in amber. ${metricDef.bad}`
+                    : matchedKpi.status === 'good'
+                        ? `\n\n🟢 **Current status:** This is healthy. ${metricDef.good}`
+                        : '';
+            return {
+                text: `**${metricDef.label}: ${matchedKpi.value}**\n\n${metricDef.definition}${statusHint}`,
+                type: 'answer',
+                chips: ['Show all numbers', 'What needs attention?', 'Send feedback'],
+            };
+        }
+        if (metricDef) {
+            // Find value from KPIs even if label didn't match exactly
+            const bestKpi = kpis.find(k => k.label.toLowerCase().includes(metricDef.label.toLowerCase().split(' ')[0]));
+            const valLine = bestKpi ? `\n\n**Current value:** ${bestKpi.value}` : '';
+            return {
+                text: `**${metricDef.label}**\n\n${metricDef.definition}\n\n✅ Good: ${metricDef.good}\n⚠️ Bad: ${metricDef.bad}${valLine}`,
+                type: 'answer',
+                chips: ['Show all numbers', 'What needs attention?', 'Send feedback'],
+            };
+        }
+    }
+
+    // ── "What needs attention" / "what's wrong" / priority ───────────
+    if (/needs? attention|what.*(wrong|concern|worry|issue|problem|urgent)|priorit|fix|action/.test(q)) {
+        const dangerKpis = kpis.filter(k => k.status === 'danger');
+        const warnKpis = kpis.filter(k => k.status === 'warn');
+        const critAlerts = alerts.filter(a => a.severity === 'critical' || a.severity === 'high');
+
+        if (dangerKpis.length === 0 && warnKpis.length === 0 && critAlerts.length === 0) {
+            return {
+                text: `🟢 **Nothing urgent right now.** All metrics on ${ctx.pageName} look healthy.\n\nKeep monitoring regularly — I'll flag any issues when they appear.`,
+                type: 'answer',
+                chips: ['Show me the numbers', 'What should I do next?', 'Send feedback'],
+            };
+        }
+
+        const parts: string[] = [];
+        if (critAlerts.length > 0) {
+            parts.push(`🔴 **${critAlerts.length} urgent alert${critAlerts.length > 1 ? 's' : ''}:**\n${critAlerts.map(a => `  • ${a.title}`).join('\n')}`);
+        }
+        if (dangerKpis.length > 0) {
+            parts.push(`🔴 **${dangerKpis.length} metric${dangerKpis.length > 1 ? 's' : ''} in red:**\n${dangerKpis.map(k => `  • ${k.label}: ${k.value}`).join('\n')}`);
+        }
+        if (warnKpis.length > 0) {
+            parts.push(`🟡 **${warnKpis.length} metric${warnKpis.length > 1 ? 's' : ''} in amber:**\n${warnKpis.map(k => `  • ${k.label}: ${k.value}`).join('\n')}`);
+        }
+
+        return {
+            text: `**Needs Attention (${ctx.pageName}):**\n\n${parts.join('\n\n')}`,
+            type: 'answer',
+            chips: ['What should I do first?', 'Explain these metrics', 'Send feedback'],
+        };
+    }
+
+    return null;
 }
 
 /* ── Deep page explanation ───────────────────────────────────────────────── */

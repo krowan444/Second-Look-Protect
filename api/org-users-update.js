@@ -101,6 +101,23 @@ export default async function handler(req, res) {
         const updated = await updateRes.json();
         const after = updated?.[0] ?? {};
 
+        // Ban/unban at Supabase Auth level to enforce login access
+        if (is_active !== undefined && is_active !== before.is_active) {
+            try {
+                const banPayload = is_active
+                    ? { ban_duration: 'none' }
+                    : { ban_duration: '876000h' }; // ~100 years = effectively permanent
+                await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${user_id}`, {
+                    method: 'PUT',
+                    headers: sbHeaders,
+                    body: JSON.stringify(banPayload),
+                });
+                console.log(`[org-users-update] Auth ${is_active ? 'unbanned' : 'banned'} user ${user_id}`);
+            } catch (banErr) {
+                console.error('[org-users-update] Auth ban/unban failed (non-blocking):', banErr);
+            }
+        }
+
         // Determine action type
         let action = 'user_updated';
         if (role !== undefined && role !== before.role) {

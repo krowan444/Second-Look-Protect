@@ -272,77 +272,51 @@ export function GroupAlertsPage() {
     }
 
     return (
-        <div>
+        <div className="gp-page">
             {/* Header */}
-            <div className="dashboard-page-header">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div>
-                        <h1 className="dashboard-page-title">
-                            <Bell size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                            {groupName}
-                        </h1>
-                        <p className="dashboard-page-subtitle">
-                            {alerts.length > 0
-                                ? `${displayAlerts.length} alert${displayAlerts.length !== 1 ? 's' : ''} detected — last 30 days vs previous 30 days`
-                                : 'Last 30 days vs previous 30 days'}
-                        </p>
-                    </div>
-                    {allOrgs.length > 0 && (
-                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
-                    )}
+            <div className="gp-header">
+                <div>
+                    <h1 className="gp-title"><Bell size={20} /> {groupName}</h1>
+                    <p className="gp-subtitle">
+                        {alerts.length > 0
+                            ? `${displayAlerts.length} alert${displayAlerts.length !== 1 ? 's' : ''} detected — last 30 days vs previous 30 days`
+                            : 'Last 30 days vs previous 30 days'}
+                    </p>
                 </div>
+                {allOrgs.length > 0 && (
+                    <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                )}
             </div>
 
-            {/* ── No alerts state ─────────────────────────────────────────── */}
+            {/* No alerts */}
             {displayAlerts.length === 0 && (
-                <div className="dashboard-panel" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
-                    <CheckCircle2 size={40} style={{ color: '#16a34a', marginBottom: '0.75rem' }} />
-                    <p style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.35rem' }}>No significant anomalies detected</p>
-                    <p style={{ fontSize: '0.85rem', color: '#64748b' }}>All homes are operating within normal ranges compared to the previous 30-day period.</p>
+                <div className="gp-card">
+                    <div className="gp-empty">
+                        <CheckCircle2 size={36} className="gp-empty-icon" />
+                        <div className="gp-empty-title">No significant anomalies detected</div>
+                        <div className="gp-empty-desc">All homes are operating within normal ranges compared to the previous 30-day period.</div>
+                    </div>
                 </div>
             )}
 
-            {/* ── Alert cards ─────────────────────────────────────────────── */}
+            {/* Alert cards */}
             {alerts.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {displayAlerts.map((a, i) => (
-                        <div
-                            key={i}
-                            style={{
-                                background: severityBg(a.severity),
-                                border: `1px solid ${severityBorder(a.severity)}`,
-                                borderLeft: `4px solid ${severityColor(a.severity)}`,
-                                borderRadius: '8px',
-                                padding: '1rem 1.25rem',
-                            }}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                                <span style={{
-                                    display: 'inline-block',
-                                    padding: '0.1rem 0.5rem',
-                                    borderRadius: '9999px',
-                                    fontSize: '0.68rem',
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.05em',
-                                    background: severityColor(a.severity) + '20',
-                                    color: severityColor(a.severity),
-                                }}>
+                        <div key={i} className={`gp-alert gp-alert--${a.severity}`}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span className="gp-alert-sev" style={{ background: severityColor(a.severity) + '18', color: severityColor(a.severity) }}>
                                     {a.severity}
                                 </span>
                                 <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>{a.home}</span>
                             </div>
-                            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e293b', marginBottom: '0.25rem' }}>
-                                {a.title}
-                            </div>
-                            <div style={{ fontSize: '0.82rem', color: '#475569', marginBottom: '0.5rem' }}>
-                                {a.explanation}
-                            </div>
-                            <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.78rem', color: '#64748b' }}>
+                            <div className="gp-alert-title">{a.title}</div>
+                            <div className="gp-alert-desc">{a.explanation}</div>
+                            <div className="gp-alert-meta">
                                 <span>Current: <strong style={{ color: '#1e293b' }}>{a.current.toLocaleString()}</strong></span>
                                 <span>Previous: <strong style={{ color: '#1e293b' }}>{a.previous.toLocaleString()}</strong></span>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                    Delta: <strong style={{ color: a.delta > 0 ? '#dc2626' : '#16a34a' }}>{a.delta > 0 ? '+' : ''}{a.delta.toLocaleString()}</strong>
+                                    Delta: <strong className={a.delta > 0 ? 'gp-val-danger' : 'gp-val-good'}>{a.delta > 0 ? '+' : ''}{a.delta.toLocaleString()}</strong>
                                     <DeltaIcon delta={a.delta} />
                                 </span>
                             </div>

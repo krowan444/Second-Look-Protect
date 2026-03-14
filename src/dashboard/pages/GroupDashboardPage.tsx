@@ -3,6 +3,7 @@ import {
     Loader2, AlertTriangle, Building2, Shield, Activity, Clock, Download,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { usePublishPageData } from '../assistant/StapeLeeDataContext';
 import { useGroupHomeFilter, groupNavigate } from '../hooks/useGroupHomeFilter';
 import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
@@ -177,6 +178,34 @@ export function GroupDashboardPage() {
         totalLoss: displayStats.reduce((s, o) => s + o.totalLoss, 0),
     };
 
+    /* ── Publish live data to Stape-Lee ─────────────────────────────── */
+    const { publishPageData, clearPageData } = usePublishPageData();
+    useEffect(() => {
+        if (loading) return;
+        publishPageData({
+            section: 'group-dashboard',
+            updatedAt: Date.now(),
+            organisationName: groupName,
+            activeFilters: filterHomeId ? displayStats[0]?.name : 'All homes',
+            kpis: [
+                { label: 'Homes', value: totals.homes, status: 'neutral' },
+                { label: 'Total Cases', value: totals.totalCases, status: 'neutral' },
+                { label: 'Open Cases', value: totals.openCases, status: totals.openCases > 10 ? 'warn' : 'good' },
+                { label: 'High Risk', value: totals.highRisk, status: totals.highRisk > 0 ? 'danger' : 'good' },
+                { label: 'Overdue', value: totals.overdue, status: totals.overdue > 0 ? 'danger' : 'good' },
+                { label: 'Total Loss', value: currency(totals.totalLoss), status: totals.totalLoss > 0 ? 'warn' : 'neutral' },
+            ],
+            tableRows: displayStats.slice(0, 10).map(o => ({
+                label: o.name,
+                cases: o.totalCases,
+                open: o.openCases,
+                'high risk': o.highRiskOpen,
+                overdue: o.overdueCases,
+            })),
+        });
+        return () => clearPageData();
+    }, [loading, totals, displayStats, groupName, filterHomeId]);
+
     /* ── Render ───────────────────────────────────────────────────────────── */
 
     if (loading) {
@@ -198,109 +227,95 @@ export function GroupDashboardPage() {
     }
 
     return (
-        <div>
+        <div className="gp-page">
             {/* Header */}
-            <div className="dashboard-page-header">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div>
-                        <h1 className="dashboard-page-title">
-                            <Building2 size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                            {groupName}
-                        </h1>
-                        <p className="dashboard-page-subtitle">
-                            Multi-site group overview — {totals.homes} home{totals.homes !== 1 ? 's' : ''}
-                        </p>
-                    </div>
+            <div className="gp-header">
+                <div>
+                    <h1 className="gp-title">
+                        <Building2 size={20} /> {groupName}
+                    </h1>
+                    <p className="gp-subtitle">
+                        Multi-site group overview — {totals.homes} home{totals.homes !== 1 ? 's' : ''}
+                    </p>
+                </div>
+                <div className="gp-actions">
                     {allOrgs.length > 0 && (
                         <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
                     )}
-                </div>
-                {displayStats.length > 0 && (
-                    <button
-                        className="casedetail-btn casedetail-btn-action"
-                        style={{ marginTop: '0.5rem', fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
-                        onClick={() => downloadCsv(
-                            'group-dashboard.csv',
-                            ['Home', 'Total Cases', 'Open Cases', 'High-Risk Open', 'Overdue Cases', 'Total Loss'],
-                            displayStats.map(o => [o.name, String(o.totalCases), String(o.openCases), String(o.highRiskOpen), String(o.overdueCases), String(o.totalLoss)])
-                        )}
-                    >
-                        <Download size={13} /> Export CSV
-                    </button>
-                )}
-            </div>
-
-            {/* ── Group Totals ─────────────────────────────────────────────── */}
-            <div className="dashboard-stats-row" style={{ marginBottom: '2rem' }}>
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-value">{totals.homes}</div>
-                    <div className="dashboard-stat-label">Homes</div>
-                </div>
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-value">{totals.totalCases}</div>
-                    <div className="dashboard-stat-label">Total Cases</div>
-                </div>
-                <div className="dashboard-stat-card">
-                    <div className="dashboard-stat-value">{totals.openCases}</div>
-                    <div className="dashboard-stat-label">Open Cases</div>
-                </div>
-                <div className="dashboard-stat-card" style={{ cursor: 'pointer' }} onClick={() => groupNavigate('/dashboard/group-high-risk')}>
-                    <div className="dashboard-stat-value" style={totals.highRisk > 0 ? { color: '#dc2626' } : undefined}>
-                        {totals.highRisk}
-                    </div>
-                    <div className="dashboard-stat-label">High-Risk Open →</div>
-                </div>
-                <div className="dashboard-stat-card" style={{ cursor: 'pointer' }} onClick={() => groupNavigate('/dashboard/group-response')}>
-                    <div className="dashboard-stat-value" style={totals.overdue > 0 ? { color: '#f59e0b' } : undefined}>
-                        {totals.overdue}
-                    </div>
-                    <div className="dashboard-stat-label">Overdue ({SLA_DAYS}+ days) →</div>
-                </div>
-                <div className="dashboard-stat-card" style={{ cursor: 'pointer' }} onClick={() => groupNavigate('/dashboard/group-pressure')}>
-                    <div className="dashboard-stat-value">{currency(totals.totalLoss)}</div>
-                    <div className="dashboard-stat-label">Total Loss →</div>
+                    {displayStats.length > 0 && (
+                        <button
+                            className="gp-export-btn"
+                            onClick={() => downloadCsv(
+                                'group-dashboard.csv',
+                                ['Home', 'Total Cases', 'Open Cases', 'High-Risk Open', 'Overdue Cases', 'Total Loss'],
+                                displayStats.map(o => [o.name, String(o.totalCases), String(o.openCases), String(o.highRiskOpen), String(o.overdueCases), String(o.totalLoss)])
+                            )}
+                        >
+                            <Download size={13} /> Export CSV
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* ── Home Comparison ──────────────────────────────────────────── */}
-            <div className="dashboard-panel">
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">
-                        <Activity size={16} className="dashboard-panel-title-icon" /> Home Comparison
-                    </h2>
+            {/* KPI strip */}
+            <div className="gp-kpi-strip">
+                <div className="gp-kpi">
+                    <div className="gp-kpi-value">{totals.homes}</div>
+                    <div className="gp-kpi-label">Homes</div>
                 </div>
-                <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
+                <div className="gp-kpi">
+                    <div className="gp-kpi-value">{totals.totalCases}</div>
+                    <div className="gp-kpi-label">Total Cases</div>
+                </div>
+                <div className="gp-kpi">
+                    <div className="gp-kpi-value">{totals.openCases}</div>
+                    <div className="gp-kpi-label">Open Cases</div>
+                </div>
+                <div className="gp-kpi gp-kpi--clickable" onClick={() => groupNavigate('/dashboard/group-high-risk')}>
+                    <div className={`gp-kpi-value${totals.highRisk > 0 ? ' gp-val-danger' : ''}`}>{totals.highRisk}</div>
+                    <div className="gp-kpi-label">High-Risk Open →</div>
+                </div>
+                <div className="gp-kpi gp-kpi--clickable" onClick={() => groupNavigate('/dashboard/group-response')}>
+                    <div className={`gp-kpi-value${totals.overdue > 0 ? ' gp-val-warn' : ''}`}>{totals.overdue}</div>
+                    <div className="gp-kpi-label">Overdue ({SLA_DAYS}+ days) →</div>
+                </div>
+                <div className="gp-kpi gp-kpi--clickable" onClick={() => groupNavigate('/dashboard/group-pressure')}>
+                    <div className="gp-kpi-value">{currency(totals.totalLoss)}</div>
+                    <div className="gp-kpi-label">Total Loss →</div>
+                </div>
+            </div>
+
+            {/* Home Comparison */}
+            <div className="gp-card">
+                <div className="gp-card-header">
+                    <h2 className="gp-card-title"><Activity size={15} /> Home Comparison</h2>
+                    <span className="gp-card-count">{displayStats.length}</span>
+                </div>
+                <div className="gp-table-wrap">
+                    <table className="gp-table">
                         <thead>
                             <tr>
-                                <th className="dashboard-table-th">Home</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Total Cases</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Open</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>High-Risk Open</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>
-                                    <Clock size={13} style={{ verticalAlign: 'text-bottom', marginRight: '3px' }} />
-                                    Overdue
-                                </th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Total Loss</th>
+                                <th>Home</th>
+                                <th className="text-right">Total Cases</th>
+                                <th className="text-right">Open</th>
+                                <th className="text-right">High-Risk Open</th>
+                                <th className="text-right"><Clock size={12} style={{ verticalAlign: 'text-bottom', marginRight: '2px' }} />Overdue</th>
+                                <th className="text-right">Total Loss</th>
                             </tr>
                         </thead>
                         <tbody>
                             {displayStats.map(org => (
-                                <tr key={org.id} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === org.id ? null : org.id)}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600, color: '#C9A84C' }}>{org.name}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{org.totalCases}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{org.openCases}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={org.highRiskOpen > 0 ? { color: '#dc2626', fontWeight: 600 } : undefined}>
-                                            {org.highRiskOpen}
-                                        </span>
+                                <tr key={org.id} className="gp-row-click" onClick={() => setFilterHomeId(filterHomeId === org.id ? null : org.id)}>
+                                    <td className="gp-home-name">{org.name}</td>
+                                    <td className="text-right">{org.totalCases}</td>
+                                    <td className="text-right">{org.openCases}</td>
+                                    <td className="text-right">
+                                        <span className={org.highRiskOpen > 0 ? 'gp-val-danger' : ''}>{org.highRiskOpen}</span>
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={org.overdueCases > 0 ? { color: '#f59e0b', fontWeight: 600 } : undefined}>
-                                            {org.overdueCases}
-                                        </span>
+                                    <td className="text-right">
+                                        <span className={org.overdueCases > 0 ? 'gp-val-warn' : ''}>{org.overdueCases}</span>
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{currency(org.totalLoss)}</td>
+                                    <td className="text-right">{currency(org.totalLoss)}</td>
                                 </tr>
                             ))}
                         </tbody>

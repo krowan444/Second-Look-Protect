@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     }
 
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
-    const EMAIL_FROM = process.env.RESEND_FROM_EMAIL;
+    const EMAIL_FROM = process.env.RESEND_FROM_EMAIL || process.env.EMAIL_FROM;
     const EMAIL_TO = process.env.DEMO_REQUEST_TO_EMAIL;
 
     if (!RESEND_API_KEY || !EMAIL_FROM || !EMAIL_TO) {

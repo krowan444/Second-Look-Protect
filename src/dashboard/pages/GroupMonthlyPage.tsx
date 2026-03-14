@@ -172,25 +172,21 @@ export function GroupMonthlyPage() {
     const monthLabel = months.find(m => m.value === selectedMonth)?.label ?? selectedMonth;
 
     return (
-        <div>
-            <div className="dashboard-page-header">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div>
-                        <h1 className="dashboard-page-title">
-                            <Calendar size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                            {groupName}
-                        </h1>
-                    </div>
+        <div className="gp-page">
+            {/* Header */}
+            <div className="gp-header">
+                <div>
+                    <h1 className="gp-title"><Calendar size={20} /> {groupName}</h1>
+                </div>
+                <div className="gp-actions">
                     {allOrgs.length > 0 && (
                         <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
                     )}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                     <select className="dsf-input" style={{ width: 'auto', minWidth: '180px' }} value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
                         {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
                     {displayMetrics.length > 0 && (
-                        <button className="casedetail-btn casedetail-btn-action" style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
+                        <button className="gp-export-btn"
                             onClick={() => downloadCsv(`group-monthly-${selectedMonth}.csv`, ['Home', 'Total Cases', 'Open', 'Closed', 'Overdue', 'High-Risk Open', 'Total Loss'],
                                 displayMetrics.map(o => [o.name, String(o.totalCases), String(o.openCases), String(o.closedCases), String(o.overdueCases), String(o.highRiskOpen), String(o.totalLoss)]))}>
                             <Download size={13} /> Export CSV
@@ -200,44 +196,46 @@ export function GroupMonthlyPage() {
                 </div>
             </div>
 
-            <div className="dashboard-stats-row" style={{ marginBottom: '2rem' }}>
-                <div className="dashboard-stat-card"><div className="dashboard-stat-value">{totals.totalCases}</div><div className="dashboard-stat-label">Total Cases</div><div className="dashboard-stat-period">{monthLabel}</div></div>
-                <div className="dashboard-stat-card"><div className="dashboard-stat-value">{totals.openCases}</div><div className="dashboard-stat-label">Open</div></div>
-                <div className="dashboard-stat-card"><div className="dashboard-stat-value">{totals.closedCases}</div><div className="dashboard-stat-label">Closed</div></div>
-                <div className="dashboard-stat-card"><div className="dashboard-stat-value" style={totals.overdue > 0 ? { color: '#f59e0b' } : undefined}>{totals.overdue}</div><div className="dashboard-stat-label">Overdue</div></div>
-                <div className="dashboard-stat-card"><div className="dashboard-stat-value" style={totals.highRisk > 0 ? { color: '#dc2626' } : undefined}>{totals.highRisk}</div><div className="dashboard-stat-label">High-Risk Open</div></div>
-                <div className="dashboard-stat-card"><div className="dashboard-stat-value">{currency(totals.totalLoss)}</div><div className="dashboard-stat-label">Total Loss</div></div>
+            {/* KPI Strip */}
+            <div className="gp-kpi-strip">
+                <div className="gp-kpi"><div className="gp-kpi-value">{totals.totalCases}</div><div className="gp-kpi-label">Total Cases</div><div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{monthLabel}</div></div>
+                <div className="gp-kpi"><div className="gp-kpi-value">{totals.openCases}</div><div className="gp-kpi-label">Open</div></div>
+                <div className="gp-kpi"><div className="gp-kpi-value">{totals.closedCases}</div><div className="gp-kpi-label">Closed</div></div>
+                <div className="gp-kpi"><div className="gp-kpi-value" style={totals.overdue > 0 ? { color: '#f59e0b' } : undefined}>{totals.overdue}</div><div className="gp-kpi-label">Overdue</div></div>
+                <div className="gp-kpi"><div className="gp-kpi-value" style={totals.highRisk > 0 ? { color: '#dc2626' } : undefined}>{totals.highRisk}</div><div className="gp-kpi-label">High-Risk Open</div></div>
+                <div className="gp-kpi"><div className="gp-kpi-value">{currency(totals.totalLoss)}</div><div className="gp-kpi-label">Total Loss</div></div>
             </div>
 
-            <div className="dashboard-panel">
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title"><Clock size={16} className="dashboard-panel-title-icon" /> Home Breakdown — {monthLabel}</h2>
+            {/* Monthly Table */}
+            <div className="gp-card">
+                <div className="gp-card-header">
+                    <h2 className="gp-card-title"><Clock size={15} /> Home Breakdown — {monthLabel}</h2>
                 </div>
-                <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
+                <div className="gp-table-wrap">
+                    <table className="gp-table">
                         <thead>
                             <tr>
-                                <th className="dashboard-table-th">Home</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Total</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Open</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Closed</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Overdue</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>High-Risk</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Total Loss</th>
+                                <th>Home</th>
+                                <th className="text-right">Total</th>
+                                <th className="text-right">Open</th>
+                                <th className="text-right">Closed</th>
+                                <th className="text-right">Overdue</th>
+                                <th className="text-right">High-Risk</th>
+                                <th className="text-right">Total Loss</th>
                             </tr>
                         </thead>
                         <tbody>
                             {displayMetrics.length === 0 ? (
-                                <tr><td className="dashboard-table-td" colSpan={7} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>No cases submitted in {monthLabel}</td></tr>
+                                <tr><td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No cases submitted in {monthLabel}</td></tr>
                             ) : displayMetrics.map(m => (
-                                <tr key={m.id} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === m.id ? null : m.id)}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600, color: '#C9A84C' }}>{m.name}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{m.totalCases}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{m.openCases}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{m.closedCases}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}><span style={m.overdueCases > 0 ? { color: '#f59e0b', fontWeight: 600 } : undefined}>{m.overdueCases}</span></td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}><span style={m.highRiskOpen > 0 ? { color: '#dc2626', fontWeight: 600 } : undefined}>{m.highRiskOpen}</span></td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{currency(m.totalLoss)}</td>
+                                <tr key={m.id} className="gp-row-click" onClick={() => setFilterHomeId(filterHomeId === m.id ? null : m.id)}>
+                                    <td className="gp-home-name">{m.name}</td>
+                                    <td className="text-right">{m.totalCases}</td>
+                                    <td className="text-right">{m.openCases}</td>
+                                    <td className="text-right">{m.closedCases}</td>
+                                    <td className="text-right"><span className={m.overdueCases > 0 ? 'gp-val-warn' : ''}>{m.overdueCases}</span></td>
+                                    <td className="text-right"><span className={m.highRiskOpen > 0 ? 'gp-val-danger' : ''}>{m.highRiskOpen}</span></td>
+                                    <td className="text-right">{currency(m.totalLoss)}</td>
                                 </tr>
                             ))}
                         </tbody>

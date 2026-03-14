@@ -3,6 +3,7 @@ import {
     Loader2, AlertTriangle, ShieldAlert, Clock, Download,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { usePublishPageData } from '../assistant/StapeLeeDataContext';
 import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
 import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
@@ -206,6 +207,32 @@ export function GroupHighRiskQueuePage({ onNavigate }: GroupHighRiskQueuePagePro
         [cases, filterHomeId]
     );
 
+    /* ── Publish live data to Stape-Lee ─────────────────────────────── */
+    const { publishPageData, clearPageData } = usePublishPageData();
+    useEffect(() => {
+        if (loading) return;
+        const critCount = displayCases.filter(c => c.risk_level === 'critical').length;
+        const highCount = displayCases.filter(c => c.risk_level === 'high').length;
+        // Count per home
+        const homeCount: Record<string, number> = {};
+        displayCases.forEach(c => { homeCount[c.orgName] = (homeCount[c.orgName] || 0) + 1; });
+        publishPageData({
+            section: 'group-high-risk',
+            updatedAt: Date.now(),
+            organisationName: groupName.replace(' — High-Risk Queue', ''),
+            activeFilters: filterHomeId ? displayCases[0]?.orgName || 'Filtered' : 'All homes',
+            kpis: [
+                { label: 'Total High-Risk', value: displayCases.length, status: displayCases.length > 0 ? 'danger' : 'good' },
+                { label: 'Critical', value: critCount, status: critCount > 0 ? 'danger' : 'good' },
+                { label: 'High', value: highCount, status: highCount > 0 ? 'warn' : 'good' },
+            ],
+            tableRows: Object.entries(homeCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({
+                label: name, 'high-risk cases': count,
+            })),
+        });
+        return () => clearPageData();
+    }, [loading, displayCases, groupName, filterHomeId]);
+
     /* ── Render ───────────────────────────────────────────────────────────── */
 
     if (loading) {
@@ -227,81 +254,73 @@ export function GroupHighRiskQueuePage({ onNavigate }: GroupHighRiskQueuePagePro
     }
 
     return (
-        <div>
+        <div className="gp-page">
             {/* Header */}
-            <div className="dashboard-page-header">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div>
-                        <h1 className="dashboard-page-title">
-                            <ShieldAlert size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                            {groupName}
-                        </h1>
-                        <p className="dashboard-page-subtitle">
-                            {displayCases.length} open high-risk case{displayCases.length !== 1 ? 's' : ''}{filterHomeId ? '' : ' across all homes'}
-                        </p>
-                    </div>
+            <div className="gp-header">
+                <div>
+                    <h1 className="gp-title"><ShieldAlert size={20} /> {groupName}</h1>
+                    <p className="gp-subtitle">
+                        {displayCases.length} open high-risk case{displayCases.length !== 1 ? 's' : ''}{filterHomeId ? '' : ' across all homes'}
+                    </p>
+                </div>
+                <div className="gp-actions">
                     {allOrgs.length > 0 && (
                         <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
                     )}
+                    {displayCases.length > 0 && (
+                        <button
+                            className="gp-export-btn"
+                            onClick={() => downloadCsv(
+                                'group-high-risk.csv',
+                                ['Home', 'Case Type', 'Risk Level', 'Status', 'Submitted At', 'Resident Ref', 'Loss Amount'],
+                                displayCases.map(c => [c.orgName, c.submission_type ?? '', c.risk_level, c.status ?? '', c.submitted_at, c.resident_ref ?? '', c.loss_amount != null ? String(c.loss_amount) : ''])
+                            )}
+                        >
+                            <Download size={13} /> Export CSV
+                        </button>
+                    )}
                 </div>
-                {displayCases.length > 0 && (
-                    <button
-                        className="casedetail-btn casedetail-btn-action"
-                        style={{ marginTop: '0.5rem', fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
-                        onClick={() => downloadCsv(
-                            'group-high-risk.csv',
-                            ['Home', 'Case Type', 'Risk Level', 'Status', 'Submitted At', 'Resident Ref', 'Loss Amount'],
-                            displayCases.map(c => [c.orgName, c.submission_type ?? '', c.risk_level, c.status ?? '', c.submitted_at, c.resident_ref ?? '', c.loss_amount != null ? String(c.loss_amount) : ''])
-                        )}
-                    >
-                        <Download size={13} /> Export CSV
-                    </button>
-                )}
             </div>
 
             {/* Queue table */}
-            <div className="dashboard-panel">
-                <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
+            <div className="gp-card">
+                <div className="gp-card-header">
+                    <h2 className="gp-card-title"><ShieldAlert size={15} /> High-Risk Cases</h2>
+                    <span className="gp-card-count">{displayCases.length}</span>
+                </div>
+                <div className="gp-table-wrap">
+                    <table className="gp-table">
                         <thead>
                             <tr>
-                                <th className="dashboard-table-th">Home</th>
-                                <th className="dashboard-table-th">Type</th>
-                                <th className="dashboard-table-th">Risk</th>
-                                <th className="dashboard-table-th">Status</th>
-                                <th className="dashboard-table-th">Submitted</th>
-                                <th className="dashboard-table-th">Resident Ref</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Loss</th>
+                                <th>Home</th>
+                                <th>Type</th>
+                                <th>Risk</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                                <th>Resident Ref</th>
+                                <th className="text-right">Loss</th>
                             </tr>
                         </thead>
                         <tbody>
                             {displayCases.length === 0 ? (
                                 <tr>
-                                    <td className="dashboard-table-td" colSpan={7} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
+                                    <td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>
                                         No open high-risk cases{filterHomeId ? ' for this home' : ' across the group'}
                                     </td>
                                 </tr>
                             ) : displayCases.map(c => (
                                 <tr
                                     key={c.id}
-                                    style={{ cursor: onNavigate ? 'pointer' : undefined }}
+                                    className={onNavigate ? 'gp-row-click' : ''}
                                     onClick={() => onNavigate?.(`/dashboard/cases/${c.id}`)}
                                 >
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{c.orgName}</td>
-                                    <td className="dashboard-table-td">{formatLabel(c.submission_type)}</td>
-                                    <td className="dashboard-table-td">
-                                        <span className={`dashboard-risk-badge risk-${riskClass(c.risk_level)}`}>
-                                            {c.risk_level}
-                                        </span>
-                                    </td>
-                                    <td className="dashboard-table-td">
-                                        <span className={`dashboard-status-badge status-${statusClass(c.status)}`}>
-                                            {statusLabel(c.status)}
-                                        </span>
-                                    </td>
-                                    <td className="dashboard-table-td">{fmtDate(c.submitted_at)}</td>
-                                    <td className="dashboard-table-td">{c.resident_ref ?? '—'}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{currency(c.loss_amount)}</td>
+                                    <td className="gp-home-name">{c.orgName}</td>
+                                    <td>{formatLabel(c.submission_type)}</td>
+                                    <td><span className={`dashboard-risk-badge risk-${riskClass(c.risk_level)}`}>{c.risk_level}</span></td>
+                                    <td><span className={`dashboard-status-badge status-${statusClass(c.status)}`}>{statusLabel(c.status)}</span></td>
+                                    <td>{fmtDate(c.submitted_at)}</td>
+                                    <td>{c.resident_ref ?? '—'}</td>
+                                    <td className="text-right">{currency(c.loss_amount)}</td>
                                 </tr>
                             ))}
                         </tbody>

@@ -3,6 +3,7 @@ import {
     Loader2, AlertTriangle, TrendingUp, TrendingDown, Minus, BarChart3,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { usePublishPageData } from '../assistant/StapeLeeDataContext';
 import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
 import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
@@ -177,6 +178,32 @@ export function GroupTrendsPage() {
         return { categories: cats, channels: chs, categoryTrends: buildTrends('category'), channelTrends: buildTrends('channel') };
     }, [rawCases, orgMap, filterHomeId]);
 
+    /* ── Publish live data to Stape-Lee ─────────────────────────────── */
+    const { publishPageData, clearPageData } = usePublishPageData();
+    useEffect(() => {
+        if (loading || categories.length === 0) return;
+        publishPageData({
+            section: 'group-trends',
+            updatedAt: Date.now(),
+            organisationName: groupName,
+            activeFilters: filterHomeId ? (orgMap.get(filterHomeId) ?? 'Filtered') : 'All homes',
+            kpis: [
+                { label: 'Top Category', value: `${formatLabel(categories[0]?.key)} (${categories[0]?.count ?? 0})`, status: 'neutral' },
+                { label: 'Top Channel', value: `${formatLabel(channels[0]?.key)} (${channels[0]?.count ?? 0})`, status: 'neutral' },
+            ],
+            tableRows: categories.slice(0, 5).map(cat => ({
+                label: formatLabel(cat.key),
+                count: cat.count,
+                share: pct(cat.share),
+                'top home': cat.topHome,
+            })),
+            insights: categoryTrends.slice(0, 3).filter(t => t.direction !== 'flat').map(t =>
+                `${formatLabel(t.key)}: ${t.direction === 'rising' ? '↑' : '↓'} ${Math.abs(t.delta)} (${t.previous}→${t.current})`
+            ),
+        });
+        return () => clearPageData();
+    }, [loading, categories, channels, categoryTrends, groupName, filterHomeId, orgMap]);
+
     /* ── Render ───────────────────────────────────────────────────────────── */
 
     if (loading) {
@@ -198,49 +225,36 @@ export function GroupTrendsPage() {
     }
 
     return (
-        <div>
+        <div className="gp-page">
             {/* Header */}
-            <div className="dashboard-page-header">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div>
-                        <h1 className="dashboard-page-title">
-                            <BarChart3 size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                            {groupName}
-                        </h1>
-                        <p className="dashboard-page-subtitle">
-                            Cross-home scam pattern intelligence
-                        </p>
-                    </div>
-                    {allOrgs.length > 0 && (
-                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
-                    )}
+            <div className="gp-header">
+                <div>
+                    <h1 className="gp-title"><BarChart3 size={20} /> {groupName}</h1>
+                    <p className="gp-subtitle">Cross-home scam pattern intelligence</p>
                 </div>
+                {allOrgs.length > 0 && (
+                    <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                )}
             </div>
 
-            {/* ── Top Categories ───────────────────────────────────────────── */}
-            <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">Top Scam Categories</h2>
+            {/* Top Categories */}
+            <div className="gp-card">
+                <div className="gp-card-header">
+                    <h2 className="gp-card-title">Top Scam Categories</h2>
+                    <span className="gp-card-count">{categories.length}</span>
                 </div>
-                <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
-                        <thead>
-                            <tr>
-                                <th className="dashboard-table-th">Category</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Cases</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Share</th>
-                                <th className="dashboard-table-th">Top Home</th>
-                            </tr>
-                        </thead>
+                <div className="gp-table-wrap">
+                    <table className="gp-table">
+                        <thead><tr><th>Category</th><th className="text-right">Cases</th><th className="text-right">Share</th><th>Top Home</th></tr></thead>
                         <tbody>
                             {categories.length === 0 ? (
-                                <tr><td className="dashboard-table-td" colSpan={4} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>No category data</td></tr>
+                                <tr><td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No category data</td></tr>
                             ) : categories.map(r => (
                                 <tr key={r.key}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{formatLabel(r.key)}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{r.count}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{pct(r.share)}</td>
-                                    <td className="dashboard-table-td">{r.topHome}</td>
+                                    <td className="gp-home-name">{formatLabel(r.key)}</td>
+                                    <td className="text-right">{r.count}</td>
+                                    <td className="text-right">{pct(r.share)}</td>
+                                    <td>{r.topHome}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -248,30 +262,24 @@ export function GroupTrendsPage() {
                 </div>
             </div>
 
-            {/* ── Top Channels ─────────────────────────────────────────────── */}
-            <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">Top Channels</h2>
+            {/* Top Channels */}
+            <div className="gp-card">
+                <div className="gp-card-header">
+                    <h2 className="gp-card-title">Top Channels</h2>
+                    <span className="gp-card-count">{channels.length}</span>
                 </div>
-                <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
-                        <thead>
-                            <tr>
-                                <th className="dashboard-table-th">Channel</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Cases</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Share</th>
-                                <th className="dashboard-table-th">Top Home</th>
-                            </tr>
-                        </thead>
+                <div className="gp-table-wrap">
+                    <table className="gp-table">
+                        <thead><tr><th>Channel</th><th className="text-right">Cases</th><th className="text-right">Share</th><th>Top Home</th></tr></thead>
                         <tbody>
                             {channels.length === 0 ? (
-                                <tr><td className="dashboard-table-td" colSpan={4} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>No channel data</td></tr>
+                                <tr><td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No channel data</td></tr>
                             ) : channels.map(r => (
                                 <tr key={r.key}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{formatLabel(r.key)}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{r.count}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{pct(r.share)}</td>
-                                    <td className="dashboard-table-td">{r.topHome}</td>
+                                    <td className="gp-home-name">{formatLabel(r.key)}</td>
+                                    <td className="text-right">{r.count}</td>
+                                    <td className="text-right">{pct(r.share)}</td>
+                                    <td>{r.topHome}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -279,36 +287,28 @@ export function GroupTrendsPage() {
                 </div>
             </div>
 
-            {/* ── Category Trends (30-day) ─────────────────────────────────── */}
-            <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">Category Trends — Last 30 Days vs Previous 30 Days</h2>
+            {/* Category Trends */}
+            <div className="gp-card">
+                <div className="gp-card-header">
+                    <h2 className="gp-card-title">Category Trends — 30 Days vs Previous</h2>
                 </div>
-                <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
-                        <thead>
-                            <tr>
-                                <th className="dashboard-table-th">Category</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Current</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Previous</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Delta</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'center' }}>Trend</th>
-                            </tr>
-                        </thead>
+                <div className="gp-table-wrap">
+                    <table className="gp-table">
+                        <thead><tr><th>Category</th><th className="text-right">Current</th><th className="text-right">Previous</th><th className="text-right">Delta</th><th style={{ textAlign: 'center' }}>Trend</th></tr></thead>
                         <tbody>
                             {categoryTrends.length === 0 ? (
-                                <tr><td className="dashboard-table-td" colSpan={5} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>No trend data</td></tr>
+                                <tr><td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No trend data</td></tr>
                             ) : categoryTrends.map(r => (
                                 <tr key={r.key}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{formatLabel(r.key)}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{r.current}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{r.previous}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right', color: r.delta > 0 ? '#dc2626' : r.delta < 0 ? '#16a34a' : '#64748b', fontWeight: 600 }}>
-                                        {r.delta > 0 ? '+' : ''}{r.delta}
+                                    <td className="gp-home-name">{formatLabel(r.key)}</td>
+                                    <td className="text-right">{r.current}</td>
+                                    <td className="text-right">{r.previous}</td>
+                                    <td className="text-right">
+                                        <span className={r.delta > 0 ? 'gp-val-danger' : r.delta < 0 ? 'gp-val-good' : 'gp-val-muted'}>
+                                            {r.delta > 0 ? '+' : ''}{r.delta}
+                                        </span>
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'center' }}>
-                                        <TrendIcon direction={r.direction} />
-                                    </td>
+                                    <td style={{ textAlign: 'center' }}><TrendIcon direction={r.direction} /></td>
                                 </tr>
                             ))}
                         </tbody>
@@ -316,36 +316,28 @@ export function GroupTrendsPage() {
                 </div>
             </div>
 
-            {/* ── Channel Trends (30-day) ──────────────────────────────────── */}
-            <div className="dashboard-panel">
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">Channel Trends — Last 30 Days vs Previous 30 Days</h2>
+            {/* Channel Trends */}
+            <div className="gp-card">
+                <div className="gp-card-header">
+                    <h2 className="gp-card-title">Channel Trends — 30 Days vs Previous</h2>
                 </div>
-                <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
-                        <thead>
-                            <tr>
-                                <th className="dashboard-table-th">Channel</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Current</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Previous</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Delta</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'center' }}>Trend</th>
-                            </tr>
-                        </thead>
+                <div className="gp-table-wrap">
+                    <table className="gp-table">
+                        <thead><tr><th>Channel</th><th className="text-right">Current</th><th className="text-right">Previous</th><th className="text-right">Delta</th><th style={{ textAlign: 'center' }}>Trend</th></tr></thead>
                         <tbody>
                             {channelTrends.length === 0 ? (
-                                <tr><td className="dashboard-table-td" colSpan={5} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>No trend data</td></tr>
+                                <tr><td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No trend data</td></tr>
                             ) : channelTrends.map(r => (
                                 <tr key={r.key}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{formatLabel(r.key)}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{r.current}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{r.previous}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right', color: r.delta > 0 ? '#dc2626' : r.delta < 0 ? '#16a34a' : '#64748b', fontWeight: 600 }}>
-                                        {r.delta > 0 ? '+' : ''}{r.delta}
+                                    <td className="gp-home-name">{formatLabel(r.key)}</td>
+                                    <td className="text-right">{r.current}</td>
+                                    <td className="text-right">{r.previous}</td>
+                                    <td className="text-right">
+                                        <span className={r.delta > 0 ? 'gp-val-danger' : r.delta < 0 ? 'gp-val-good' : 'gp-val-muted'}>
+                                            {r.delta > 0 ? '+' : ''}{r.delta}
+                                        </span>
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'center' }}>
-                                        <TrendIcon direction={r.direction} />
-                                    </td>
+                                    <td style={{ textAlign: 'center' }}><TrendIcon direction={r.direction} /></td>
                                 </tr>
                             ))}
                         </tbody>

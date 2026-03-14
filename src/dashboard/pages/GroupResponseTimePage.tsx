@@ -258,101 +258,86 @@ export function GroupResponseTimePage() {
     }
 
     return (
-        <div>
+        <div className="gp-page">
             {/* Header */}
-            <div className="dashboard-page-header">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div>
-                        <h1 className="dashboard-page-title">
-                            <Timer size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                            {groupName}
-                        </h1>
-                        <p className="dashboard-page-subtitle">
-                            Operational speed comparison across {displayHomes.length} home{displayHomes.length !== 1 ? 's' : ''}
-                        </p>
-                    </div>
-                    {allOrgs.length > 0 && (
-                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
-                    )}
+            <div className="gp-header">
+                <div>
+                    <h1 className="gp-title"><Timer size={20} /> {groupName}</h1>
+                    <p className="gp-subtitle">Operational speed comparison across {displayHomes.length} home{displayHomes.length !== 1 ? 's' : ''}</p>
                 </div>
+                {allOrgs.length > 0 && (
+                    <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                )}
             </div>
 
-            {/* ── Highlight Cards ─────────────────────────────────────────── */}
+            {/* Highlight Cards */}
             {highlights.length > 0 && (
-                <div className="dashboard-stats-row" style={{ marginBottom: '2rem' }}>
+                <div className="gp-highlights">
                     {highlights.map((h, i) => (
-                        <div key={i} className="dashboard-stat-card" style={{ borderLeft: `4px solid ${h.color}` }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.35rem', color: h.color }}>
+                        <div key={i} className="gp-highlight">
+                            <div className="gp-highlight-icon" style={{ background: h.color + '14', color: h.color }}>
                                 {h.icon}
-                                <span style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748b' }}>
-                                    {h.label}
-                                </span>
                             </div>
-                            <div className="dashboard-stat-value" style={{ fontSize: '1.35rem' }}>{h.value}</div>
-                            <div className="dashboard-stat-label">{h.homeName}</div>
+                            <div>
+                                <div className="gp-highlight-label">{h.label}</div>
+                                <div className="gp-highlight-home">{h.homeName}</div>
+                                <div className="gp-highlight-value">{h.value}</div>
+                            </div>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* ── Comparison Table ────────────────────────────────────────── */}
-            <div className="dashboard-panel">
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">
-                        <Timer size={16} className="dashboard-panel-title-icon" /> Home Response Comparison
-                    </h2>
+            {/* Comparison Table */}
+            <div className="gp-card">
+                <div className="gp-card-header">
+                    <h2 className="gp-card-title"><Timer size={15} /> Home Response Comparison</h2>
                 </div>
-                <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
+                <div className="gp-table-wrap">
+                    <table className="gp-table">
                         <thead>
                             <tr>
-                                <th className="dashboard-table-th">Home</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Avg Review Time</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Avg Closure Time</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Avg Open Age</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Overdue Open</th>
+                                <th>Home</th>
+                                <th className="text-right">Avg Review Time</th>
+                                <th className="text-right">Avg Closure Time</th>
+                                <th className="text-right">Avg Open Age</th>
+                                <th className="text-right">Overdue Open</th>
                             </tr>
                         </thead>
                         <tbody>
                             {/* Group average row */}
                             <tr style={{ background: '#f8fafc', fontStyle: 'italic' }}>
-                                <td className="dashboard-table-td" style={{ fontWeight: 600, color: '#64748b' }}>Group Average</td>
-                                <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>{fmtDuration(avgGroupReview)}</td>
-                                <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>{fmtDuration(avgGroupClose)}</td>
-                                <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>{fmtDuration(avgGroupOpenAge)}</td>
-                                <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>—</td>
+                                <td className="gp-val-muted" style={{ fontWeight: 600 }}>Group Average</td>
+                                <td className="text-right gp-val-muted">{fmtDuration(avgGroupReview)}</td>
+                                <td className="text-right gp-val-muted">{fmtDuration(avgGroupClose)}</td>
+                                <td className="text-right gp-val-muted">{fmtDuration(avgGroupOpenAge)}</td>
+                                <td className="text-right gp-val-muted">—</td>
                             </tr>
                             {displayHomes.map(h => (
-                                <tr key={h.id} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === h.id ? null : h.id)}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{h.name}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={h.avgReviewHours !== null && avgGroupReview !== null && h.avgReviewHours > avgGroupReview ? { color: '#dc2626', fontWeight: 600 } : undefined}>
+                                <tr key={h.id} className="gp-row-click" onClick={() => setFilterHomeId(filterHomeId === h.id ? null : h.id)}>
+                                    <td className="gp-home-name">{h.name}</td>
+                                    <td className="text-right">
+                                        <span className={h.avgReviewHours !== null && avgGroupReview !== null && h.avgReviewHours > avgGroupReview ? 'gp-val-danger' : ''}>
                                             {fmtDuration(h.avgReviewHours)}
                                         </span>
                                         {' '}<Indicator value={h.avgReviewHours} avg={avgGroupReview} lower />
-                                        {h.reviewedCount > 0 && (
-                                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '4px' }}>({h.reviewedCount})</span>
-                                        )}
+                                        {h.reviewedCount > 0 && <span className="gp-val-muted" style={{ fontSize: '0.7rem', marginLeft: '4px' }}>({h.reviewedCount})</span>}
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={h.avgCloseHours !== null && avgGroupClose !== null && h.avgCloseHours > avgGroupClose ? { color: '#dc2626', fontWeight: 600 } : undefined}>
+                                    <td className="text-right">
+                                        <span className={h.avgCloseHours !== null && avgGroupClose !== null && h.avgCloseHours > avgGroupClose ? 'gp-val-danger' : ''}>
                                             {fmtDuration(h.avgCloseHours)}
                                         </span>
                                         {' '}<Indicator value={h.avgCloseHours} avg={avgGroupClose} lower />
-                                        {h.closedCount > 0 && (
-                                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '4px' }}>({h.closedCount})</span>
-                                        )}
+                                        {h.closedCount > 0 && <span className="gp-val-muted" style={{ fontSize: '0.7rem', marginLeft: '4px' }}>({h.closedCount})</span>}
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={h.avgOpenAgeHours !== null && avgGroupOpenAge !== null && h.avgOpenAgeHours > avgGroupOpenAge ? { color: '#f59e0b', fontWeight: 600 } : undefined}>
+                                    <td className="text-right">
+                                        <span className={h.avgOpenAgeHours !== null && avgGroupOpenAge !== null && h.avgOpenAgeHours > avgGroupOpenAge ? 'gp-val-warn' : ''}>
                                             {fmtDuration(h.avgOpenAgeHours)}
                                         </span>
                                         {' '}<Indicator value={h.avgOpenAgeHours} avg={avgGroupOpenAge} lower />
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={h.overdueOpen > 0 ? { color: '#f59e0b', fontWeight: 600 } : undefined}>
-                                            {h.overdueOpen}
-                                        </span>
+                                    <td className="text-right">
+                                        <span className={h.overdueOpen > 0 ? 'gp-val-warn' : ''}>{h.overdueOpen}</span>
                                     </td>
                                 </tr>
                             ))}
@@ -363,3 +348,4 @@ export function GroupResponseTimePage() {
         </div>
     );
 }
+

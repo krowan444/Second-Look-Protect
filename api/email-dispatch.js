@@ -48,12 +48,19 @@ export default async function handler(req, res) {
     const { event_type, organisation_id, case_id, actor_id, context } = req.body || {};
 
     if (event_type === 'developer_feedback') {
-        const DEV_FEEDBACK_EMAIL = process.env.DEV_FEEDBACK_EMAIL || 'developer-feedback@secondlookprotect.co.uk';
+        const FEEDBACK_RECIPIENTS = [
+            'hello@secondlookprotect.co.uk',
+            'reports@secondlookprotect.co.uk',
+        ];
         const feedbackContext = context || {};
+        const senderName = feedbackContext.userName || 'Unknown user';
+        const senderEmail = feedbackContext.userEmail || '—';
+        const orgName = feedbackContext.organisationName || '—';
+        const timestamp = new Date().toISOString();
+
         console.log('[stape-lee-feedback] ═══ FEEDBACK SEND REQUESTED ═══');
-        console.log(`[stape-lee-feedback] Route hit: yes`);
-        console.log(`[stape-lee-feedback] Recipient resolved: ${DEV_FEEDBACK_EMAIL}`);
-        console.log(`[stape-lee-feedback] Sender resolved: ${EMAIL_FROM}`);
+        console.log(`[stape-lee-feedback] Recipients: ${FEEDBACK_RECIPIENTS.join(', ')}`);
+        console.log(`[stape-lee-feedback] Sender: ${senderName} (${senderEmail}) | Org: ${orgName}`);
         console.log(`[stape-lee-feedback] Category: ${feedbackContext.category || 'General'} | Page: ${feedbackContext.page || 'unknown'} | Priority: ${feedbackContext.priority || 'Medium'}`);
 
         const fbSubject = `[${feedbackContext.category || 'Feedback'}] Dashboard Feedback — ${feedbackContext.page || 'Dashboard'}`;
@@ -63,7 +70,9 @@ export default async function handler(req, res) {
             `<strong>🔧 Developer Feedback via Stape-Lee</strong></div>` +
             `<div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px">` +
             `<table style="width:100%;border-collapse:collapse;font-size:14px">` +
-            `<tr><td style="padding:6px 0;color:#64748b;width:100px"><strong>Type</strong></td><td>${feedbackContext.category || 'General'}</td></tr>` +
+            `<tr><td style="padding:6px 0;color:#64748b;width:110px"><strong>From</strong></td><td>${escapeHtml(senderName)}${senderEmail !== '—' ? ` (${escapeHtml(senderEmail)})` : ''}</td></tr>` +
+            `<tr><td style="padding:6px 0;color:#64748b"><strong>Organisation</strong></td><td>${escapeHtml(orgName)}</td></tr>` +
+            `<tr><td style="padding:6px 0;color:#64748b"><strong>Type</strong></td><td>${feedbackContext.category || 'General'}</td></tr>` +
             `<tr><td style="padding:6px 0;color:#64748b"><strong>Page</strong></td><td>${feedbackContext.page || 'Unknown'}</td></tr>` +
             `<tr><td style="padding:6px 0;color:#64748b"><strong>Priority</strong></td><td>${feedbackContext.priority || 'Medium'}</td></tr>` +
             `</table>` +
@@ -72,7 +81,7 @@ export default async function handler(req, res) {
             `<hr style="border:none;border-top:1px solid #e2e8f0;margin:14px 0"/>` +
             `<div style="font-size:12px;color:#94a3b8">` +
             `Sent from: ${feedbackContext.sourceUrl || 'Dashboard'}<br/>` +
-            `Timestamp: ${new Date().toISOString()}` +
+            `Timestamp: ${timestamp}` +
             `</div></div></div>`;
 
         console.log(`[stape-lee-feedback] Payload built: subject="${fbSubject}" | html_length=${fbBody.length}`);
@@ -86,7 +95,7 @@ export default async function handler(req, res) {
                 },
                 body: JSON.stringify({
                     from: EMAIL_FROM,
-                    to: [DEV_FEEDBACK_EMAIL],
+                    to: FEEDBACK_RECIPIENTS,
                     subject: fbSubject,
                     html: fbBody,
                 }),
@@ -94,7 +103,7 @@ export default async function handler(req, res) {
             const fbData = await fbRes.json();
 
             if (fbRes.ok) {
-                console.log(`[stape-lee-feedback] ✔ EMAIL SENT — provider_id: ${fbData?.id}`);
+                console.log(`[stape-lee-feedback] ✔ EMAIL SENT — provider_id: ${fbData?.id} | recipients: ${FEEDBACK_RECIPIENTS.join(', ')}`);
                 return res.status(200).json({ ok: true, sent: true, provider_message_id: fbData?.id });
             } else {
                 console.error(`[stape-lee-feedback] ✖ EMAIL FAILED — status: ${fbRes.status} | error: ${fbData?.message || 'unknown'}`);

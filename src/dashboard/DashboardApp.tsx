@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './dashboard.css';
 import { getSupabase } from '../lib/supabaseClient';
 import { LoginPage } from './LoginPage';
+import { SetPasswordPage } from './SetPasswordPage';
 import { DashboardLayout } from './DashboardLayout';
 import type { DashboardUser, Organisation, UserRole } from './types';
 
@@ -109,12 +110,12 @@ function getPage(
   // If a non-super user tries a protected URL, bounce them safely
   if (superAdminOnly.has(topSegment) && !isSuperAdmin(userRole)) {
     window.history.replaceState(null, '', '/dashboard/overview');
-    return <OverviewPage />;
+    return <OverviewPage onNavigate={navigate} />;
   }
 
   switch (topSegment) {
     case 'overview':
-      return <OverviewPage />;
+      return <OverviewPage onNavigate={navigate} />;
 
     case 'submit':
       return <SubmitCasePage onNavigate={navigate} />;
@@ -204,7 +205,7 @@ function getPage(
       return <GroupAlertsPage />;
 
     default:
-      return <OverviewPage />;
+      return <OverviewPage onNavigate={navigate} />;
   }
 }
 
@@ -228,6 +229,7 @@ export function DashboardApp() {
 
   const [user, setUser] = useState<DashboardUser | null>(null);
   const [organisation, setOrganisation] = useState<Organisation | null>(null);
+  const [needsPasswordSet, setNeedsPasswordSet] = useState(false);
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [error, setError] = useState<string | null>(null);
 
@@ -248,8 +250,17 @@ export function DashboardApp() {
 
     // Subscribe to changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         if (cancelled) return;
+        if (event === 'PASSWORD_RECOVERY') {
+          console.log('[Dashboard] PASSWORD_RECOVERY event — showing set-password form');
+          setNeedsPasswordSet(true);
+          // Still load profile so we have user context ready
+          if (session?.user) {
+            loadProfile(session.user.id, session.user.email ?? '');
+          }
+          return;
+        }
         if (session?.user) {
           loadProfile(session.user.id, session.user.email ?? '');
         } else {
@@ -298,7 +309,7 @@ export function DashboardApp() {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, role, organisation_id, full_name')
+        .select('id, role, organisation_id, full_name, is_active')
         .eq('id', uid)
         .maybeSingle();
 
@@ -333,7 +344,7 @@ export function DashboardApp() {
         // Re-fetch after insert
         const { data: newProfile, error: refetchErr } = await supabase
           .from('profiles')
-          .select('id, role, organisation_id, full_name')
+          .select('id, role, organisation_id, full_name, is_active')
           .eq('id', uid)
           .maybeSingle();
 
@@ -345,6 +356,15 @@ export function DashboardApp() {
         }
 
         return applyProfile(newProfile, email, supabase);
+      }
+
+      // Check if account is deactivated
+      if (profile.is_active === false) {
+        console.warn('[Dashboard] Account deactivated for uid:', uid);
+        await supabase.auth.signOut();
+        setError('Your account has been disabled. Please contact your administrator.');
+        setAuthState('unauthenticated');
+        return;
       }
 
       // Profile exists — apply it
@@ -452,6 +472,23 @@ export function DashboardApp() {
           <p className="dashboard-loading-text">Loading dashboard…</p>
         </div>
       </div>
+    );
+  }
+
+  if (needsPasswordSet) {
+    return (
+      <SetPasswordPage
+        onComplete={() => {
+          setNeedsPasswordSet(false);
+          // Profile should already be loaded; if not, re-trigger
+          if (!user) {
+            const supabase = getSupabase();
+            supabase.auth.getSession().then(({ data: { session } }) => {
+              if (session?.user) loadProfile(session.user.id, session.user.email ?? '');
+            });
+          }
+        }}
+      />
     );
   }
 

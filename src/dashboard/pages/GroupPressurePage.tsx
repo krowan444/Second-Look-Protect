@@ -268,110 +268,86 @@ export function GroupPressurePage() {
     }
 
     return (
-        <div>
+        <div className="gp-page">
             {/* Header */}
-            <div className="dashboard-page-header">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div>
-                        <h1 className="dashboard-page-title">
-                            <Gauge size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                            {groupName}
-                        </h1>
-                        <p className="dashboard-page-subtitle">
-                            Operational risk pressure across {displayHomes.length} home{displayHomes.length !== 1 ? 's' : ''}
-                        </p>
-                    </div>
-                    {allOrgs.length > 0 && (
-                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
-                    )}
+            <div className="gp-header">
+                <div>
+                    <h1 className="gp-title"><Gauge size={20} /> {groupName}</h1>
+                    <p className="gp-subtitle">Operational risk pressure across {displayHomes.length} home{displayHomes.length !== 1 ? 's' : ''}</p>
                 </div>
+                {allOrgs.length > 0 && (
+                    <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                )}
             </div>
 
-            {/* ── Highlight Cards ─────────────────────────────────────────── */}
+            {/* Highlight Cards */}
             {highlights.length > 0 && (
-                <div className="dashboard-stats-row" style={{ marginBottom: '2rem' }}>
+                <div className="gp-highlights">
                     {highlights.map((h, i) => (
-                        <div key={i} className="dashboard-stat-card" style={{ borderLeft: `4px solid ${h.color}` }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.35rem', color: h.color }}>
+                        <div key={i} className="gp-highlight">
+                            <div className="gp-highlight-icon" style={{ background: h.color + '14', color: h.color }}>
                                 {h.icon}
-                                <span style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748b' }}>
-                                    {h.label}
-                                </span>
                             </div>
-                            <div className="dashboard-stat-value" style={{ fontSize: '1.35rem' }}>{h.value}</div>
-                            <div className="dashboard-stat-label">{h.homeName}</div>
+                            <div>
+                                <div className="gp-highlight-label">{h.label}</div>
+                                <div className="gp-highlight-home">{h.homeName}</div>
+                                <div className="gp-highlight-value">{h.value}</div>
+                            </div>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* ── Pressure Table ──────────────────────────────────────────── */}
-            <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">
-                        <Gauge size={16} className="dashboard-panel-title-icon" /> Pressure Comparison
-                    </h2>
+            {/* Pressure Table */}
+            <div className="gp-card">
+                <div className="gp-card-header">
+                    <h2 className="gp-card-title"><Gauge size={15} /> Pressure Comparison</h2>
                 </div>
-                <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
+                <div className="gp-table-wrap">
+                    <table className="gp-table">
                         <thead>
                             <tr>
-                                <th className="dashboard-table-th">Home</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'center' }}>Score</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'center' }}>Band</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Open ({Math.round(W_OPEN * 100)}%)</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Overdue ({Math.round(W_OVERDUE * 100)}%)</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>High-Risk ({Math.round(W_HIGHRISK * 100)}%)</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Loss ({Math.round(W_LOSS * 100)}%)</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Repeat ({Math.round(W_REPEAT * 100)}%)</th>
+                                <th>Home</th>
+                                <th style={{ textAlign: 'center' }}>Score</th>
+                                <th style={{ textAlign: 'center' }}>Band</th>
+                                <th className="text-right">Open ({Math.round(W_OPEN * 100)}%)</th>
+                                <th className="text-right">Overdue ({Math.round(W_OVERDUE * 100)}%)</th>
+                                <th className="text-right">High-Risk ({Math.round(W_HIGHRISK * 100)}%)</th>
+                                <th className="text-right">Loss ({Math.round(W_LOSS * 100)}%)</th>
+                                <th className="text-right">Repeat ({Math.round(W_REPEAT * 100)}%)</th>
                             </tr>
                         </thead>
                         <tbody>
                             {displayHomes.length === 0 ? (
-                                <tr>
-                                    <td className="dashboard-table-td" colSpan={8} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
-                                        No data available
-                                    </td>
-                                </tr>
+                                <tr><td colSpan={8} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No data available</td></tr>
                             ) : displayHomes.map(h => (
-                                <tr key={h.id} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === h.id ? null : h.id)}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{h.name}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'center', fontWeight: 700, fontSize: '1.1rem', color: bandColor(h.band) }}>
-                                        {h.totalScore}
-                                    </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'center' }}>
-                                        <span style={{
-                                            display: 'inline-block',
-                                            padding: '0.15rem 0.6rem',
-                                            borderRadius: '9999px',
-                                            fontSize: '0.72rem',
-                                            fontWeight: 600,
-                                            background: bandColor(h.band) + '18',
-                                            color: bandColor(h.band),
-                                            border: `1px solid ${bandColor(h.band)}40`,
-                                        }}>
+                                <tr key={h.id} className="gp-row-click" onClick={() => setFilterHomeId(filterHomeId === h.id ? null : h.id)}>
+                                    <td className="gp-home-name">{h.name}</td>
+                                    <td style={{ textAlign: 'center', fontWeight: 700, fontSize: '1.1rem', color: bandColor(h.band) }}>{h.totalScore}</td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <span className="gp-tag" style={{ background: bandColor(h.band) + '18', color: bandColor(h.band), border: `1px solid ${bandColor(h.band)}40` }}>
                                             {h.band}
                                         </span>
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
+                                    <td className="text-right">
                                         {h.openScore}
-                                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '4px' }}>({h.openCases})</span>
+                                        <span className="gp-val-muted" style={{ fontSize: '0.7rem', marginLeft: '4px' }}>({h.openCases})</span>
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={h.overdueScore > 50 ? { color: '#f59e0b', fontWeight: 600 } : undefined}>{h.overdueScore}</span>
-                                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '4px' }}>({h.overdueCases})</span>
+                                    <td className="text-right">
+                                        <span className={h.overdueScore > 50 ? 'gp-val-warn' : ''}>{h.overdueScore}</span>
+                                        <span className="gp-val-muted" style={{ fontSize: '0.7rem', marginLeft: '4px' }}>({h.overdueCases})</span>
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={h.highRiskScore > 50 ? { color: '#dc2626', fontWeight: 600 } : undefined}>{h.highRiskScore}</span>
-                                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '4px' }}>({h.highRiskOpen})</span>
+                                    <td className="text-right">
+                                        <span className={h.highRiskScore > 50 ? 'gp-val-danger' : ''}>{h.highRiskScore}</span>
+                                        <span className="gp-val-muted" style={{ fontSize: '0.7rem', marginLeft: '4px' }}>({h.highRiskOpen})</span>
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
+                                    <td className="text-right">
                                         {h.lossScore}
-                                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '4px' }}>(£{h.totalLoss.toLocaleString()})</span>
+                                        <span className="gp-val-muted" style={{ fontSize: '0.7rem', marginLeft: '4px' }}>(£{h.totalLoss.toLocaleString()})</span>
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
+                                    <td className="text-right">
                                         {h.repeatScore}
-                                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '4px' }}>({h.repeatedResidents})</span>
+                                        <span className="gp-val-muted" style={{ fontSize: '0.7rem', marginLeft: '4px' }}>({h.repeatedResidents})</span>
                                     </td>
                                 </tr>
                             ))}
@@ -380,14 +356,12 @@ export function GroupPressurePage() {
                 </div>
             </div>
 
-            {/* ── Explainability ──────────────────────────────────────────── */}
-            <div className="dashboard-panel">
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">
-                        <AlertOctagon size={16} className="dashboard-panel-title-icon" /> How Pressure is Calculated
-                    </h2>
+            {/* Explainability */}
+            <div className="gp-card">
+                <div className="gp-card-header">
+                    <h2 className="gp-card-title"><AlertOctagon size={15} /> How Pressure is Calculated</h2>
                 </div>
-                <div style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#475569', lineHeight: 1.7 }}>
+                <div className="gp-card-body" style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.7 }}>
                     <p style={{ marginBottom: '0.75rem' }}>
                         The pressure score (0–100) is derived from five current operational signals, each normalised against the group maximum and combined with the following weights:
                     </p>
@@ -411,3 +385,4 @@ export function GroupPressurePage() {
         </div>
     );
 }
+

@@ -179,71 +179,63 @@ export function GroupActivityPage({ onNavigate }: GroupActivityPageProps) {
     }
 
     return (
-        <div>
+        <div className="gp-page">
             {/* Header */}
-            <div className="dashboard-page-header">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div>
-                        <h1 className="dashboard-page-title">
-                            <Activity size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                            {groupName}
-                        </h1>
-                        <p className="dashboard-page-subtitle">
-                            Latest {displayItems.length} event{displayItems.length !== 1 ? 's' : ''}{filterHomeId ? '' : ' across all homes'}
-                        </p>
-                    </div>
+            <div className="gp-header">
+                <div>
+                    <h1 className="gp-title"><Activity size={20} /> {groupName}</h1>
+                    <p className="gp-subtitle">
+                        Latest {displayItems.length} event{displayItems.length !== 1 ? 's' : ''}{filterHomeId ? '' : ' across all homes'}
+                    </p>
+                </div>
+                <div className="gp-actions">
                     {allOrgs.length > 0 && (
                         <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
                     )}
+                    {displayItems.length > 0 && (
+                        <button
+                            className="gp-export-btn"
+                            onClick={() => downloadCsv(
+                                'group-activity.csv',
+                                ['Home', 'Event Message', 'Event Type', 'Created At', 'Case ID'],
+                                displayItems.map(i => [i.orgName, i.message, i.type, i.created_at, i.case_id ?? ''])
+                            )}
+                        >
+                            <Download size={13} /> Export CSV
+                        </button>
+                    )}
                 </div>
-                {displayItems.length > 0 && (
-                    <button
-                        className="casedetail-btn casedetail-btn-action"
-                        style={{ marginTop: '0.5rem', fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
-                        onClick={() => downloadCsv(
-                            'group-activity.csv',
-                            ['Home', 'Event Message', 'Event Type', 'Created At', 'Case ID'],
-                            displayItems.map(i => [i.orgName, i.message, i.type, i.created_at, i.case_id ?? ''])
-                        )}
-                    >
-                        <Download size={13} /> Export CSV
-                    </button>
-                )}
             </div>
 
             {/* Activity table */}
-            <div className="dashboard-panel">
-                <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
+            <div className="gp-card">
+                <div className="gp-table-wrap">
+                    <table className="gp-table">
                         <thead>
                             <tr>
-                                <th className="dashboard-table-th">Home</th>
-                                <th className="dashboard-table-th">Event</th>
-                                <th className="dashboard-table-th">Type</th>
-                                <th className="dashboard-table-th">Time</th>
+                                <th>Home</th>
+                                <th>Event</th>
+                                <th>Type</th>
+                                <th>Time</th>
                             </tr>
                         </thead>
                         <tbody>
                             {displayItems.length === 0 ? (
                                 <tr>
-                                    <td className="dashboard-table-td" colSpan={4} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
+                                    <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>
                                         No recent activity{filterHomeId ? ' for this home' : ' across the group'}
                                     </td>
                                 </tr>
                             ) : displayItems.map(item => (
                                 <tr
                                     key={item.id}
-                                    style={{ cursor: item.case_id && onNavigate ? 'pointer' : undefined }}
+                                    className={item.case_id && onNavigate ? 'gp-row-click' : ''}
                                     onClick={() => item.case_id && onNavigate?.(`/dashboard/cases/${item.case_id}`)}
                                 >
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{item.orgName}</td>
-                                    <td className="dashboard-table-td">{item.message}</td>
-                                    <td className="dashboard-table-td">
-                                        <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '4px', color: '#475569' }}>
-                                            {friendlyType(item.type)}
-                                        </span>
-                                    </td>
-                                    <td className="dashboard-table-td" style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(item.created_at)}</td>
+                                    <td className="gp-home-name">{item.orgName}</td>
+                                    <td>{item.message}</td>
+                                    <td><span className="gp-tag">{friendlyType(item.type)}</span></td>
+                                    <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(item.created_at)}</td>
                                 </tr>
                             ))}
                         </tbody>

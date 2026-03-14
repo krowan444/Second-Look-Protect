@@ -11,6 +11,7 @@ import { X, Send, MessageSquare } from 'lucide-react';
 import { usePageContext } from './usePageContext';
 import { askStapeLee, SessionMemory } from './stapeLeeBrain';
 import { pageGuides } from './stapeLeeKnowledge';
+import { usePageDataSnapshot } from './StapeLeeDataContext';
 
 /* ── Types ────────────────────────────────────────────────────────────────── */
 
@@ -277,6 +278,7 @@ export function StapeLeeChat({ currentPath }: Props) {
     const latestMsgRef = useRef<HTMLDivElement>(null);
     const userScrolledUp = useRef(false);
     const anchoredMsgId = useRef<string>('');
+    const pageData = usePageDataSnapshot();
 
     /* ── Panel width (resizable, persisted) ──────────────────────────── */
     const [panelWidth, setPanelWidth] = useState(() => {
@@ -434,7 +436,7 @@ export function StapeLeeChat({ currentPath }: Props) {
             }
         }
 
-        const response = askStapeLee(chip, ctx, sessionMemory.current);
+        const response = askStapeLee(chip, ctx, sessionMemory.current, pageData);
         addAssistantReply(response.text, { action: response.action, chips: response.chips });
     }, [ctx, feedbackMode, isThinking, addAssistantReply]);
 
@@ -481,7 +483,7 @@ export function StapeLeeChat({ currentPath }: Props) {
             }
         }
 
-        const response = askStapeLee(text, ctx, sessionMemory.current);
+        const response = askStapeLee(text, ctx, sessionMemory.current, pageData);
         addAssistantReply(response.text, { action: response.action, chips: response.chips });
     }, [input, ctx, feedbackMode, feedbackDraft, isThinking, addAssistantReply]);
 
@@ -513,6 +515,30 @@ export function StapeLeeChat({ currentPath }: Props) {
                 return;
             }
 
+            // Resolve user + org info for the feedback email
+            const userEmail = session?.user?.email || '';
+            const userName = session?.user?.user_metadata?.display_name
+                || session?.user?.user_metadata?.full_name
+                || userEmail.split('@')[0]
+                || 'Unknown';
+
+            let organisationName = '';
+            try {
+                const { data: profile } = await sb
+                    .from('profiles')
+                    .select('organisation_id')
+                    .eq('id', session.user.id)
+                    .single();
+                if (profile?.organisation_id) {
+                    const { data: org } = await sb
+                        .from('organisations')
+                        .select('name')
+                        .eq('id', profile.organisation_id)
+                        .single();
+                    if (org?.name) organisationName = org.name;
+                }
+            } catch { /* best-effort — email will still send without org name */ }
+
             const res = await fetch('/api/email-dispatch', {
                 method: 'POST',
                 headers: {
@@ -527,6 +553,9 @@ export function StapeLeeChat({ currentPath }: Props) {
                         description: draft.description,
                         priority: draft.priority,
                         sourceUrl: window.location.href,
+                        userName,
+                        userEmail,
+                        organisationName,
                     },
                 }),
             });

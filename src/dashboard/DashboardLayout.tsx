@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getSupabase } from '../lib/supabaseClient';
-import { Upload, LogOut, User, Menu } from 'lucide-react';
+import { Upload, LogOut, User, Menu, Eye } from 'lucide-react';
 import { DashboardSidebar } from './DashboardSidebar';
 import { StapeLeeChat } from './assistant/StapeLeeChat';
+import { StapeLeeDataProvider } from './assistant/StapeLeeDataContext';
 import { NotificationBell } from './components/NotificationBell';
 import type { DashboardUser, Organisation } from './types';
 
@@ -71,22 +72,39 @@ export function DashboardLayout({
     const id = e.target.value;
 
     if (id === '__global__' || id === '') {
-      setActiveOrgId('');
-      localStorage.removeItem('slp_active_org_id');
-      localStorage.removeItem('slp_active_org_name');
-      localStorage.removeItem('slp_viewing_as_org_id');
-      localStorage.removeItem('slp_viewing_as');
-      console.log('[DashboardLayout] Org switch → Global (all keys cleared)');
-      window.location.href = '/dashboard/platform';
+      handleExitViewAs();
       return;
     }
 
     setActiveOrgId(id);
-    // Write both keys so all pages resolve the same org consistently
     localStorage.setItem('slp_active_org_id', id);
     localStorage.setItem('slp_viewing_as_org_id', id);
-    console.log('[DashboardLayout] Org switch → id:', id, '(wrote slp_active_org_id + slp_viewing_as_org_id)');
+    console.log('[DashboardLayout] Org switch → id:', id);
+
+    // Audit log the switch
+    const orgName = allOrgs.find(o => o.id === id)?.name ?? id;
+    try {
+      const supabase = getSupabase();
+      supabase.from('alert_log').insert({
+        event_type: 'view_as_switch',
+        entity_type: 'organisation',
+        severity: 'info',
+        organisation_id: id,
+        meta: { admin_email: user.email, admin_id: user.id, target_org: orgName },
+      }).then(() => console.log('[ViewAs] Audit logged:', orgName));
+    } catch { /* non-blocking */ }
+
     window.location.reload();
+  }
+
+  function handleExitViewAs() {
+    setActiveOrgId('');
+    localStorage.removeItem('slp_active_org_id');
+    localStorage.removeItem('slp_active_org_name');
+    localStorage.removeItem('slp_viewing_as_org_id');
+    localStorage.removeItem('slp_viewing_as');
+    console.log('[DashboardLayout] Exited View As mode');
+    window.location.href = '/dashboard/platform';
   }
 
   /* ── Display name in top bar ───────────────────────────────────────── */
@@ -110,6 +128,7 @@ export function DashboardLayout({
     : user.email.slice(0, 2).toUpperCase();
 
   return (
+    <StapeLeeDataProvider>
     <div className="dashboard-shell">
       {/* Sidebar */}
       <DashboardSidebar
@@ -236,6 +255,32 @@ export function DashboardLayout({
           </div>
         </header>
 
+        {/* View As banner */}
+        {isSuperAdmin && activeOrgId && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+            padding: '8px 16px', background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            color: '#fff', fontSize: '0.82rem', fontWeight: 600,
+            borderBottom: '1px solid rgba(0,0,0,0.1)',
+            flexWrap: 'wrap',
+          }}>
+            <Eye size={16} style={{ flexShrink: 0 }} />
+            <span>Viewing as: <strong>{activeOrgName}</strong> · Role: Org Admin (simulated)</span>
+            <button
+              onClick={handleExitViewAs}
+              style={{
+                background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)',
+                color: '#fff', padding: '3px 12px', borderRadius: '6px', cursor: 'pointer',
+                fontSize: '0.75rem', fontWeight: 600, transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.35)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}
+            >
+              ✕ Exit View As
+            </button>
+          </div>
+        )}
+
         {/* Main content */}
         <main className="dashboard-main">{children}</main>
       </div>
@@ -251,5 +296,6 @@ export function DashboardLayout({
         />
       )}
     </div>
+    </StapeLeeDataProvider>
   );
 }

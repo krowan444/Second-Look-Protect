@@ -257,92 +257,76 @@ export function GroupIntelPage() {
     }
 
     return (
-        <div>
+        <div className="gp-page">
             {/* Header */}
-            <div className="dashboard-page-header">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div>
-                        <h1 className="dashboard-page-title">
-                            <BarChart3 size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                            {groupName}
-                        </h1>
-                        <p className="dashboard-page-subtitle">
-                            Cross-home risk and performance comparison — {displayMetrics.length} home{displayMetrics.length !== 1 ? 's' : ''}
-                        </p>
-                    </div>
-                    {allOrgs.length > 0 && (
-                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
-                    )}
+            <div className="gp-header">
+                <div>
+                    <h1 className="gp-title"><BarChart3 size={20} /> {groupName}</h1>
+                    <p className="gp-subtitle">Cross-home risk and performance comparison — {displayMetrics.length} home{displayMetrics.length !== 1 ? 's' : ''}</p>
                 </div>
+                {allOrgs.length > 0 && (
+                    <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                )}
             </div>
 
-            {/* ── Insight Cards ────────────────────────────────────────────── */}
+            {/* Insight Cards */}
             {insights.length > 0 && (
-                <div className="dashboard-stats-row" style={{ marginBottom: '2rem' }}>
+                <div className="gp-highlights">
                     {insights.map((ins, i) => (
-                        <div key={i} className="dashboard-stat-card" style={{ borderLeft: `4px solid ${ins.color}` }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.35rem', color: ins.color }}>
+                        <div key={i} className="gp-highlight">
+                            <div className="gp-highlight-icon" style={{ background: ins.color + '14', color: ins.color }}>
                                 {ins.icon}
-                                <span style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748b' }}>
-                                    {ins.label}
-                                </span>
                             </div>
-                            <div className="dashboard-stat-value" style={{ fontSize: '1.35rem' }}>{ins.value}</div>
-                            <div className="dashboard-stat-label">{ins.homeName}</div>
+                            <div>
+                                <div className="gp-highlight-label">{ins.label}</div>
+                                <div className="gp-highlight-home">{ins.homeName}</div>
+                                <div className="gp-highlight-value">{ins.value}</div>
+                            </div>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* ── Detailed Comparison Table ────────────────────────────────── */}
-            <div className="dashboard-panel">
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">
-                        <BarChart3 size={16} className="dashboard-panel-title-icon" /> Detailed Comparison
-                    </h2>
+            {/* Detailed Comparison Table */}
+            <div className="gp-card">
+                <div className="gp-card-header">
+                    <h2 className="gp-card-title"><BarChart3 size={15} /> Detailed Comparison</h2>
                 </div>
-                <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
+                <div className="gp-table-wrap">
+                    <table className="gp-table">
                         <thead>
                             <tr>
-                                <th className="dashboard-table-th">Home</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Total</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Open</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Closed</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Overdue</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>High-Risk</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Closure Rate</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Total Loss</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Avg Loss/Case</th>
+                                <th>Home</th>
+                                <th className="text-right">Total</th>
+                                <th className="text-right">Open</th>
+                                <th className="text-right">Closed</th>
+                                <th className="text-right">Overdue</th>
+                                <th className="text-right">High-Risk</th>
+                                <th className="text-right">Closure Rate</th>
+                                <th className="text-right">Total Loss</th>
+                                <th className="text-right">Avg Loss/Case</th>
                             </tr>
                         </thead>
                         <tbody>
                             {displayMetrics.map(m => (
-                                <tr key={m.id} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === m.id ? null : m.id)}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600, color: '#C9A84C' }}>{m.name}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{m.totalCases}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{m.openCases}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{m.closedCases}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={m.overdueCases > 0 ? { color: '#f59e0b', fontWeight: 600 } : undefined}>
-                                            {m.overdueCases}
-                                        </span>
+                                <tr key={m.id} className="gp-row-click" onClick={() => setFilterHomeId(filterHomeId === m.id ? null : m.id)}>
+                                    <td className="gp-home-name">{m.name}</td>
+                                    <td className="text-right">{m.totalCases}</td>
+                                    <td className="text-right">{m.openCases}</td>
+                                    <td className="text-right">{m.closedCases}</td>
+                                    <td className="text-right">
+                                        <span className={m.overdueCases > 0 ? 'gp-val-warn' : ''}>{m.overdueCases}</span>
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={m.highRiskOpen > 0 ? { color: '#dc2626', fontWeight: 600 } : undefined}>
-                                            {m.highRiskOpen}
-                                        </span>
+                                    <td className="text-right">
+                                        <span className={m.highRiskOpen > 0 ? 'gp-val-danger' : ''}>{m.highRiskOpen}</span>
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={{
-                                            color: m.closureRate >= 80 ? '#16a34a' : m.closureRate >= 50 ? '#f59e0b' : '#dc2626',
-                                            fontWeight: 600,
-                                        }}>
+                                    <td className="text-right">
+                                        <span className={m.closureRate >= 80 ? 'gp-val-good' : m.closureRate >= 50 ? 'gp-val-warn' : 'gp-val-danger'}>
                                             {pct(m.closureRate)}
                                         </span>
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{currency(m.totalLoss)}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{currency(m.avgLossPerCase)}</td>
+                                    <td className="text-right">{currency(m.totalLoss)}</td>
+                                    <td className="text-right">{currency(m.avgLossPerCase)}</td>
                                 </tr>
                             ))}
                         </tbody>

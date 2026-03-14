@@ -5,6 +5,7 @@ import {
     Eye, BarChart3,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { usePublishPageData } from '../assistant/StapeLeeDataContext';
 import { KpiRingChart } from '../components/KpiRingChart';
 import {
     KPI_COLORS, DEFAULTS,
@@ -99,7 +100,7 @@ function fmtDate(iso: string): string {
 
 /* â”€â”€â”€ Overview Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
-export function OverviewPage() {
+export function OverviewPage({ onNavigate }: { onNavigate?: (path: string) => void }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [noOrg, setNoOrg] = useState(false);
@@ -406,6 +407,46 @@ export function OverviewPage() {
             .slice(0, 5);
     }, [casesAll]);
 
+    /* ── Publish data for Stape-Lee ────────────────────────────────── */
+    const { publishPageData, clearPageData } = usePublishPageData();
+    useEffect(() => {
+        if (loading || error || noOrg) return;
+        publishPageData({
+            section: 'overview',
+            updatedAt: Date.now(),
+            organisationName: orgName || undefined,
+            kpis: [
+                { label: 'Overall Health', value: `${kpi.overallPct}%`, status: kpi.overallStatus },
+                { label: 'Queue', value: kpi.queueDepth, status: kpi.queueStatus },
+                { label: 'Triage', value: `${kpi.triagePct}%`, status: kpi.triageStatus },
+                { label: 'Documented', value: `${kpi.docPct}%`, status: kpi.docStatus },
+                { label: 'Closure', value: `${kpi.closurePct}%`, status: kpi.closureStatus },
+                { label: 'Cases This Month', value: casesMonth.length, status: 'neutral' },
+                { label: 'High Risk', value: metrics.highRisk, status: metrics.highRisk > 0 ? 'danger' : 'good' },
+                { label: 'Overdue', value: metrics.overdue, status: metrics.overdue > 0 ? 'danger' : 'good' },
+                { label: 'Awaiting Review', value: panels.awaitingReview.length, status: panels.awaitingReview.length > 5 ? 'danger' : panels.awaitingReview.length > 0 ? 'warn' : 'good' },
+            ],
+            alerts: execAlerts.map(ea => ({
+                severity: ea.severity,
+                title: ea.title || ea.event_type.replace(/_/g, ' '),
+                description: ea.description,
+            })),
+            tableRows: panels.awaitingReview.slice(0, 5).map(c => ({
+                label: `Case ${c.id.slice(0, 8)}`,
+                status: c.status ?? 'unknown',
+                risk: c.risk_level ?? 'unknown',
+                type: c.category ?? 'unknown',
+                submitted: c.submitted_at ? new Date(c.submitted_at).toLocaleDateString() : 'N/A',
+            })),
+            insights: [
+                insight,
+                sysStatusLabel !== 'All Clear' ? `System status: ${sysStatusLabel}` : null,
+                residentsAttention.length > 0 ? `${residentsAttention.length} resident${residentsAttention.length > 1 ? 's' : ''} with repeat incidents` : null,
+            ].filter(Boolean) as string[],
+        });
+        return () => clearPageData();
+    }, [loading, error, noOrg, kpi, metrics, panels, execAlerts, insight, sysStatusLabel, residentsAttention, orgName]);
+
     /* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     if (loading) {
         return (
@@ -622,7 +663,7 @@ export function OverviewPage() {
             </div>
 
             {/* ── A. Status Strip ─────────────────────────────────────────── */}
-            <div style={{
+            <div onClick={() => { if (onNavigate) onNavigate('/dashboard/review-queue'); }} style={{
                 background: sysStatusBand === 'red' ? '#fef2f2' : sysStatusBand === 'amber' ? '#fefce8' : '#f0fdf4',
                 border: `1px solid ${sysStatusBand === 'red' ? '#fecaca' : sysStatusBand === 'amber' ? '#fef08a' : '#bbf7d0'}`,
                 borderRadius: '10px',
@@ -632,7 +673,9 @@ export function OverviewPage() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: '0.5rem',
-            }}>
+                cursor: onNavigate ? 'pointer' : undefined,
+                transition: 'opacity 0.15s ease',
+            }} onMouseEnter={e => { if (onNavigate) (e.currentTarget as HTMLDivElement).style.opacity = '0.85'; }} onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.opacity = '1'; }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <ShieldCheck size={15} style={{ color: sysStatusBand === 'red' ? '#f87171' : sysStatusBand === 'amber' ? '#fbbf24' : '#34d399' }} />
                     <span style={{
@@ -692,6 +735,7 @@ export function OverviewPage() {
                         flexWrap: 'wrap',
                         justifyContent: 'center',
                     }}>
+                        <div onClick={() => { if (onNavigate) onNavigate('/dashboard/cases'); }} style={{ cursor: onNavigate ? 'pointer' : undefined, transition: 'transform 0.15s ease' }} onMouseEnter={e => { if (onNavigate) (e.currentTarget as HTMLDivElement).style.transform = 'scale(1.08)'; }} onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)'; }} title="View cases">
                         <KpiRingChart
                             percent={kpi.closurePct}
                             status={kpi.closureStatus}
@@ -699,6 +743,8 @@ export function OverviewPage() {
                             sublabel="Closure"
                             size={85}
                         />
+                        </div>
+                        <div onClick={() => { if (onNavigate) onNavigate('/dashboard/review-queue'); }} style={{ cursor: onNavigate ? 'pointer' : undefined, transition: 'transform 0.15s ease' }} onMouseEnter={e => { if (onNavigate) (e.currentTarget as HTMLDivElement).style.transform = 'scale(1.08)'; }} onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)'; }} title="View review queue">
                         <KpiRingChart
                             percent={kpi.triagePct}
                             status={kpi.triageStatus}
@@ -706,6 +752,8 @@ export function OverviewPage() {
                             sublabel="Triage"
                             size={85}
                         />
+                        </div>
+                        <div onClick={() => { if (onNavigate) onNavigate('/dashboard/cases'); }} style={{ cursor: onNavigate ? 'pointer' : undefined, transition: 'transform 0.15s ease' }} onMouseEnter={e => { if (onNavigate) (e.currentTarget as HTMLDivElement).style.transform = 'scale(1.08)'; }} onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)'; }} title="View cases">
                         <KpiRingChart
                             percent={kpi.docPct}
                             status={kpi.docStatus}
@@ -713,6 +761,8 @@ export function OverviewPage() {
                             sublabel="Documented"
                             size={85}
                         />
+                        </div>
+                        <div onClick={() => { if (onNavigate) onNavigate('/dashboard/review-queue'); }} style={{ cursor: onNavigate ? 'pointer' : undefined, transition: 'transform 0.15s ease' }} onMouseEnter={e => { if (onNavigate) (e.currentTarget as HTMLDivElement).style.transform = 'scale(1.08)'; }} onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)'; }} title="View review queue">
                         <KpiRingChart
                             percent={kpi.queuePct}
                             status={kpi.queueStatus}
@@ -720,6 +770,7 @@ export function OverviewPage() {
                             sublabel="Queue"
                             size={85}
                         />
+                        </div>
                     </div>
                 </div>
 
@@ -771,14 +822,17 @@ export function OverviewPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                         {execAlerts.map((ea) => {
                             const sc = sevColour(ea.severity);
+                            const alertDest = /sla|overdue|queue|triage|risk/i.test(ea.event_type) ? '/dashboard/review-queue' : '/dashboard/cases';
                             return (
-                                <div key={ea.id} style={{
+                                <div key={ea.id} onClick={() => { if (onNavigate) onNavigate(alertDest); }} style={{
                                     background: sc.bg,
                                     border: `1px solid ${sc.border}`,
                                     borderLeft: `3px solid ${sc.dot}`,
                                     borderRadius: '8px',
                                     padding: '0.55rem 0.75rem',
-                                }}>
+                                    cursor: onNavigate ? 'pointer' : undefined,
+                                    transition: 'box-shadow 0.15s ease',
+                                }} onMouseEnter={e => { if (onNavigate) (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'; }} onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'; }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.15rem' }}>
                                         <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: sc.dot, flexShrink: 0 }} />
                                         <span style={{ fontSize: '0.78rem', fontWeight: 600, color: sc.fg }}>{ea.title || plainEventType(ea.event_type)}</span>
@@ -904,7 +958,7 @@ export function OverviewPage() {
                                     {panels.awaitingReview.map((c) => {
                                         const age = ageLabel(c.submitted_at);
                                         return (
-                                            <tr key={c.id}>
+                                            <tr key={c.id} onClick={() => { if (onNavigate) onNavigate(`/dashboard/cases/${c.id}`); }} style={{ cursor: onNavigate ? 'pointer' : undefined, transition: 'background 0.12s ease' }} onMouseEnter={e => { if (onNavigate) (e.currentTarget as HTMLTableRowElement).style.background = '#f8fafc'; }} onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'; }}>
                                                 <td>{fmtDate(c.submitted_at)}</td>
                                                 <td>
                                                     <span style={{

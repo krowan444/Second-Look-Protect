@@ -7,6 +7,8 @@ import {
     ShieldCheck,
     XCircle,
     CheckCircle2,
+    Trash2,
+    AlertTriangle,
 } from 'lucide-react';
 
 interface OrgUser {
@@ -41,6 +43,9 @@ export function OrganisationUsersPage() {
     // Action states
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [actionMsg, setActionMsg] = useState<string | null>(null);
+
+    // Remove confirmation modal
+    const [removeTarget, setRemoveTarget] = useState<OrgUser | null>(null);
 
     const canAccess = userRole === 'super_admin' || userRole === 'org_admin';
 
@@ -132,7 +137,8 @@ export function OrganisationUsersPage() {
             });
             const result = await resp.json().catch(() => null);
             if (!resp.ok) throw new Error(result?.error ?? 'Failed to invite');
-            setInviteMsg('Invite sent');
+            const emailSent = result?.emailSent === true;
+            setInviteMsg(emailSent ? 'Invite sent — email delivered' : 'Account created — email may not have been sent');
             setInviteEmail('');
             setInviteName('');
             fetchUsers();
@@ -295,7 +301,7 @@ export function OrganisationUsersPage() {
                                         <td style={{ fontSize: '0.75rem', color: '#64748b' }}>
                                             {new Date(u.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </td>
-                                        <td>
+                                        <td style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                             <button
                                                 className="dashboard-reports-action-btn"
                                                 style={{ fontSize: '0.7rem', padding: '2px 8px' }}
@@ -311,6 +317,18 @@ export function OrganisationUsersPage() {
                                                 )}
                                                 {u.is_active ? 'Disable' : 'Enable'}
                                             </button>
+                                            {u.is_active && (
+                                                <button
+                                                    className="dashboard-reports-action-btn"
+                                                    style={{ fontSize: '0.7rem', padding: '2px 8px', color: '#dc2626', borderColor: '#fecaca' }}
+                                                    onClick={() => setRemoveTarget(u)}
+                                                    disabled={actionLoading === u.id}
+                                                    title="Remove user access"
+                                                >
+                                                    <Trash2 size={12} />
+                                                    Remove
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -391,6 +409,65 @@ export function OrganisationUsersPage() {
                     )}
                 </div>
             </div>
+
+            {/* Remove User Confirmation Modal */}
+            {removeTarget && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 1000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(0,0,0,0.45)',
+                }}>
+                    <div style={{
+                        background: '#fff', borderRadius: '12px', padding: '1.5rem',
+                        maxWidth: '420px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                            <AlertTriangle size={20} style={{ color: '#dc2626', flexShrink: 0 }} />
+                            <h3 style={{ margin: 0, fontSize: '1rem', color: '#1e293b' }}>Remove User</h3>
+                        </div>
+                        <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 0.5rem', lineHeight: 1.5 }}>
+                            Are you sure you want to remove <strong>{removeTarget.full_name || removeTarget.email}</strong>?
+                        </p>
+                        <div style={{
+                            background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px',
+                            padding: '0.75rem', fontSize: '0.78rem', color: '#64748b', margin: '0 0 1rem',
+                        }}>
+                            <strong>What happens:</strong>
+                            <ul style={{ margin: '0.3rem 0 0', paddingLeft: '1.2rem', lineHeight: 1.6 }}>
+                                <li>Login access will be <strong style={{ color: '#dc2626' }}>blocked immediately</strong></li>
+                                <li>All cases, reviews, and audit history are <strong style={{ color: '#16a34a' }}>preserved</strong></li>
+                                <li>User will appear as "Disabled" and can be re-enabled later</li>
+                            </ul>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => setRemoveTarget(null)}
+                                style={{
+                                    padding: '6px 16px', borderRadius: '6px', border: '1px solid #e2e8f0',
+                                    background: '#fff', cursor: 'pointer', fontSize: '0.82rem', color: '#475569',
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    const target = removeTarget;
+                                    setRemoveTarget(null);
+                                    await handleToggleActive(target.id, true);
+                                }}
+                                disabled={actionLoading === removeTarget.id}
+                                style={{
+                                    padding: '6px 16px', borderRadius: '6px', border: 'none',
+                                    background: '#dc2626', color: '#fff', cursor: 'pointer',
+                                    fontSize: '0.82rem', fontWeight: 600,
+                                }}
+                            >
+                                {actionLoading === removeTarget.id ? 'Removing…' : 'Remove User'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

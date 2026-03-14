@@ -92,6 +92,33 @@ export default async function handler(req, res) {
                     const existingUser = (lookupData?.users || []).find(u => u.email === email);
                     if (existingUser) {
                         newUserId = existingUser.id;
+
+                        // Unban auth user in case they were previously removed
+                        try {
+                            await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${newUserId}`, {
+                                method: 'PUT',
+                                headers: sbHeaders,
+                                body: JSON.stringify({ ban_duration: 'none' }),
+                            });
+                            console.log(`[org-users-invite] Unbanned auth user ${newUserId} for re-invite`);
+                        } catch (unbanErr) {
+                            console.error('[org-users-invite] Unban failed (non-blocking):', unbanErr);
+                        }
+
+                        // Re-activate profile if it was deactivated
+                        try {
+                            await fetch(
+                                `${SUPABASE_URL}/rest/v1/profiles?id=eq.${newUserId}&organisation_id=eq.${organisation_id}`,
+                                {
+                                    method: 'PATCH',
+                                    headers: { ...sbHeaders, Prefer: 'return=minimal' },
+                                    body: JSON.stringify({ is_active: true, role, updated_at: new Date().toISOString() }),
+                                }
+                            );
+                            console.log(`[org-users-invite] Re-activated profile ${newUserId}`);
+                        } catch (reactivateErr) {
+                            console.error('[org-users-invite] Re-activate failed (non-blocking):', reactivateErr);
+                        }
                     } else {
                         return res.status(409).json({ ok: false, error: 'User exists but could not be found. Try updating their role instead.' });
                     }
@@ -110,18 +137,116 @@ export default async function handler(req, res) {
             throw new Error('Failed to get user ID');
         }
 
-        // Now send the actual invite/magic-link email
-        const magicRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
+        // Now generate the actual invite link and send the email
+        const RESEND_API_KEY = process.env.RESEND_API_KEY;
+        const EMAIL_FROM = process.env.EMAIL_FROM || 'Second Look Protect <noreply@secondlookprotect.co.uk>';
+
+        if (!RESEND_API_KEY) {
+            console.error('RESEND_API_KEY not set — cannot send invite email');
+            // Still create the profile, but warn that email failed
+        }
+
+        let inviteLink = null;
+
+        // Try invite-type link first (works for unconfirmed users)
+        const linkRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
             method: 'POST',
             headers: sbHeaders,
-            body: JSON.stringify({
-                type: 'magiclink',
-                email,
-            }),
+            body: JSON.stringify({ type: 'invite', email }),
         });
-        // Non-blocking — if magic link generation fails, user can still use password reset
-        if (!magicRes.ok) {
-            console.warn('Magic link generation failed, user can use password reset instead');
+
+        if (linkRes.ok) {
+            const linkData = await linkRes.json();
+            inviteLink = linkData?.action_link || linkData?.properties?.action_link || null;
+        }
+
+        // Fallback: try recovery link if invite link fails (e.g. user already confirmed)
+        if (!inviteLink) {
+            const recoveryRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
+                method: 'POST',
+                headers: sbHeaders,
+                body: JSON.stringify({ type: 'recovery', email }),
+            });
+            if (recoveryRes.ok) {
+                const recoveryData = await recoveryRes.json();
+                inviteLink = recoveryData?.action_link || recoveryData?.properties?.action_link || null;
+            }
+        }
+
+        // Send the invite email via Resend
+        let emailSent = false;
+        if (RESEND_API_KEY && inviteLink) {
+            const displayName = full_name || email;
+            const emailBody = {
+                from: EMAIL_FROM,
+                to: [email],
+                subject: 'You\'ve been invited to Second Look Protect',
+                html: `
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px;">
+                        <div style="text-align: center; margin-bottom: 32px;">
+                            <h1 style="color: #1e293b; font-size: 22px; margin: 0;">Second Look Protect</h1>
+                            <p style="color: #64748b; font-size: 14px; margin: 8px 0 0 0;">Safeguarding Intelligence Platform</p>
+                        </div>
+                        <div style="background: #f8fafc; border-radius: 12px; padding: 28px; border: 1px solid #e2e8f0;">
+                            <h2 style="color: #1e293b; font-size: 18px; margin: 0 0 12px 0;">Welcome, ${displayName}</h2>
+                            <p style="color: #475569; font-size: 14px; line-height: 1.6; margin: 0 0 20px 0;">
+                                You've been invited to join your organisation's safeguarding dashboard.
+                                Click the button below to set your password and activate your account.
+                            </p>
+                            <div style="text-align: center; margin: 24px 0;">
+                                <a href="${inviteLink}" style="display: inline-block; background: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-size: 14px; font-weight: 600;">
+                                    Set Password &amp; Activate Account
+                                </a>
+                            </div>
+                            <p style="color: #94a3b8; font-size: 12px; line-height: 1.5; margin: 20px 0 0 0;">
+                                If the button doesn't work, copy and paste this link into your browser:<br/>
+                                <a href="${inviteLink}" style="color: #2563eb; word-break: break-all;">${inviteLink}</a>
+                            </p>
+                        </div>
+                        <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 24px 0 0 0;">
+                            This invitation was sent by an administrator. If you didn't expect this, you can safely ignore it.
+                        </p>
+                    </div>
+                `,
+            };
+
+            try {
+                const sendRes = await fetch('https://api.resend.com/emails', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(emailBody),
+                });
+                if (sendRes.ok) {
+                    emailSent = true;
+                    const sendData = await sendRes.json().catch(() => null);
+                    console.log(`[org-users-invite] Invite email sent to ${email} — provider_id: ${sendData?.id}`);
+                    // Log to email_logs for traceability
+                    try {
+                        await fetch(`${SUPABASE_URL}/rest/v1/email_logs`, {
+                            method: 'POST',
+                            headers: { ...sbHeaders, Prefer: 'return=minimal' },
+                            body: JSON.stringify({
+                                organisation_id,
+                                event_type: 'user_invite_sent',
+                                recipient_email: email,
+                                recipient_role: role || 'staff',
+                                subject: emailBody.subject,
+                                status: 'sent',
+                                provider_message_id: sendData?.id || null,
+                                meta: { full_name: full_name || null },
+                                sent_at: new Date().toISOString(),
+                            }),
+                        });
+                    } catch { /* non-blocking */ }
+                } else {
+                    const sendErr = await sendRes.text().catch(() => '');
+                    console.error(`Resend failed for invite to ${email}:`, sendErr);
+                }
+            } catch (emailErr) {
+                console.error(`Email send error for ${email}:`, emailErr);
+            }
+        } else if (!inviteLink) {
+            console.warn(`Could not generate invite link for ${email}`);
         }
 
         // Upsert profile
@@ -147,7 +272,7 @@ export default async function handler(req, res) {
         }
 
         const profile = await upsertRes.json();
-        return res.status(201).json({ ok: true, profile: profile?.[0] ?? null, email });
+        return res.status(201).json({ ok: true, profile: profile?.[0] ?? null, email, emailSent });
 
     } catch (err) {
         return res.status(500).json({ ok: false, error: err.message || 'Unknown error' });

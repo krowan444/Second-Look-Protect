@@ -60,7 +60,7 @@ export default async function handler(req, res) {
     try {
         // Fetch profiles for this org
         const profilesRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisationId}&select=id,full_name,role,is_active,created_at&order=created_at.asc`,
+            `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisationId}&is_active=eq.true&select=id,full_name,role,is_active,created_at&order=created_at.asc`,
             { headers: sbHeaders }
         );
         if (!profilesRes.ok) throw new Error(`Profiles fetch failed: ${profilesRes.status}`);

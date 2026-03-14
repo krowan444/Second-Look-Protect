@@ -123,14 +123,23 @@ export default async function handler(req, res) {
             recipients = Array.isArray(settings.report_recipients) ? settings.report_recipients.filter(Boolean) : [];
         }
         if (recipients.length === 0) {
-            // Final fallback: org_admin profile emails
+            // Final fallback: org_admin emails resolved from auth.users (profiles has no email column)
+            console.log('[send-inspection-pack] No custom recipients — falling back to org admin emails via auth.users');
             const adminRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&role=eq.org_admin&is_active=eq.true&select=email&limit=10`,
+                `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&role=eq.org_admin&is_active=eq.true&select=id&limit=10`,
                 { headers: sbHeaders }
             );
             if (adminRes.ok) {
                 const adminRows = await adminRes.json();
-                recipients = (adminRows || []).map(r => r.email).filter(Boolean);
+                for (const row of (adminRows || [])) {
+                    try {
+                        const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${row.id}`, { headers: sbHeaders });
+                        if (authRes.ok) {
+                            const authUser = await authRes.json();
+                            if (authUser?.email) recipients.push(authUser.email);
+                        }
+                    } catch { /* skip this user */ }
+                }
             }
         }
         const cc = Array.isArray(settings.report_cc) ? settings.report_cc.filter(Boolean) : [];

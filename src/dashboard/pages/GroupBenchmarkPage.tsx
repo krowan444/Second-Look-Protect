@@ -4,6 +4,7 @@ import {
     AlertOctagon, Clock, DollarSign, ArrowUp, ArrowDown, Minus,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
+import { usePublishPageData } from '../assistant/StapeLeeDataContext';
 import { useGroupHomeFilter } from '../hooks/useGroupHomeFilter';
 import { GroupHomeFilter } from '../components/GroupHomeFilter';
 
@@ -220,6 +221,33 @@ export function GroupBenchmarkPage() {
         [homes, filterHomeId]
     );
 
+    /* ── Publish live data to Stape-Lee ─────────────────────────────── */
+    const { publishPageData, clearPageData } = usePublishPageData();
+    useEffect(() => {
+        if (loading || homes.length === 0) return;
+        publishPageData({
+            section: 'group-benchmark',
+            updatedAt: Date.now(),
+            organisationName: groupName,
+            activeFilters: filterHomeId ? displayHomes[0]?.name : 'All homes',
+            kpis: [
+                { label: 'Homes Benchmarked', value: displayHomes.length, status: 'neutral' },
+                { label: 'Avg Closure Rate', value: pct(avg.closureRate), status: avg.closureRate >= 80 ? 'good' : avg.closureRate >= 50 ? 'warn' : 'danger' },
+                { label: 'Avg Overdue Rate', value: pct(avg.overdueRate), status: avg.overdueRate === 0 ? 'good' : avg.overdueRate < 15 ? 'warn' : 'danger' },
+                { label: 'Avg High-Risk Rate', value: pct(avg.highRiskRate), status: avg.highRiskRate === 0 ? 'good' : 'warn' },
+            ],
+            tableRows: displayHomes.slice(0, 10).map(h => ({
+                label: h.name,
+                cases: h.totalCases,
+                'closure rate': pct(h.closureRate),
+                'overdue rate': pct(h.overdueRate),
+                'high-risk rate': pct(h.highRiskRate),
+            })),
+            insights: highlights.map(hl => `${hl.label}: ${hl.homeName} (${hl.value})`),
+        });
+        return () => clearPageData();
+    }, [loading, homes, avg, displayHomes, highlights, groupName, filterHomeId]);
+
     /* ── Render ───────────────────────────────────────────────────────────── */
 
     if (loading) {
@@ -241,103 +269,94 @@ export function GroupBenchmarkPage() {
     }
 
     return (
-        <div>
+        <div className="gp-page">
             {/* Header */}
-            <div className="dashboard-page-header">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div>
-                        <h1 className="dashboard-page-title">
-                            <GitCompareArrows size={22} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />
-                            {groupName}
-                        </h1>
-                        <p className="dashboard-page-subtitle">
-                            Comparing {displayHomes.length} home{displayHomes.length !== 1 ? 's' : ''} against group average
-                        </p>
-                    </div>
-                    {allOrgs.length > 0 && (
-                        <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
-                    )}
+            <div className="gp-header">
+                <div>
+                    <h1 className="gp-title"><GitCompareArrows size={20} /> {groupName}</h1>
+                    <p className="gp-subtitle">Comparing {displayHomes.length} home{displayHomes.length !== 1 ? 's' : ''} against group average</p>
                 </div>
+                {allOrgs.length > 0 && (
+                    <GroupHomeFilter homes={allOrgs} selectedHomeId={filterHomeId} onSelect={setFilterHomeId} />
+                )}
             </div>
 
-            {/* ── Highlight Cards ─────────────────────────────────────────── */}
+            {/* Highlight Cards */}
             {highlights.length > 0 && (
-                <div className="dashboard-stats-row" style={{ marginBottom: '2rem' }}>
+                <div className="gp-highlights">
                     {highlights.map((h, i) => (
-                        <div key={i} className="dashboard-stat-card" style={{ borderLeft: `4px solid ${h.color}` }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.35rem', color: h.color }}>
+                        <div key={i} className="gp-highlight">
+                            <div className="gp-highlight-icon" style={{ background: h.color + '14', color: h.color }}>
                                 {h.icon}
-                                <span style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748b' }}>
-                                    {h.label}
-                                </span>
                             </div>
-                            <div className="dashboard-stat-value" style={{ fontSize: '1.35rem' }}>{h.value}</div>
-                            <div className="dashboard-stat-label">{h.homeName}</div>
+                            <div>
+                                <div className="gp-highlight-label">{h.label}</div>
+                                <div className="gp-highlight-home">{h.homeName}</div>
+                                <div className="gp-highlight-value">{h.value}</div>
+                            </div>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* ── Benchmark Table ─────────────────────────────────────────── */}
-            <div className="dashboard-panel">
-                <div className="dashboard-panel-header">
-                    <h2 className="dashboard-panel-title">
-                        <GitCompareArrows size={16} className="dashboard-panel-title-icon" /> Home vs Group Average
-                    </h2>
+            {/* Benchmark Table */}
+            <div className="gp-card">
+                <div className="gp-card-header">
+                    <h2 className="gp-card-title"><GitCompareArrows size={15} /> Home vs Group Average</h2>
                 </div>
-                <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
+                <div className="gp-table-wrap">
+                    <table className="gp-table">
                         <thead>
                             <tr>
-                                <th className="dashboard-table-th">Home</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Cases</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Open Rate</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Closure Rate</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Overdue Rate</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>High-Risk Rate</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Total Loss</th>
-                                <th className="dashboard-table-th" style={{ textAlign: 'right' }}>Avg Loss/Case</th>
+                                <th>Home</th>
+                                <th className="text-right">Cases</th>
+                                <th className="text-right">Open Rate</th>
+                                <th className="text-right">Closure Rate</th>
+                                <th className="text-right">Overdue Rate</th>
+                                <th className="text-right">High-Risk Rate</th>
+                                <th className="text-right">Total Loss</th>
+                                <th className="text-right">Avg Loss/Case</th>
                             </tr>
                         </thead>
                         <tbody>
                             {/* Group Average row */}
                             <tr style={{ background: '#f8fafc', fontStyle: 'italic' }}>
-                                <td className="dashboard-table-td" style={{ fontWeight: 600, color: '#64748b' }}>Group Average</td>
-                                <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>—</td>
-                                <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>{pct(avg.openRate)}</td>
-                                <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>{pct(avg.closureRate)}</td>
-                                <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>{pct(avg.overdueRate)}</td>
-                                <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>{pct(avg.highRiskRate)}</td>
-                                <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>—</td>
-                                <td className="dashboard-table-td" style={{ textAlign: 'right', color: '#64748b' }}>{currency(Math.round(avg.avgLossPerCase))}</td>
+                                <td className="gp-val-muted" style={{ fontWeight: 600 }}>Group Average</td>
+                                <td className="text-right gp-val-muted">—</td>
+                                <td className="text-right gp-val-muted">{pct(avg.openRate)}</td>
+                                <td className="text-right gp-val-muted">{pct(avg.closureRate)}</td>
+                                <td className="text-right gp-val-muted">{pct(avg.overdueRate)}</td>
+                                <td className="text-right gp-val-muted">{pct(avg.highRiskRate)}</td>
+                                <td className="text-right gp-val-muted">—</td>
+                                <td className="text-right gp-val-muted">{currency(Math.round(avg.avgLossPerCase))}</td>
                             </tr>
                             {displayHomes.map(h => (
-                                <tr key={h.id} style={{ cursor: 'pointer' }} onClick={() => setFilterHomeId(filterHomeId === h.id ? null : h.id)}>
-                                    <td className="dashboard-table-td" style={{ fontWeight: 600 }}>{h.name}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{h.totalCases}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
+                                <tr key={h.id} className="gp-row-click" onClick={() => setFilterHomeId(filterHomeId === h.id ? null : h.id)}>
+                                    <td className="gp-home-name">{h.name}</td>
+                                    <td className="text-right">{h.totalCases}</td>
+                                    <td className="text-right">
                                         {pct(h.openRate)} <Indicator value={h.openRate} avg={avg.openRate} />
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={{ color: h.closureRate >= avg.closureRate ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
+                                    <td className="text-right">
+                                        <span className={h.closureRate >= avg.closureRate ? 'gp-val-good' : 'gp-val-danger'}>
                                             {pct(h.closureRate)}
                                         </span>{' '}
                                         <Indicator value={h.closureRate} avg={avg.closureRate} invert />
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={h.overdueRate > avg.overdueRate ? { color: '#f59e0b', fontWeight: 600 } : undefined}>
+                                    <td className="text-right">
+                                        <span className={h.overdueRate > avg.overdueRate ? 'gp-val-warn' : ''}>
                                             {pct(h.overdueRate)}
                                         </span>{' '}
                                         <Indicator value={h.overdueRate} avg={avg.overdueRate} />
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
-                                        <span style={h.highRiskRate > avg.highRiskRate ? { color: '#dc2626', fontWeight: 600 } : undefined}>
+                                    <td className="text-right">
+                                        <span className={h.highRiskRate > avg.highRiskRate ? 'gp-val-danger' : ''}>
                                             {pct(h.highRiskRate)}
                                         </span>{' '}
                                         <Indicator value={h.highRiskRate} avg={avg.highRiskRate} />
                                     </td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>{currency(h.totalLoss)}</td>
-                                    <td className="dashboard-table-td" style={{ textAlign: 'right' }}>
+                                    <td className="text-right">{currency(h.totalLoss)}</td>
+                                    <td className="text-right">
                                         {currency(h.avgLossPerCase)}{' '}
                                         <Indicator value={h.avgLossPerCase} avg={avg.avgLossPerCase} />
                                     </td>
@@ -350,3 +369,4 @@ export function GroupBenchmarkPage() {
         </div>
     );
 }
+

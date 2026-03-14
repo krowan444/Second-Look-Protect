@@ -2840,3 +2840,95 @@
     width: 16px;
     height: 16px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Group Pages — Premium Shared Design System
+   Matches the calmer, softer aesthetic of the new Safeguarding Overview.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.gp-page { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+
+/* Header */
+.gp-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+.gp-title { font-size: 1.15rem; font-weight: 700; color: #0B1E36; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+.gp-subtitle { font-size: 0.82rem; color: #64748b; margin: 0.25rem 0 0; }
+.gp-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+/* KPI strip */
+.gp-kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.65rem; }
+.gp-kpi { background: #fff; border: 1px solid #e8ecf4; border-radius: 10px; padding: 0.75rem 1rem; transition: box-shadow 0.2s ease, transform 0.15s ease; }
+.gp-kpi:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.04); transform: translateY(-1px); }
+.gp-kpi--clickable { cursor: pointer; }
+.gp-kpi-value { font-size: 1.35rem; font-weight: 700; color: #0B1E36; line-height: 1.2; letter-spacing: -0.02em; }
+.gp-kpi-label { font-size: 0.72rem; font-weight: 500; color: #64748b; margin-top: 0.15rem; }
+
+/* Card / Panel */
+.gp-card { background: #fff; border: 1px solid #e8ecf4; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.gp-card-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; }
+.gp-card-title { font-size: 0.78rem; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 0.4rem; margin: 0; }
+.gp-card-title svg { color: #94a3b8; flex-shrink: 0; }
+.gp-card-count { font-size: 0.62rem; font-weight: 600; color: #94a3b8; background: #f1f5f9; padding: 1px 7px; border-radius: 10px; }
+.gp-card-body { padding: 1rem 1.25rem; }
+
+/* Table */
+.gp-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.gp-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.gp-table thead th { text-align: left; padding: 0.5rem 1.15rem; font-weight: 600; color: #94a3b8; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; background: transparent; border-bottom: 1px solid #f1f5f9; }
+.gp-table thead th.text-right { text-align: right; }
+.gp-table tbody td { padding: 0.55rem 1.15rem; color: #334155; border-bottom: 1px solid #f1f5f9; }
+.gp-table tbody td.text-right { text-align: right; }
+.gp-table tbody tr:last-child td { border-bottom: none; }
+.gp-table tbody tr:hover { background: #fafbfc; }
+.gp-table tbody tr.gp-row-click { cursor: pointer; transition: background 0.12s ease; }
+.gp-table tbody tr.gp-row-click:hover { background: #f8fafc; }
+
+/* Value + link colours */
+.gp-home-name { font-weight: 600; color: #475569; }
+.gp-val-warn { color: #d97706; font-weight: 600; }
+.gp-val-danger { color: #ef4444; font-weight: 600; }
+.gp-val-good { color: #16a34a; font-weight: 600; }
+.gp-val-muted { color: #94a3b8; }
+
+/* Alert cards */
+.gp-alert { border-radius: 10px; padding: 0.75rem 1rem; border: 1px solid; }
+.gp-alert--critical { background: #fef8f8; border-color: #fecaca; border-left: 4px solid #f87171; }
+.gp-alert--warning  { background: #fffdf5; border-color: #fde68a; border-left: 4px solid #fbbf24; }
+.gp-alert--info     { background: #f8fbff; border-color: #bfdbfe; border-left: 4px solid #93c5fd; }
+.gp-alert-sev { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 9999px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.gp-alert-title { font-weight: 700; font-size: 0.92rem; color: #1e293b; margin: 0.3rem 0 0.15rem; }
+.gp-alert-desc { font-size: 0.82rem; color: #475569; margin-bottom: 0.4rem; }
+.gp-alert-meta { display: flex; gap: 1.5rem; font-size: 0.76rem; color: #64748b; flex-wrap: wrap; }
+
+/* Comparison indicator */
+.gp-indicator { display: inline-flex; align-items: center; gap: 3px; font-size: 0.72rem; font-weight: 600; padding: 0.12rem 0.45rem; border-radius: 8px; }
+.gp-indicator--good    { background: #f0fdf4; color: #16a34a; }
+.gp-indicator--bad     { background: #fef8f8; color: #ef4444; }
+.gp-indicator--neutral { background: #f1f5f9; color: #94a3b8; }
+
+/* Empty state */
+.gp-empty { text-align: center; padding: 3rem 1.5rem; }
+.gp-empty-icon { color: #34d399; margin-bottom: 0.75rem; }
+.gp-empty-title { font-size: 1.05rem; font-weight: 600; color: #1e293b; margin-bottom: 0.25rem; }
+.gp-empty-desc { font-size: 0.82rem; color: #64748b; }
+
+/* Export button */
+.gp-export-btn { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; font-size: 0.76rem; font-weight: 500; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-family: 'Inter', system-ui, sans-serif; transition: all 0.15s ease; }
+.gp-export-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+
+/* Tag pill */
+.gp-tag { display: inline-block; font-size: 0.72rem; background: #f1f5f9; padding: 0.15rem 0.5rem; border-radius: 6px; color: #475569; }
+
+/* Highlight cards (benchmark) */
+.gp-highlights { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.65rem; }
+.gp-highlight { background: #fff; border: 1px solid #e8ecf4; border-radius: 10px; padding: 0.75rem 1rem; display: flex; align-items: flex-start; gap: 0.6rem; }
+.gp-highlight-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gp-highlight-label { font-size: 0.72rem; color: #64748b; font-weight: 500; }
+.gp-highlight-home { font-size: 0.82rem; font-weight: 600; color: #1e293b; }
+.gp-highlight-value { font-size: 0.82rem; color: #475569; }
+
+/* Responsive */
+@media (max-width: 640px) {
+    .gp-kpi-strip { grid-template-columns: repeat(2, 1fr); }
+    .gp-table thead th, .gp-table tbody td { padding: 0.5rem 0.75rem; font-size: 0.75rem; }
+    .gp-highlights { grid-template-columns: 1fr; }
+}

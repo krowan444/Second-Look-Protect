@@ -102,15 +102,24 @@ export default async function handler(req, res) {
             console.error('[send-report-email] Settings query failed:', settingsRes.status);
         }
 
-        // Fallback: org admin profile emails
+        // Fallback: org admin emails resolved from auth.users (profiles table has no email column)
         if (recipients.length === 0) {
+            console.log('[send-report-email] No custom recipients — falling back to org admin emails via auth.users');
             const adminRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&role=eq.org_admin&is_active=eq.true&select=email&limit=10`,
+                `${SUPABASE_URL}/rest/v1/profiles?organisation_id=eq.${organisation_id}&role=eq.org_admin&is_active=eq.true&select=id&limit=10`,
                 { headers: sbHeaders }
             );
             if (adminRes.ok) {
                 const adminRows = await adminRes.json();
-                recipients = (adminRows || []).map(r => r.email).filter(Boolean);
+                for (const row of (adminRows || [])) {
+                    try {
+                        const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${row.id}`, { headers: sbHeaders });
+                        if (authRes.ok) {
+                            const authUser = await authRes.json();
+                            if (authUser?.email) recipients.push(authUser.email);
+                        }
+                    } catch { /* skip this user */ }
+                }
             }
         }
         console.log('[send-report-email] Resolved recipients:', recipients);
@@ -190,8 +199,10 @@ export default async function handler(req, res) {
         const emailData = await emailRes.json();
 
         if (!emailRes.ok) {
+            console.error('[send-report-email] Resend FAILED — status:', emailRes.status, 'error:', emailData?.message || 'unknown');
             throw new Error(emailData?.message || `Resend error ${emailRes.status}`);
         }
+        console.log('[send-report-email] Resend SUCCESS — provider_id:', emailData?.id, 'recipients:', recipients);
 
         // 6) Audit log entry
         try {
