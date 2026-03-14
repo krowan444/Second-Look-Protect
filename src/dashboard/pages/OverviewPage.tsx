@@ -114,7 +114,7 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (path: string) => vo
     });
     const toggleMode = (m: 'standard' | 'visual') => {
         setViewMode(m);
-        try { localStorage.setItem('slp_overview_mode', m); } catch {}
+        try { localStorage.setItem('slp_overview_mode', m); } catch { }
     };
 
     // Canonical source of truth: CASES
@@ -126,6 +126,9 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (path: string) => vo
     // Platform-wide data (super admin global)
     const [platformOrgCount, setPlatformOrgCount] = useState(0);
     const [platformCases, setPlatformCases] = useState<(CaseRow & { org_name?: string })[]>([]);
+
+    /* ── Stape-Lee page data (must be before early returns) ─────────── */
+    const { publishPageData, clearPageData } = usePublishPageData();
 
     /* â”€â”€ Fetch data on mount â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     useEffect(() => {
@@ -361,7 +364,7 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (path: string) => vo
         const queueStatus = getStatusLowerBetter(queueDepth, DEFAULTS.reviewQueueGreen, DEFAULTS.reviewQueueAmber);
         const queuePct = queueDepth <= DEFAULTS.reviewQueueGreen ? 100
             : queueDepth <= DEFAULTS.reviewQueueAmber ? Math.round(((DEFAULTS.reviewQueueAmber - queueDepth) / (DEFAULTS.reviewQueueAmber - DEFAULTS.reviewQueueGreen)) * 50 + 50)
-            : Math.max(10, Math.round(30 - queueDepth));
+                : Math.max(10, Math.round(30 - queueDepth));
 
         // 6. Overall health (weighted average)
         const weights = [0.25, 0.2, 0.2, 0.15, 0.2];
@@ -595,7 +598,6 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (path: string) => vo
             : { bg: '#ecfdf5', fg: '#065f46', border: '#a7f3d0' };
 
     /* ── Publish data for Stape-Lee ────────────────────────────────── */
-    const { publishPageData, clearPageData } = usePublishPageData();
     useEffect(() => {
         if (loading || error || noOrg) return;
         publishPageData({
@@ -610,7 +612,7 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (path: string) => vo
                 { label: 'Closure', value: `${kpi.closurePct}%`, status: kpi.closureStatus },
                 { label: 'Cases This Month', value: casesMonth.length, status: 'neutral' },
                 { label: 'High Risk', value: metrics.highRisk, status: metrics.highRisk > 0 ? 'danger' : 'good' },
-                { label: 'Overdue', value: metrics.overdue, status: metrics.overdue > 0 ? 'danger' : 'good' },
+                { label: 'Awaiting', value: metrics.awaiting, status: metrics.awaiting > 0 ? 'warn' : 'good' },
                 { label: 'Awaiting Review', value: panels.awaitingReview.length, status: panels.awaitingReview.length > 5 ? 'danger' : panels.awaitingReview.length > 0 ? 'warn' : 'good' },
             ],
             alerts: execAlerts.map(ea => ({
@@ -736,40 +738,40 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (path: string) => vo
                         justifyContent: 'center',
                     }}>
                         <div onClick={() => { if (onNavigate) onNavigate('/dashboard/cases'); }} style={{ cursor: onNavigate ? 'pointer' : undefined, transition: 'transform 0.15s ease' }} onMouseEnter={e => { if (onNavigate) (e.currentTarget as HTMLDivElement).style.transform = 'scale(1.08)'; }} onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)'; }} title="View cases">
-                        <KpiRingChart
-                            percent={kpi.closurePct}
-                            status={kpi.closureStatus}
-                            label={`${kpi.closurePct}%`}
-                            sublabel="Closure"
-                            size={85}
-                        />
+                            <KpiRingChart
+                                percent={kpi.closurePct}
+                                status={kpi.closureStatus}
+                                label={`${kpi.closurePct}%`}
+                                sublabel="Closure"
+                                size={85}
+                            />
                         </div>
                         <div onClick={() => { if (onNavigate) onNavigate('/dashboard/review-queue'); }} style={{ cursor: onNavigate ? 'pointer' : undefined, transition: 'transform 0.15s ease' }} onMouseEnter={e => { if (onNavigate) (e.currentTarget as HTMLDivElement).style.transform = 'scale(1.08)'; }} onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)'; }} title="View review queue">
-                        <KpiRingChart
-                            percent={kpi.triagePct}
-                            status={kpi.triageStatus}
-                            label={`${kpi.triagePct}%`}
-                            sublabel="Triage"
-                            size={85}
-                        />
+                            <KpiRingChart
+                                percent={kpi.triagePct}
+                                status={kpi.triageStatus}
+                                label={`${kpi.triagePct}%`}
+                                sublabel="Triage"
+                                size={85}
+                            />
                         </div>
                         <div onClick={() => { if (onNavigate) onNavigate('/dashboard/cases'); }} style={{ cursor: onNavigate ? 'pointer' : undefined, transition: 'transform 0.15s ease' }} onMouseEnter={e => { if (onNavigate) (e.currentTarget as HTMLDivElement).style.transform = 'scale(1.08)'; }} onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)'; }} title="View cases">
-                        <KpiRingChart
-                            percent={kpi.docPct}
-                            status={kpi.docStatus}
-                            label={`${kpi.docPct}%`}
-                            sublabel="Documented"
-                            size={85}
-                        />
+                            <KpiRingChart
+                                percent={kpi.docPct}
+                                status={kpi.docStatus}
+                                label={`${kpi.docPct}%`}
+                                sublabel="Documented"
+                                size={85}
+                            />
                         </div>
                         <div onClick={() => { if (onNavigate) onNavigate('/dashboard/review-queue'); }} style={{ cursor: onNavigate ? 'pointer' : undefined, transition: 'transform 0.15s ease' }} onMouseEnter={e => { if (onNavigate) (e.currentTarget as HTMLDivElement).style.transform = 'scale(1.08)'; }} onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)'; }} title="View review queue">
-                        <KpiRingChart
-                            percent={kpi.queuePct}
-                            status={kpi.queueStatus}
-                            label={`${kpi.queueDepth}`}
-                            sublabel="Queue"
-                            size={85}
-                        />
+                            <KpiRingChart
+                                percent={kpi.queuePct}
+                                status={kpi.queueStatus}
+                                label={`${kpi.queueDepth}`}
+                                sublabel="Queue"
+                                size={85}
+                            />
                         </div>
                     </div>
                 </div>
