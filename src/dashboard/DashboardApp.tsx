@@ -230,6 +230,7 @@ export function DashboardApp() {
   const [user, setUser] = useState<DashboardUser | null>(null);
   const [organisation, setOrganisation] = useState<Organisation | null>(null);
   const [needsPasswordSet, setNeedsPasswordSet] = useState(false);
+  const [passwordSetSource, setPasswordSetSource] = useState<'invite' | 'recovery'>('invite');
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [error, setError] = useState<string | null>(null);
 
@@ -253,7 +254,8 @@ export function DashboardApp() {
       (event, session) => {
         if (cancelled) return;
         if (event === 'PASSWORD_RECOVERY') {
-          console.log('[Dashboard] PASSWORD_RECOVERY event — showing set-password form');
+          console.log('[Dashboard] PASSWORD_RECOVERY event — showing reset-password form');
+          setPasswordSetSource('recovery');
           setNeedsPasswordSet(true);
           // Still load profile so we have user context ready
           if (session?.user) {
@@ -478,8 +480,10 @@ export function DashboardApp() {
   if (needsPasswordSet) {
     return (
       <SetPasswordPage
+        isReset={passwordSetSource === 'recovery'}
         onComplete={() => {
           setNeedsPasswordSet(false);
+          setPasswordSetSource('invite');
           // Profile should already be loaded; if not, re-trigger
           if (!user) {
             const supabase = getSupabase();
