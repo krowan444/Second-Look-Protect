@@ -24,6 +24,11 @@ type CaseRow = {
   submission_type: string | null;
 };
 
+function fmtLabel(v: string | null | undefined): string {
+  if (!v) return '—';
+  return v.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 function startOfMonthISO(timezone: string) {
   // Simple approach: compute in local browser time; good enough for v1.
   // Later we can align exactly to org timezone using SQL.
@@ -566,7 +571,7 @@ export function PlatformOverviewPage() {
                         <td className="dashboard-table-td">{c.status ?? '-'}</td>
                         <td className="dashboard-table-td">{c.risk_level ?? 'untriaged'}</td>
                         <td className="dashboard-table-td">{c.decision ?? '-'}</td>
-                        <td className="dashboard-table-td">{c.submission_type ?? '-'}</td>
+                        <td className="dashboard-table-td">{fmtLabel(c.submission_type)}</td>
                       </tr>
                     ))}
                     {recentCases.length === 0 && (

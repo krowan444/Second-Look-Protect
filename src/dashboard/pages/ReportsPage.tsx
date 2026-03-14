@@ -864,7 +864,7 @@ export function ReportsPage() {
                                         <tbody>
                                             {metrics.categories.map(([cat, count]) => (
                                                 <tr key={cat}>
-                                                    <td>{capitalize(cat)}</td>
+                                                    <td>{cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</td>
                                                     <td>{count}</td>
                                                     <td>{metrics.total > 0 ? `${Math.round((count / metrics.total) * 100)}%` : '—'}</td>
                                                 </tr>
@@ -889,7 +889,7 @@ export function ReportsPage() {
                                         <tbody>
                                             {metrics.channels.map(([ch, count]) => (
                                                 <tr key={ch}>
-                                                    <td>{capitalize(ch)}</td>
+                                                    <td>{ch.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</td>
                                                     <td>{count}</td>
                                                     <td>{metrics.total > 0 ? `${Math.round((count / metrics.total) * 100)}%` : '—'}</td>
                                                 </tr>

@@ -568,7 +568,7 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (path: string) => vo
                                                 <tr key={c.id}>
                                                     <td>{fmtDate(c.submitted_at)}</td>
                                                     <td style={{ fontWeight: 500 }}>{c.org_name ?? 'â€”'}</td>
-                                                    <td>{c.submission_type ?? 'â€”'}</td>
+                                                    <td>{c.submission_type ? plainEventType(c.submission_type) : "—"}</td>
                                                     <td>
                                                         <span className={`dashboard-status-badge status-${statusClass(c.status)}`}>
                                                             {statusLabel(c.status)}

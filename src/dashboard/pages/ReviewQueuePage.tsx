@@ -53,6 +53,11 @@ function decisionClass(d: string | null): string {
     }
 }
 
+function formatLabel(value: string | null | undefined): string {
+    if (!value) return '—';
+    return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function fmtDate(iso: string): string {
     try {
         const d = new Date(iso);
@@ -234,7 +239,7 @@ export function ReviewQueuePage({ onNavigate, userRole }: ReviewQueuePageProps) 
                                 {submissions.map((s) => (
                                     <tr key={s.id}>
                                         <td>{fmtDate(s.submitted_at)}</td>
-                                        <td>{s.submission_type ?? '—'}</td>
+                                        <td>{formatLabel(s.submission_type)}</td>
                                         <td>
                                             <span className={`dashboard-status-badge status-${statusClass(s.status)}`}>
                                                 {statusLabel(s.status)}
@@ -250,7 +255,7 @@ export function ReviewQueuePage({ onNavigate, userRole }: ReviewQueuePageProps) 
                                                 {s.decision ?? '—'}
                                             </span>
                                         </td>
-                                        <td>{s.category ?? '—'}</td>
+                                        <td>{formatLabel(s.category)}</td>
                                         <td>{s.resident_ref ?? '—'}</td>
                                         <td className="dashboard-td-actions">
                                             <button

@@ -16,6 +16,12 @@ type CaseRow = {
 
 type OrgRow = { id: string; name: string | null };
 
+function fmtLabel(v: string | null | undefined): string {
+  if (!v) return '—';
+  return v.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+
 export function GlobalQueuePage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -201,12 +207,12 @@ export function GlobalQueuePage() {
                   <tr key={c.id} className="dashboard-table-row">
                     <td className="dashboard-table-td">{orgNameById[c.organisation_id] ?? c.organisation_id}</td>
                     <td className="dashboard-table-td">{c.submitted_at ? new Date(c.submitted_at).toLocaleString() : '-'}</td>
-                    <td className="dashboard-table-td">{c.status ?? '-'}</td>
+                    <td className="dashboard-table-td">{fmtLabel(c.status)}</td>
                     <td className="dashboard-table-td">{c.risk_level ?? 'untriaged'}</td>
                     <td className="dashboard-table-td">{c.decision ?? '-'}</td>
-                    <td className="dashboard-table-td">{c.category ?? '-'}</td>
+                    <td className="dashboard-table-td">{fmtLabel(c.category)}</td>
                     <td className="dashboard-table-td">{c.resident_ref ?? '-'}</td>
-                    <td className="dashboard-table-td">{c.submission_type ?? '-'}</td>
+                    <td className="dashboard-table-td">{fmtLabel(c.submission_type)}</td>
                   </tr>
                 ))}
 
