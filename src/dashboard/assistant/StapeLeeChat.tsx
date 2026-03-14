@@ -2,14 +2,15 @@
    Stape-Lee — Premium Right-Edge Assistant Panel
    ═══════════════════════════════════════════════════════════════════════════
    A branded, context-aware assistant docked to the right edge of the
-   dashboard. Features a cartoon stapler character, typing indicator,
-   progressive reply rendering, resizable panel, and real page intelligence.
+   dashboard. Features clickable recommendation chips, guided feedback flow,
+   session memory, progressive reply rendering, and resizable panel.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Send } from 'lucide-react';
+import { X, Send, MessageSquare } from 'lucide-react';
 import { usePageContext } from './usePageContext';
-import { askStapeLee } from './stapeLeeBrain';
+import { askStapeLee, SessionMemory } from './stapeLeeBrain';
+import { pageGuides } from './stapeLeeKnowledge';
 
 /* ── Types ────────────────────────────────────────────────────────────────── */
 
@@ -18,7 +19,9 @@ interface ChatMessage {
     role: 'user' | 'assistant';
     text: string;
     timestamp: number;
-    streaming?: boolean; // true while progressively rendering
+    streaming?: boolean;
+    chips?: string[];
+    showFeedbackButtons?: boolean;
 }
 
 interface FeedbackDraft {
@@ -117,13 +120,11 @@ function ProgressiveText({ text, onComplete }: { text: string; onComplete: () =>
     useEffect(() => {
         setChars(0);
         const total = text.length;
-        // Speed: ~18ms per char at the start, accelerating slightly for long texts
         const baseSpeed = 12;
         let frame: number;
         let current = 0;
 
         const tick = () => {
-            // Accelerate for longer texts: after 80 chars, reveal 2-3 at a time
             const chunkSize = current > 120 ? 4 : current > 80 ? 3 : current > 40 ? 2 : 1;
             current = Math.min(current + chunkSize, total);
             setChars(current);
@@ -134,13 +135,111 @@ function ProgressiveText({ text, onComplete }: { text: string; onComplete: () =>
             }
         };
 
-        // Small initial pause before text starts appearing
         frame = window.setTimeout(tick, 60);
         return () => clearTimeout(frame);
     }, [text]);
 
     const visible = text.slice(0, chars);
     return <>{renderMarkdownLight(visible)}{chars < text.length && <span style={{ opacity: 0.4 }}>▍</span>}</>;
+}
+
+/* ── Recommendation Chips ────────────────────────────────────────────────── */
+
+function RecommendationChips({ chips, onSelect, disabled }: { chips: string[]; onSelect: (chip: string) => void; disabled?: boolean }) {
+    if (!chips || chips.length === 0) return null;
+    return (
+        <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '5px',
+            marginTop: '6px',
+            paddingLeft: '2px',
+        }}>
+            {chips.map((chip, i) => (
+                <button
+                    key={i}
+                    onClick={() => !disabled && onSelect(chip)}
+                    disabled={disabled}
+                    style={{
+                        padding: '4px 10px',
+                        fontSize: '0.68rem',
+                        fontWeight: 500,
+                        background: disabled ? '#f1f5f9' : '#f1f5f9',
+                        color: disabled ? '#94a3b8' : '#475569',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '14px',
+                        cursor: disabled ? 'default' : 'pointer',
+                        transition: 'all 0.15s ease',
+                        lineHeight: 1.3,
+                        whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={e => {
+                        if (!disabled) {
+                            e.currentTarget.style.background = '#e2e8f0';
+                            e.currentTarget.style.color = '#1e293b';
+                            e.currentTarget.style.borderColor = '#cbd5e1';
+                        }
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.background = '#f1f5f9';
+                        e.currentTarget.style.color = disabled ? '#94a3b8' : '#475569';
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                    }}
+                >
+                    {chip}
+                </button>
+            ))}
+        </div>
+    );
+}
+
+/* ── Feedback Action Buttons ─────────────────────────────────────────────── */
+
+function FeedbackButtons({ onSend, onDiscard, sending }: { onSend: () => void; onDiscard: () => void; sending: boolean }) {
+    return (
+        <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+            <button
+                onClick={onSend}
+                disabled={sending}
+                style={{
+                    flex: 1,
+                    padding: '7px 12px',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    background: sending ? '#94a3b8' : 'linear-gradient(135deg, #059669, #10b981)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: sending ? 'default' : 'pointer',
+                    transition: 'all 0.15s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '5px',
+                }}
+            >
+                <Send size={12} />
+                {sending ? 'Sending…' : '✓ Send Feedback'}
+            </button>
+            <button
+                onClick={onDiscard}
+                disabled={sending}
+                style={{
+                    padding: '7px 12px',
+                    fontSize: '0.72rem',
+                    fontWeight: 500,
+                    background: '#f1f5f9',
+                    color: '#64748b',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    cursor: sending ? 'default' : 'pointer',
+                    transition: 'all 0.15s',
+                }}
+            >
+                ✗ Discard
+            </button>
+        </div>
+    );
 }
 
 /* ── Slide animation keyframes ───────────────────────────────────────────── */
@@ -172,6 +271,7 @@ export function StapeLeeChat({ currentPath }: Props) {
     const [feedbackSending, setFeedbackSending] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const sessionMemory = useRef(new SessionMemory());
 
     /* ── Panel width (resizable, persisted) ──────────────────────────── */
     const [panelWidth, setPanelWidth] = useState(() => {
@@ -233,16 +333,21 @@ export function StapeLeeChat({ currentPath }: Props) {
     /* ── Welcome message on first open ───────────────────────────────── */
     const handleOpen = useCallback(() => {
         setOpen(true);
+        // Reset session memory on open
+        sessionMemory.current.reset();
         if (messages.length === 0) {
+            const guide = pageGuides[ctx.section];
+            const chips = guide?.chips ?? ['What is this page?', 'What should I do next?', 'Send feedback'];
             setMessages([{
                 id: 'welcome',
                 role: 'assistant',
-                text: `Hey — I'm Stape-Lee, your dashboard assistant.\n\nYou're on **${ctx.pageName}**. I can explain what's here, guide you through tasks, or help draft feedback for the dev team.\n\nTry:\n• "What is this page?"\n• "What should I do next?"\n• "Send developer feedback"`,
+                text: `Hey — I'm Stape-Lee, your Second Look Protect assistant.\n\nYou're on **${ctx.pageName}**. I know this dashboard inside out — ask me anything about this page, workflows, statuses, or the platform.`,
                 timestamp: Date.now(),
                 streaming: true,
+                chips,
             }]);
         }
-    }, [messages.length, ctx.pageName]);
+    }, [messages.length, ctx.pageName, ctx.section]);
 
     /* ── Mark streaming complete for a message ───────────────────────── */
     const markStreamComplete = useCallback((msgId: string) => {
@@ -252,21 +357,51 @@ export function StapeLeeChat({ currentPath }: Props) {
     }, []);
 
     /* ── Add assistant reply with thinking delay + progressive render ── */
-    const addAssistantReply = useCallback((text: string, action?: string) => {
+    const addAssistantReply = useCallback((text: string, opts?: { action?: string; chips?: string[]; showFeedbackButtons?: boolean }) => {
         setIsThinking(true);
         const delay = 350 + Math.random() * 400;
         setTimeout(() => {
             setIsThinking(false);
-            if (action === 'start_feedback') setFeedbackMode(true);
+            if (opts?.action === 'start_feedback') setFeedbackMode(true);
             setMessages(prev => [...prev, {
                 id: `a-${Date.now()}`,
                 role: 'assistant',
                 text,
                 timestamp: Date.now(),
                 streaming: true,
+                chips: opts?.chips,
+                showFeedbackButtons: opts?.showFeedbackButtons,
             }]);
         }, delay);
     }, []);
+
+    /* ── Handle chip click ───────────────────────────────────────────── */
+    const handleChipClick = useCallback((chip: string) => {
+        if (isThinking) return;
+        // Add as user message then process
+        setMessages(prev => [...prev, {
+            id: `u-${Date.now()}`,
+            role: 'user',
+            text: chip,
+            timestamp: Date.now(),
+        }]);
+
+        // Handle special chips
+        if (/^(Bug Report|Feature Request|UX Feedback)$/i.test(chip)) {
+            // Category chip during feedback mode
+            if (feedbackMode) {
+                setFeedbackMode(false);
+                addAssistantReply(
+                    `Got it — **${chip}**. Now describe the issue or suggestion in your own words and I'll draft the full message.`,
+                    { action: 'start_feedback' }
+                );
+                return;
+            }
+        }
+
+        const response = askStapeLee(chip, ctx, sessionMemory.current);
+        addAssistantReply(response.text, { action: response.action, chips: response.chips });
+    }, [ctx, feedbackMode, isThinking, addAssistantReply]);
 
     /* ── Send message ────────────────────────────────────────────────── */
     const handleSend = useCallback(() => {
@@ -291,7 +426,8 @@ export function StapeLeeChat({ currentPath }: Props) {
             setFeedbackDraft(draft);
             setFeedbackMode(false);
             addAssistantReply(
-                `Here's your draft:\n\n**Type:** ${draft.category}\n**Page:** ${draft.page}\n**Priority:** ${draft.priority}\n**Message:** ${draft.description}\n\nSay **"send"** to submit it to the dev team, or **"cancel"** to discard.`
+                `Here's your feedback draft:\n\n**Type:** ${draft.category}\n**Page:** ${draft.page}\n**Priority:** ${draft.priority}\n**Message:** ${draft.description}`,
+                { showFeedbackButtons: true }
             );
             return;
         }
@@ -300,23 +436,34 @@ export function StapeLeeChat({ currentPath }: Props) {
             if (/^(yes|send|confirm|go ahead|do it|submit|ok)\b/i.test(text)) {
                 sendFeedback(feedbackDraft);
                 return;
-            } else if (/^(no|cancel|edit|change|redo)\b/i.test(text)) {
+            } else if (/^(no|cancel|edit|change|redo|discard)\b/i.test(text)) {
                 setFeedbackDraft(null);
-                addAssistantReply('Feedback discarded. Ask me anything else, or say "feedback" to start again.');
+                addAssistantReply('Feedback discarded. Ask me anything else, or say "feedback" to start again.', { chips: pageGuides[ctx.section]?.chips?.slice(0, 3) });
                 return;
             }
         }
 
-        const response = askStapeLee(text, ctx);
-        addAssistantReply(response.text, response.action);
+        const response = askStapeLee(text, ctx, sessionMemory.current);
+        addAssistantReply(response.text, { action: response.action, chips: response.chips });
     }, [input, ctx, feedbackMode, feedbackDraft, isThinking, addAssistantReply]);
+
+    /* ── Feedback button handlers ────────────────────────────────────── */
+    const handleFeedbackSend = useCallback(() => {
+        if (feedbackDraft) sendFeedback(feedbackDraft);
+    }, [feedbackDraft]);
+
+    const handleFeedbackDiscard = useCallback(() => {
+        setFeedbackDraft(null);
+        // Remove the showFeedbackButtons flag from the last message
+        setMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, showFeedbackButtons: false } : m));
+        addAssistantReply('Feedback discarded. What else can I help with?', { chips: pageGuides[ctx.section]?.chips?.slice(0, 3) });
+    }, [ctx.section, addAssistantReply]);
 
     /* ── Send feedback via email-dispatch ─────────────────────────────── */
     const sendFeedback = useCallback(async (draft: FeedbackDraft) => {
         setFeedbackSending(true);
         setIsThinking(true);
         try {
-            // Get auth token from Supabase session
             const { getSupabase } = await import('../../lib/supabaseClient');
             const sb = getSupabase();
             const { data: { session } } = await sb.auth.getSession();
@@ -350,18 +497,23 @@ export function StapeLeeChat({ currentPath }: Props) {
 
             if (res.ok && data.ok) {
                 setFeedbackDraft(null);
-                addAssistantReply('✓ **Feedback sent.** The dev team will review it — thanks for sharing.');
+                addAssistantReply('✓ **Feedback sent.** The dev team will review it — thanks for sharing.', {
+                    chips: pageGuides[ctx.section]?.chips?.slice(0, 3),
+                });
             } else {
-                // Keep draft visible so user doesn't lose it
                 const serverError = data.error || `Server returned ${res.status}`;
-                addAssistantReply(`⚠ **Feedback could not be sent** — ${serverError}.\n\nYour draft is still saved. Say **"send"** to retry or **"cancel"** to discard.`);
+                addAssistantReply(`⚠ **Feedback could not be sent** — ${serverError}.\n\nYour draft is still saved.`, {
+                    showFeedbackButtons: true,
+                });
             }
         } catch (err: any) {
-            addAssistantReply(`⚠ **Couldn't reach the server** — ${err.message || 'network error'}.\n\nYour draft is still saved. Say **"send"** to retry or **"cancel"** to discard.`);
+            addAssistantReply(`⚠ **Couldn't reach the server** — ${err.message || 'network error'}.\n\nYour draft is still saved.`, {
+                showFeedbackButtons: true,
+            });
         } finally {
             setFeedbackSending(false);
         }
-    }, [addAssistantReply]);
+    }, [addAssistantReply, ctx.section]);
 
     /* ── Key handler ──────────────────────────────────────────────────── */
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -529,7 +681,7 @@ export function StapeLeeChat({ currentPath }: Props) {
                             <StaplerIcon size={30} />
                             <div>
                                 <div style={{ fontSize: '0.82rem', fontWeight: 700, letterSpacing: '0.01em' }}>Stape-Lee</div>
-                                <div style={{ fontSize: '0.6rem', opacity: 0.6 }}>Dashboard Assistant</div>
+                                <div style={{ fontSize: '0.6rem', opacity: 0.6 }}>Dashboard Operator</div>
                             </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
@@ -632,6 +784,22 @@ export function StapeLeeChat({ currentPath }: Props) {
                                         renderMarkdownLight(msg.text)
                                     )}
                                 </div>
+                                {/* Feedback send/discard buttons */}
+                                {msg.role === 'assistant' && msg.showFeedbackButtons && !msg.streaming && feedbackDraft && (
+                                    <FeedbackButtons
+                                        onSend={handleFeedbackSend}
+                                        onDiscard={handleFeedbackDiscard}
+                                        sending={feedbackSending}
+                                    />
+                                )}
+                                {/* Recommendation chips (shown after streaming completes) */}
+                                {msg.role === 'assistant' && msg.chips && !msg.streaming && !msg.showFeedbackButtons && (
+                                    <RecommendationChips
+                                        chips={msg.chips}
+                                        onSelect={handleChipClick}
+                                        disabled={isThinking}
+                                    />
+                                )}
                             </div>
                         ))}
 
