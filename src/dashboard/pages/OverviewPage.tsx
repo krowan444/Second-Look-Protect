@@ -130,51 +130,6 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (path: string) => vo
     /* ── Stape-Lee page data (must be before early returns) ─────────── */
     const { publishPageData, clearPageData } = usePublishPageData();
 
-    // Derived label for Stape-Lee insights — computed from state (no hooks)
-    const _sevs = execAlerts.map(e => (e.severity ?? '').toLowerCase());
-    const _sysStatusLabel = _sevs.includes('critical') ? 'Immediate Attention Required'
-        : _sevs.includes('high') ? 'Elevated Risk'
-            : _sevs.includes('warning') ? 'Monitor Closely' : 'All Clear';
-
-    // MUST be here — before ANY early return — so hook count stays constant every render
-    useEffect(() => {
-        if (loading || error || noOrg) return;
-        publishPageData({
-            section: 'overview',
-            updatedAt: Date.now(),
-            organisationName: orgName || undefined,
-            kpis: [
-                { label: 'Overall Health', value: `${kpi.overallPct}%`, status: kpi.overallStatus },
-                { label: 'Queue', value: kpi.queueDepth, status: kpi.queueStatus },
-                { label: 'Triage', value: `${kpi.triagePct}%`, status: kpi.triageStatus },
-                { label: 'Documented', value: `${kpi.docPct}%`, status: kpi.docStatus },
-                { label: 'Closure', value: `${kpi.closurePct}%`, status: kpi.closureStatus },
-                { label: 'Cases This Month', value: casesMonth.length, status: 'neutral' },
-                { label: 'High Risk', value: metrics.highRisk, status: metrics.highRisk > 0 ? 'danger' : 'good' },
-                { label: 'Awaiting', value: metrics.awaiting, status: metrics.awaiting > 0 ? 'warn' : 'good' },
-                { label: 'Awaiting Review', value: panels.awaitingReview.length, status: panels.awaitingReview.length > 5 ? 'danger' : panels.awaitingReview.length > 0 ? 'warn' : 'good' },
-            ],
-            alerts: execAlerts.map(ea => ({
-                severity: ea.severity,
-                title: ea.title || ea.event_type.replace(/_/g, ' '),
-                description: ea.description,
-            })),
-            tableRows: panels.awaitingReview.slice(0, 5).map(c => ({
-                label: `Case ${c.id.slice(0, 8)}`,
-                status: c.status ?? 'unknown',
-                risk: c.risk_level ?? 'unknown',
-                type: c.category ?? 'unknown',
-                submitted: c.submitted_at ? new Date(c.submitted_at).toLocaleDateString() : 'N/A',
-            })),
-            insights: [
-                insight,
-                _sysStatusLabel !== 'All Clear' ? `System status: ${_sysStatusLabel}` : null,
-                residentsAttention.length > 0 ? `${residentsAttention.length} resident${residentsAttention.length > 1 ? 's' : ''} with repeat incidents` : null,
-            ].filter(Boolean) as string[],
-        });
-        return () => clearPageData();
-    }, [loading, error, noOrg, kpi, metrics, panels, execAlerts, insight, _sysStatusLabel, residentsAttention, orgName]);
-
     /* â”€â”€ Fetch data on mount â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     useEffect(() => {
         let cancelled = false;
@@ -454,6 +409,49 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (path: string) => vo
             .sort((a, b) => b[1] - a[1])
             .slice(0, 5);
     }, [casesAll]);
+
+    /* -- Stape-Lee publish -- after all useMemos, before any early return -- */
+    const _sevs = execAlerts.map(e => (e.severity ?? '').toLowerCase());
+    const _sysStatusLabel = _sevs.includes('critical') ? 'Immediate Attention Required'
+        : _sevs.includes('high') ? 'Elevated Risk'
+            : _sevs.includes('warning') ? 'Monitor Closely' : 'All Clear';
+    useEffect(() => {
+        if (loading || error || noOrg) return;
+        publishPageData({
+            section: 'overview',
+            updatedAt: Date.now(),
+            organisationName: orgName || undefined,
+            kpis: [
+                { label: 'Overall Health', value: `%`, status: kpi.overallStatus },
+                { label: 'Queue', value: kpi.queueDepth, status: kpi.queueStatus },
+                { label: 'Triage', value: `%`, status: kpi.triageStatus },
+                { label: 'Documented', value: `%`, status: kpi.docStatus },
+                { label: 'Closure', value: `%`, status: kpi.closureStatus },
+                { label: 'Cases This Month', value: casesMonth.length, status: 'neutral' },
+                { label: 'High Risk', value: metrics.highRisk, status: metrics.highRisk > 0 ? 'danger' : 'good' },
+                { label: 'Awaiting', value: metrics.awaiting, status: metrics.awaiting > 0 ? 'warn' : 'good' },
+                { label: 'Awaiting Review', value: panels.awaitingReview.length, status: panels.awaitingReview.length > 5 ? 'danger' : panels.awaitingReview.length > 0 ? 'warn' : 'good' },
+            ],
+            alerts: execAlerts.map(ea => ({
+                severity: ea.severity,
+                title: ea.title || ea.event_type.replace(/_/g, ' '),
+                description: ea.description,
+            })),
+            tableRows: panels.awaitingReview.slice(0, 5).map(c => ({
+                label: `Case `,
+                status: c.status ?? 'unknown',
+                risk: c.risk_level ?? 'unknown',
+                type: c.category ?? 'unknown',
+                submitted: c.submitted_at ? new Date(c.submitted_at).toLocaleDateString() : 'N/A',
+            })),
+            insights: [
+                insight,
+                _sysStatusLabel !== 'All Clear' ? `System status: ` : null,
+                residentsAttention.length > 0 ? ` resident with repeat incidents` : null,
+            ].filter(Boolean) as string[],
+        });
+        return () => clearPageData();
+    }, [loading, error, noOrg, kpi, metrics, panels, execAlerts, insight, _sysStatusLabel, residentsAttention, orgName]);
 
     /* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     if (loading) {
