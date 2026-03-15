@@ -252,6 +252,7 @@ export function ReportsPage() {
     // Org context
     const [orgId, setOrgId] = useState<string>('');
     const [orgName, setOrgName] = useState<string>('');
+    const [orgResolved, setOrgResolved] = useState(false); // true once the org resolution useEffect has finished
     const [isSuperAdmin, setIsSuperAdmin] = useState(false);
     const [userRole, setUserRole] = useState<string>('');
     const [allOrgs, setAllOrgs] = useState<OrgOption[]>([]);
@@ -393,11 +394,15 @@ export function ReportsPage() {
 
                 setOrgName(org?.name ?? '');
             }
+            // Signal that org resolution is complete (orgId may still be '' for super admin with no org selected)
+            setOrgResolved(true);
         })();
     }, []);
 
     /* ── Fetch cases + saved report + SLA overdue NOW ─────────────────────── */
     const fetchData = useCallback(async () => {
+        // Wait for org resolution to complete before attempting to fetch
+        if (!orgResolved) return;
         if (!orgId) { setLoading(false); return; }
 
         setLoading(true);
@@ -475,7 +480,7 @@ export function ReportsPage() {
         }
     }, [selectedMonth, orgId]);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => { fetchData(); }, [fetchData, orgResolved]);
 
     /* ── Fetch report history ────────────────────────────────────────────── */
     const fetchHistory = useCallback(async () => {
