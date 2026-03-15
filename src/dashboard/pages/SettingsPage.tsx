@@ -746,7 +746,7 @@ export function SettingsPage() {
                                 <Image size={16} />
                                 Upload logo
                             </label>
-                            <p className="dashboard-settings-hint">PNG, JPEG, WebP, or SVG. Max 512 KB. Square images work best.</p>
+                            <p className="dashboard-settings-hint">PNG, JPEG, WebP, or SVG. Max 5 MB. Square images work best.</p>
                             <label style={{
                                 display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
                                 marginTop: '0.4rem', padding: '0.45rem 1rem',
@@ -763,7 +763,7 @@ export function SettingsPage() {
                                     onChange={(e) => {
                                         const file = e.target.files?.[0];
                                         if (!file) return;
-                                        if (file.size > 524288) { setBrandingError('Image must be under 512 KB.'); return; }
+                                        if (file.size > 5242880) { setBrandingError('Image must be under 5 MB.'); return; }
                                         setBrandingError(null);
                                         setPendingFile(file);
                                         setPendingPreset(null);  // uploading clears preset selection
