@@ -56,9 +56,12 @@ interface AiNarrative {
     emergingRisks?: string;
     operationalPressure?: string;
     positiveSignals?: string;
+    scamThemeInsight?: string;
+    defensiveRecommendations?: string;
     recommendedActions?: string;
     inspectionSummary?: string;
     leadershipSummary?: string;
+    [key: string]: string | undefined;
 }
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -985,6 +988,8 @@ export function ReportsPage() {
             { key: 'emergingRisks', title: 'Emerging Risks', icon: <ShieldAlert size={13} /> },
             { key: 'operationalPressure', title: 'Operational Pressure', icon: <Clock size={13} /> },
             { key: 'positiveSignals', title: 'Positive Signals', icon: <CheckCircle2 size={13} /> },
+            { key: 'scamThemeInsight', title: 'Scam-Theme Intelligence', icon: <ShieldAlert size={13} />, accentColor: '#d97706' },
+            { key: 'defensiveRecommendations', title: 'Defensive Recommendations', icon: <ClipboardList size={13} />, isList: true, accentColor: '#0B1E36' },
             { key: 'recommendedActions', title: 'Recommended Actions', icon: <ClipboardList size={13} />, isList: true },
         ];
         const inspRv = goodAiText(aiNarrative?.inspectionSummary) || 'This report has been prepared in accordance with safeguarding reporting standards. All case records, review timelines, decisions, and supporting evidence are available for inspection.';
@@ -1527,6 +1532,8 @@ export function ReportsPage() {
                                 { key: 'emergingRisks', title: 'Emerging Risks', icon: <ShieldAlert size={14} /> },
                                 { key: 'operationalPressure', title: 'Operational Pressure', icon: <Clock size={14} /> },
                                 { key: 'positiveSignals', title: 'Positive Signals', icon: <CheckCircle2 size={14} /> },
+                                { key: 'scamThemeInsight', title: 'Scam-Theme Intelligence', icon: <ShieldAlert size={14} />, accentColor: '#d97706' },
+                                { key: 'defensiveRecommendations', title: 'Defensive Recommendations', icon: <ClipboardList size={14} />, isList: true, accentColor: '#0B1E36' },
                                 { key: 'recommendedActions', title: 'Recommended Actions', icon: <ClipboardList size={14} />, isList: true },
                             ];
                             const canGenerateAi = userRole === 'org_admin' || userRole === 'super_admin' || userRole === 'safeguarding_lead';
