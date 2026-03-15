@@ -890,6 +890,41 @@ export function ReportsPage() {
 
     const selectedMonthLabel = monthOptions.find(o => o.value === selectedMonth)?.label ?? selectedMonth;
 
+    // Phase 11 derived display variables — computed from selectedMonth and report state
+    const isCurrentPeriod = (() => {
+        const now = new Date();
+        const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        return selectedMonth === currentYM;
+    })();
+
+    const selectedDateRange = (() => {
+        if (!selectedMonth) return '';
+        const [y, m] = selectedMonth.split('-').map(Number);
+        const start = new Date(y, m - 1, 1);
+        const end = new Date(y, m, 0); // last day of month
+        const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        return `${fmt(start)} – ${fmt(end)}`;
+    })();
+
+    const dataSourceLabel = isCurrentPeriod ? 'Live data' : 'Historical snapshot';
+
+    const statusLabelFull = reportStatus === 'approved'
+        ? 'Approved'
+        : reportStatus === 'locked'
+            ? 'Locked'
+            : reportStatus === 'draft'
+                ? 'Draft'
+                : null;
+
+    const aiLastRefresh = (() => {
+        const ts = reportMetricsSnapshot?.ai_generated_at;
+        if (!ts) return null;
+        const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+        if (diff < 1) return 'just now';
+        if (diff < 60) return `${diff}m ago`;
+        return `${Math.floor(diff / 60)}h ago`;
+    })();
+
     /**
      * AI quality filter — returns null if the text is absent, too short to be
      * meaningful (< 40 chars), or matches known stub phrases that indicate a
