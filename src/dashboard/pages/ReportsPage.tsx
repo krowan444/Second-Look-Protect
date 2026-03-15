@@ -3,6 +3,7 @@ import {
     BarChart3, Loader2, AlertTriangle, Calendar, ShieldAlert, PieChart,
     CheckCircle2, TrendingUp, Info, Printer, Save, Lock, Eye,
     ClipboardList, Clock, FileText, Download, Activity, Mail,
+    Sparkles, RefreshCw, Building2,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabaseClient';
 
@@ -47,6 +48,17 @@ interface AuditLogEntry {
 interface OrgOption {
     id: string;
     name: string;
+}
+
+interface AiNarrative {
+    execSummary?: string;
+    safeguardingTrends?: string;
+    emergingRisks?: string;
+    operationalPressure?: string;
+    positiveSignals?: string;
+    recommendedActions?: string;
+    inspectionSummary?: string;
+    leadershipSummary?: string;
 }
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -160,6 +172,12 @@ export function ReportsPage() {
 
     // Audit logs
     const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+
+    // AI narrative
+    const [aiNarrative, setAiNarrative] = useState<AiNarrative | null>(null);
+    const [regeneratingAi, setRegeneratingAi] = useState(false);
+    const [aiCooldownUntil, setAiCooldownUntil] = useState<number | null>(null);
+    const [aiError, setAiError] = useState<string | null>(null);
 
     // Inspection mode
     const [inspectionMode, setInspectionMode] = useState(false);
@@ -292,6 +310,7 @@ export function ReportsPage() {
                 setRecommendations(savedReport.recommendations ?? '');
 
                 if (savedReport.metrics?.keyTrends) setKeyTrends(savedReport.metrics.keyTrends);
+                setAiNarrative(savedReport.metrics?.aiNarrative ?? null);
             } else {
                 setReportId(null);
                 setReportStatus(null);
@@ -300,6 +319,7 @@ export function ReportsPage() {
                 setExecSummary('');
                 setRecommendations('');
                 setKeyTrends('');
+                setAiNarrative(null);
             }
         } catch (err: any) {
             setError(err?.message ?? 'Failed to load report data');
@@ -419,6 +439,97 @@ export function ReportsPage() {
         };
     }, [reportHistory]);
 
+    /* ── Rich report payload for AI composer ───────────────────────────────── */
+    const reportPayload = useMemo(() => {
+        const closureRate = metrics.total > 0
+            ? Math.round((metrics.byStatus.closed / metrics.total) * 100)
+            : null;
+        const openBacklog = metrics.byStatus.new + metrics.byStatus.in_review;
+        const trendSignals: { label: string; value: string }[] = [];
+        if (metrics.categories[0]) {
+            trendSignals.push({
+                label: 'Most Common Concern',
+                value: `${metrics.categories[0][0].replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} (${metrics.categories[0][1]} cases)`,
+            });
+        }
+        if (metrics.highRisk > 0)
+            trendSignals.push({ label: 'High-Risk Signal', value: `${metrics.highRisk} high or critical risk cases` });
+        if (slaOverdueNow > 0)
+            trendSignals.push({ label: 'Response Pressure', value: `${slaOverdueNow} cases overdue beyond 3 days` });
+        if (closureRate !== null && closureRate >= 70)
+            trendSignals.push({ label: 'Positive Signal', value: `${closureRate}% closure rate this period` });
+        return {
+            ...metrics,
+            closureRate,
+            openBacklog,
+            slaOverdueNow,
+            trendSignals,
+            prev: prevMonthMetrics
+                ? { total: prevMonthMetrics.total, highRisk: prevMonthMetrics.highRisk }
+                : null,
+        };
+    }, [metrics, slaOverdueNow, prevMonthMetrics]);
+
+    /* ── Generate AI narrative ──────────────────────────────────────────────── */
+    async function handleGenerateAiNarrative() {
+        if (!reportId || !orgId || regeneratingAi) return;
+        if (aiCooldownUntil && Date.now() < aiCooldownUntil) return;
+
+        setRegeneratingAi(true);
+        setAiError(null);
+        try {
+            const supabase = getSupabase();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) throw new Error('Not authenticated');
+
+            const { start, end } = monthBoundaries(selectedMonth);
+            const periodStartDate = start.slice(0, 10);
+            const periodEndDate = new Date(new Date(end).getTime() - 1).toISOString().slice(0, 10);
+
+            const resp = await fetch('/api/reports-compose-ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                    reportId,
+                    organisationId: orgId,
+                    periodStart: periodStartDate,
+                    periodEnd: periodEndDate,
+                    payload: reportPayload,
+                }),
+            });
+
+            const result = await resp.json();
+
+            if (resp.status === 429) {
+                const retryAfter = result.retryAfterSeconds ?? 60;
+                setAiCooldownUntil(Date.now() + retryAfter * 1000);
+                setAiError(`Please wait ${retryAfter} seconds before regenerating.`);
+                return;
+            }
+            if (result.fallback) {
+                setAiError('AI narrative generation is temporarily unavailable. Your report data is complete.');
+                return;
+            }
+            if (!resp.ok) {
+                setAiError(result.error ?? 'Could not generate AI narrative.');
+                return;
+            }
+            if (result.aiNarrative) {
+                setAiNarrative(result.aiNarrative);
+                setAiCooldownUntil(Date.now() + 60_000);
+            }
+        } catch {
+            setAiError('AI generation failed. Please try again.');
+        } finally {
+            setRegeneratingAi(false);
+        }
+    }
+
+
+
     /* ── Auto-generate key trends bullet points ──────────────────────────── */
     useEffect(() => {
         if (keyTrends || isLocked) return;
@@ -526,29 +637,21 @@ export function ReportsPage() {
 
     /* ── Load a saved report ─────────────────────────────────────────────── */
     function loadReport(r: SavedReport) {
-        // Restore all fields from the canonical saved snapshot so the page,
-        // PDF, and history all agree on exactly what this report contained.
         setReportId(r.id);
         setReportStatus(r.status as 'draft' | 'locked' | 'approved');
         setReportLocked(!!r.locked);
         setReportPdfUrl(r.pdf_url ?? null);
         setExecSummary(r.ai_summary ?? '');
         setRecommendations(r.recommendations ?? '');
-        // Always restore keyTrends — use empty string so the field doesn't
-        // re-generate auto bullets from a different month's live data.
         setKeyTrends(r.metrics?.keyTrends ?? '');
-        // Restore the SLA overdue count that was snapshotted with this report.
-        // Falls back to legacy key name for older saved reports.
         setSlaOverdueNow(r.metrics?.slaOverdueNow ?? r.metrics?.slaOverdue ?? 0);
+        setAiNarrative(r.metrics?.aiNarrative ?? null);
 
-        // Switch the month selector to match this report's period so the header
-        // and all date-dependent UI stay in sync with the loaded data.
         const d = new Date(r.period_start);
         const monthVal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         setSelectedMonth(monthVal);
 
         setSaveMsg(`Loaded report from ${fmtDate(r.period_start)}`);
-        // Scroll to top so the updated period label is immediately visible
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -967,61 +1070,186 @@ export function ReportsPage() {
                         </div>
                     </div>
 
-                    {/* REPORT CONTENT */}
+                    {/* REPORT CONTENT — AI-powered narrative */}
                     <div style={{ marginTop: '2rem' }}>
-                        {/* A) Executive Summary */}
-                        <div className="dashboard-panel" style={{ marginBottom: '1rem' }}>
-                            <div className="dashboard-panel-header">
-                                <h2 className="dashboard-panel-title"><FileText size={16} className="dashboard-panel-title-icon" /> Executive Summary</h2>
+
+                        {/* Branded report hero */}
+                        <div style={{
+                            background: 'linear-gradient(135deg, #0B1E36 0%, #16324F 100%)',
+                            borderRadius: 14,
+                            padding: '1.5rem 1.75rem',
+                            marginBottom: '1.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '1rem',
+                            flexWrap: 'wrap',
+                        }}>
+                            <div>
+                                <p style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#C9A84C', margin: '0 0 0.3rem' }}>
+                                    Second Look Protect
+                                </p>
+                                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#f8fafc', margin: '0 0 0.25rem', lineHeight: 1.2 }}>
+                                    Safeguarding Monthly Report
+                                </h2>
+                                <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>
+                                    <Building2 size={12} style={{ verticalAlign: 'middle', marginRight: 4, color: '#C9A84C' }} />
+                                    {orgName}{orgName ? ' · ' : ''}{selectedMonthLabel}
+                                </p>
                             </div>
-                            <div style={{ padding: '1rem' }}>
-                                <textarea
-                                    className="dsf-textarea"
-                                    rows={4}
-                                    value={execSummary}
-                                    onChange={(e) => setExecSummary(e.target.value)}
-                                    placeholder="Write an executive summary for this month's safeguarding report…"
-                                    disabled={fieldsDisabled}
-                                    style={fieldsDisabled ? { background: '#f8fafc', color: '#475569', opacity: inspectionMode ? 0.6 : 1 } : {}}
-                                />
+                            <div style={{ textAlign: 'right' }}>
+                                {reportStatus && (
+                                    <span style={{
+                                        display: 'inline-block', padding: '0.3rem 0.85rem',
+                                        borderRadius: 99, fontSize: '0.72rem', fontWeight: 600,
+                                        background: isLocked ? 'rgba(34,197,94,0.15)' : 'rgba(201,168,76,0.15)',
+                                        color: isLocked ? '#4ade80' : '#C9A84C',
+                                        border: `1px solid ${isLocked ? 'rgba(34,197,94,0.3)' : 'rgba(201,168,76,0.3)'}`,
+                                    }}>
+                                        {reportStatus === 'approved' ? '✓ Approved' : reportStatus === 'locked' ? '⊘ Locked' : '✎ Draft'}
+                                    </span>
+                                )}
+                                <p style={{ fontSize: '0.7rem', color: '#64748b', margin: '0.4rem 0 0' }}>
+                                    {metrics.total} case{metrics.total !== 1 ? 's' : ''} · {metrics.highRisk} high-risk · {metrics.byStatus.closed} closed
+                                </p>
                             </div>
                         </div>
 
-                        {/* B) Key Trends */}
-                        <div className="dashboard-panel" style={{ marginBottom: '1rem' }}>
-                            <div className="dashboard-panel-header">
-                                <h2 className="dashboard-panel-title"><TrendingUp size={16} className="dashboard-panel-title-icon" /> Key Trends This Month</h2>
+                        {/* AI error message */}
+                        {aiError && (
+                            <div style={{
+                                marginBottom: '1rem', padding: '0.65rem 0.9rem',
+                                borderRadius: 8, background: '#fffbeb', border: '1px solid #fde68a',
+                                fontSize: '0.8rem', color: '#92400e',
+                            }}>
+                                {aiError}
                             </div>
-                            <div style={{ padding: '1rem' }}>
-                                <textarea
-                                    className="dsf-textarea"
-                                    rows={6}
-                                    value={keyTrends}
-                                    onChange={(e) => setKeyTrends(e.target.value)}
-                                    placeholder="Auto-generated bullet points based on this month's data…"
-                                    disabled={fieldsDisabled}
-                                    style={fieldsDisabled ? { background: '#f8fafc', color: '#475569', opacity: inspectionMode ? 0.6 : 1 } : {}}
-                                />
-                            </div>
-                        </div>
+                        )}
 
-                        {/* C) Recommendations */}
-                        <div className="dashboard-panel" style={{ marginBottom: '1rem' }}>
-                            <div className="dashboard-panel-header">
-                                <h2 className="dashboard-panel-title"><Info size={16} className="dashboard-panel-title-icon" /> Recommendations</h2>
-                            </div>
-                            <div style={{ padding: '1rem' }}>
-                                <textarea
-                                    className="dsf-textarea"
-                                    rows={4}
-                                    value={recommendations}
-                                    onChange={(e) => setRecommendations(e.target.value)}
-                                    placeholder="Add recommendations for the safeguarding team…"
-                                    disabled={fieldsDisabled}
-                                    style={fieldsDisabled ? { background: '#f8fafc', color: '#475569', opacity: inspectionMode ? 0.6 : 1 } : {}}
-                                />
-                            </div>
-                        </div>
+                        {/* AI narrative sections */}
+                        {((): React.ReactNode => {
+                            const n = aiNarrative;
+                            const hasAi = !!n && Object.values(n).some(v => !!v);
+                            const closureRate = metrics.total > 0
+                                ? Math.round((metrics.byStatus.closed / metrics.total) * 100)
+                                : null;
+
+                            const AiBadge = () => (
+                                <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 3,
+                                    fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase',
+                                    letterSpacing: '0.05em', color: '#7c3aed',
+                                    background: 'rgba(124,58,237,0.08)', borderRadius: 4,
+                                    padding: '0.1rem 0.4rem', marginLeft: 'auto', flexShrink: 0,
+                                }}>
+                                    <Sparkles size={9} /> AI
+                                </span>
+                            );
+
+                            const Skeleton = () => (
+                                <div style={{ padding: '0.25rem 0' }}>
+                                    {[85, 95, 72].map((w, i) => (
+                                        <div key={i} style={{
+                                            height: 11, borderRadius: 4, marginBottom: 8, width: `${w}%`,
+                                            background: 'linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)',
+                                            backgroundSize: '200% 100%',
+                                            animation: 'dashboard-shimmer 1.5s infinite linear',
+                                        }} />
+                                    ))}
+                                </div>
+                            );
+
+                            // Deterministic fallback per section
+                            const fallbacks: Partial<AiNarrative> = {
+                                execSummary: execSummary || (metrics.total === 0
+                                    ? `No cases were recorded for ${selectedMonthLabel}. The organisation maintained safeguarding protocols throughout this period with no submissions requiring active review.`
+                                    : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were recorded during ${selectedMonthLabel}.${metrics.highRisk > 0 ? ` ${metrics.highRisk} case${metrics.highRisk !== 1 ? 's were' : ' was'} classified as high or critical risk.` : ' No high-risk cases were identified.'} ${closureRate !== null ? `The closure rate for the period was ${closureRate}%.` : ''}`),
+                                safeguardingTrends: keyTrends
+                                    ? keyTrends.split('\n').filter(l => l.trim()).join(' ')
+                                    : `Case volume for ${selectedMonthLabel}: ${metrics.total} total case${metrics.total !== 1 ? 's' : ''}. Generate AI narrative for a full trend analysis.`,
+                                emergingRisks: metrics.highRisk > 0
+                                    ? `${metrics.highRisk} case${metrics.highRisk !== 1 ? 's' : ''} were classified as high or critical risk this period${metrics.categories[0] ? `, with ${metrics.categories[0][0].replace(/_/g, ' ')} as the most common concern category` : ''}.`
+                                    : 'No high or critical risk cases were recorded during this period.',
+                                operationalPressure: `Average time to first review: ${metrics.avgReview}. Average time to close: ${metrics.avgClose}.${slaOverdueNow > 0 ? ` ${slaOverdueNow} case${slaOverdueNow !== 1 ? 's remain' : ' remains'} open beyond the 3-day SLA threshold.` : ' All cases are within SLA thresholds.'}`,
+                                positiveSignals: closureRate !== null && closureRate >= 60
+                                    ? `${closureRate}% of cases were closed during this period, reflecting strong review throughput.`
+                                    : metrics.highRisk === 0 && metrics.total > 0
+                                        ? 'No high or critical risk cases were reported, reflecting a safe and well-managed period.'
+                                        : 'Case processing continued within normal operational parameters.',
+                                recommendedActions: recommendations || '- Ensure all open cases are reviewed and progressed promptly.\n- Confirm SLA compliance across all active cases.\n- Review any high-risk cases with the safeguarding lead.',
+                                inspectionSummary: 'This report has been prepared in accordance with safeguarding reporting standards. All case records, timelines, and decisions are available for inspection review.',
+                                leadershipSummary: metrics.total === 0
+                                    ? `No safeguarding cases were recorded in ${selectedMonthLabel}. No escalation action is required at this time.`
+                                    : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were managed during ${selectedMonthLabel}. ${metrics.highRisk > 0 ? 'Leadership attention is recommended for high-risk case review.' : 'No high-risk concerns require immediate leadership action.'}`,
+                            };
+
+                            type SectionDef = { key: keyof AiNarrative; title: string; icon: React.ReactNode; isList?: boolean };
+                            const sections: SectionDef[] = [
+                                { key: 'execSummary', title: 'Executive Summary', icon: <FileText size={15} /> },
+                                { key: 'safeguardingTrends', title: 'Safeguarding Trends', icon: <TrendingUp size={15} /> },
+                                { key: 'emergingRisks', title: 'Emerging Risks', icon: <ShieldAlert size={15} /> },
+                                { key: 'operationalPressure', title: 'Operational Pressure', icon: <Clock size={15} /> },
+                                { key: 'positiveSignals', title: 'Positive Signals', icon: <CheckCircle2 size={15} /> },
+                                { key: 'recommendedActions', title: 'Recommended Actions', icon: <ClipboardList size={15} />, isList: true },
+                                { key: 'inspectionSummary', title: 'Inspection Summary', icon: <Lock size={15} /> },
+                                { key: 'leadershipSummary', title: 'Leadership Summary', icon: <Building2 size={15} /> },
+                            ];
+
+                            return (
+                                <>
+                                    {!hasAi && !regeneratingAi && reportId && (userRole === 'org_admin' || userRole === 'super_admin') && (
+                                        <div style={{
+                                            marginBottom: '1.25rem', padding: '0.9rem 1.1rem',
+                                            borderRadius: 10, border: '1px dashed #c4b5fd',
+                                            background: 'rgba(124,58,237,0.03)',
+                                            display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                        }}>
+                                            <Sparkles size={18} style={{ color: '#7c3aed', flexShrink: 0 }} />
+                                            <div>
+                                                <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#5b21b6' }}>AI narrative not yet generated</p>
+                                                <p style={{ margin: '0.1rem 0 0', fontSize: '0.78rem', color: '#7c3aed' }}>Click &ldquo;Generate AI Narrative&rdquo; in the toolbar below to create polished report sections from this period&apos;s data.</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                                        {sections.map(section => {
+                                            const aiText = n?.[section.key];
+                                            const text = aiText || fallbacks[section.key] || '';
+                                            const isAiText = !!aiText;
+
+                                            return (
+                                                <div key={section.key} className="dashboard-panel" style={{ marginBottom: 0 }}>
+                                                    <div className="dashboard-panel-header" style={{ borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center' }}>
+                                                        <h2 className="dashboard-panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flex: 1, minWidth: 0 }}>
+                                                            <span style={{ color: isAiText ? '#7c3aed' : '#94a3b8', flexShrink: 0 }}>{section.icon}</span>
+                                                            {section.title}
+                                                        </h2>
+                                                        {isAiText && <AiBadge />}
+                                                    </div>
+                                                    <div style={{ padding: '1rem 1rem', fontSize: '0.875rem', color: '#334155', lineHeight: 1.75 }}>
+                                                        {regeneratingAi ? <Skeleton /> : (
+                                                            section.isList ? (
+                                                                <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                                                    {(text || '').split('\n').filter(l => l.trim()).map((line, i) => (
+                                                                        <li key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                                                                            <span style={{ color: '#C9A84C', flexShrink: 0, marginTop: 2, fontWeight: 700 }}>›</span>
+                                                                            <span>{line.replace(/^[-–—•]\s*/, '')}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            ) : (
+                                                                <p style={{ margin: 0 }}>{text}</p>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            );
+                        })()}
 
                         {/* D) Inspection Ready Notes — insight-led summary */}
                         {(() => {
@@ -1280,6 +1508,29 @@ export function ReportsPage() {
                         zIndex: 50,
                         marginTop: '1rem'
                     }}>
+                        {/* Generate AI Narrative — org_admin + super_admin only */}
+                        {reportId && (userRole === 'org_admin' || userRole === 'super_admin') && !inspectionMode && (() => {
+                            const cooldownRemaining = aiCooldownUntil
+                                ? Math.max(0, Math.ceil((aiCooldownUntil - Date.now()) / 1000))
+                                : 0;
+                            const onCooldown = cooldownRemaining > 0;
+                            return (
+                                <button
+                                    type="button"
+                                    className="dashboard-reports-action-btn"
+                                    onClick={handleGenerateAiNarrative}
+                                    disabled={regeneratingAi || onCooldown}
+                                    style={{ background: '#5b21b6', color: '#fff', minWidth: 164, gap: '0.4rem' }}
+                                >
+                                    {regeneratingAi
+                                        ? <><Loader2 size={15} className="dsf-spinner" /> Generating…</>
+                                        : onCooldown
+                                            ? <><RefreshCw size={15} /> Wait {cooldownRemaining}s</>
+                                            : <><Sparkles size={15} /> Generate AI Narrative</>}
+                                </button>
+                            );
+                        })()}
+
                         {/* Save Draft — only when not approved/locked and not in inspection mode */}
                         {!isLocked && !inspectionMode && userRole !== 'read_only' && (
                             <button type="button" className="dashboard-reports-action-btn" onClick={handleSaveDraft} disabled={savingDraft}>

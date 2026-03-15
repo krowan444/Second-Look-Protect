@@ -155,186 +155,266 @@ export default async function handler(req, res) {
         // Fall back to legacy key slaOverdue for older saved reports.
         const slaOverdue = m.slaOverdueNow ?? m.slaOverdue ?? '—';
 
-        /* ── Build PDF ────────────────────────────────────────────────────── */
+        /* ── Build PDF ────────────────────────────────────────────────────────── */
 
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-        let y = 20;
-        const lm = 15;  // left margin
-        const pw = 180; // printable width
+        const lm = 15;      // left margin
+        const pw = 180;     // printable width
+        const rm = lm + pw; // right edge
+        let y = 0;
 
-        // ── Header ──────────────────────────────────────────────────────────
-        doc.setFontSize(18);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Safeguarding Monthly Report', lm, y);
-        y += 8;
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'normal');
-        doc.text(sanitisePdfText(orgName), lm, y);
-        y += 6;
-        doc.text(`Period: ${periodStart} to ${periodEnd}`, lm, y);
-        y += 6;
-        doc.text(`Status: ${fmtLabel(report.status ?? 'draft')}`, lm, y);
-        y += 3;
-        doc.setDrawColor(200);
-        doc.line(lm, y, lm + pw, y);
-        y += 8;
+        /* ── Colour palette ─────────────────────────────────────────────────── */
+        const navy = [11, 30, 54];   // #0B1E36
+        const gold = [201, 168, 76];    // #C9A84C
+        const light = [248, 250, 252];    // #f8fafc
+        const slate = [71, 85, 105];   // #475569
+        const border = [226, 232, 240];    // #e2e8f0
 
-        // ── Key Metrics ──────────────────────────────────────────────────────
-        doc.setFontSize(13);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Key Metrics', lm, y);
-        y += 7;
+        /* ── Helpers ─────────────────────────────────────────────────────────── */
+        function setCol(rgb) { doc.setTextColor(...rgb); }
+        function setFill(rgb) { doc.setFillColor(...rgb); }
+        function setDraw(rgb) { doc.setDrawColor(...rgb); }
+        function newPage() { doc.addPage(); y = 20; }
+        function checkY(needed = 10) { if (y + needed > 275) newPage(); }
 
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-
-        const metricLines = [
-            `Total Cases: ${m.total ?? '0'}`,
-            `New: ${byStatus.new ?? '0'}  |  In Review: ${byStatus.in_review ?? '0'}  |  Closed: ${byStatus.closed ?? '0'}`,
-            `High/Critical Risk: ${m.highRisk ?? '0'}`,
-            `Scam Confirmed: ${m.scamConfirmed ?? '0'}`,
-            `Prevented: ${outcomeMap.prevented ?? '0'}  |  Lost: ${outcomeMap.lost ?? '0'}  |  Escalated: ${outcomeMap.escalated ?? '0'}`,
-            `Avg Time to Review: ${m.avgReview ?? '—'}`,
-            `Avg Time to Close: ${m.avgClose ?? '—'}`,
-            `SLA Overdue (>3 days): ${slaOverdue}`,
-        ];
-
-        for (const line of metricLines) {
-            if (y > 270) { doc.addPage(); y = 20; }
-            doc.text(sanitisePdfText(line), lm, y);
-            y += 5.5;
+        function renderSectionTitle(title) {
+            checkY(14);
+            setFill(navy);
+            doc.rect(lm, y, pw, 8, 'F');
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(255, 255, 255);
+            doc.text(sanitisePdfText(title), lm + 3, y + 5.5);
+            setCol([0, 0, 0]);
+            y += 12;
         }
-        y += 4;
 
-        // ── Helper: render a breakdown table ────────────────────────────────
-        function renderTable(title, entries, headers = ['Name', 'Count']) {
+        function renderBodyText(text, fallback) {
+            const content = sanitisePdfText(text) || sanitisePdfText(fallback) || 'No content recorded.';
+            doc.setFontSize(9.5);
+            doc.setFont('helvetica', 'normal');
+            setCol(slate);
+            const lines = doc.splitTextToSize(content, pw);
+            for (const line of lines) {
+                checkY(6);
+                doc.text(line, lm, y);
+                y += 5.2;
+            }
+            y += 4;
+        }
+
+        function renderBulletList(text, fallback) {
+            const content = sanitisePdfText(text) || sanitisePdfText(fallback) || 'No recommendations recorded.';
+            const items = content.split('\n').map(l => l.replace(/^[-–—•]\s*/, '').trim()).filter(Boolean);
+            doc.setFontSize(9.5);
+            doc.setFont('helvetica', 'normal');
+            setCol(slate);
+            for (const item of items) {
+                checkY(6);
+                doc.text('›', lm + 1, y);
+                const wrapped = doc.splitTextToSize(item, pw - 8);
+                doc.text(wrapped, lm + 6, y);
+                y += wrapped.length * 5.2;
+            }
+            y += 4;
+        }
+
+        function renderKpiBox(label, value, x, w) {
+            setFill(light);
+            setDraw(border);
+            doc.rect(x, y, w, 20, 'FD');
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            setCol(navy);
+            doc.text(String(value), x + w / 2, y + 10, { align: 'center' });
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'normal');
+            setCol(slate);
+            doc.text(sanitisePdfText(label), x + w / 2, y + 16.5, { align: 'center' });
+        }
+
+        function renderTable(title, entries, headers = ['Category', 'Count']) {
+            renderSectionTitle(title);
             if (!entries || entries.length === 0) {
-                // Render section with a clean fallback instead of silently omitting
-                if (y > 255) { doc.addPage(); y = 20; }
-                doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
-                doc.text(sanitisePdfText(title), lm, y);
-                y += 6;
                 doc.setFontSize(9);
-                doc.setFont('helvetica', 'normal');
+                doc.setFont('helvetica', 'italic');
+                setCol(slate);
                 doc.text('No data recorded for this period.', lm, y);
                 y += 8;
                 return;
             }
-            if (y > 250) { doc.addPage(); y = 20; }
-            doc.setFontSize(12);
+            // Header row
+            doc.setFontSize(8.5);
             doc.setFont('helvetica', 'bold');
-            doc.text(sanitisePdfText(title), lm, y);
-            y += 6;
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'bold');
-            doc.text(headers[0], lm, y);
-            doc.text(headers[1], lm + 100, y);
-            y += 5;
+            setCol(slate);
+            doc.text(headers[0], lm + 2, y);
+            doc.text(headers[1], rm - 3, y, { align: 'right' });
+            y += 4;
+            setDraw(border);
+            doc.line(lm, y, rm, y);
+            y += 2;
+
+            // Data rows
             doc.setFont('helvetica', 'normal');
+            setCol([30, 41, 59]);
+            let shade = false;
             for (const entry of entries) {
-                if (y > 275) { doc.addPage(); y = 20; }
+                checkY(7);
                 const name = Array.isArray(entry) ? entry[0] : (entry.name ?? String(entry));
                 const count = Array.isArray(entry) ? String(entry[1]) : String(entry.count ?? '');
-                // Apply full title-case formatting (handles underscores in category/channel names)
-                doc.text(sanitisePdfText(fmtLabel(String(name))), lm, y);
-                doc.text(sanitisePdfText(count), lm + 100, y);
-                y += 4.5;
+                if (shade) { setFill(light); doc.rect(lm, y - 3.5, pw, 6, 'F'); }
+                doc.text(sanitisePdfText(fmtLabel(String(name))), lm + 2, y);
+                doc.text(sanitisePdfText(count), rm - 3, y, { align: 'right' });
+                y += 5.5;
+                shade = !shade;
             }
-            y += 4;
+            y += 5;
         }
 
-        // Categories
-        renderTable('Top Categories', m.categories);
+        /* ── Page 1: Cover block ─────────────────────────────────────────────── */
+        y = 0;
+        // Dark navy header band
+        setFill(navy);
+        doc.rect(0, 0, 210, 58, 'F');
 
-        // Channels
+        // Gold accent bar
+        setFill(gold);
+        doc.rect(0, 58, 210, 2.5, 'F');
+
+        // Branding copy
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(201, 168, 76); // gold
+        doc.text('SECOND LOOK PROTECT', lm, 16);
+
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(248, 250, 252); // light
+        doc.text('Safeguarding Monthly Report', lm, 28);
+
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(148, 163, 184); // muted slate
+        doc.text(sanitisePdfText(orgName), lm, 37);
+        doc.text(`Period: ${periodStart}  to  ${periodEnd}`, lm, 44);
+
+        const statusLabel = fmtLabel(report.status ?? 'draft');
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'bold');
+        const statusColor = (report.status === 'approved' || report.status === 'locked')
+            ? [74, 222, 128]   // green
+            : [201, 168, 76];  // gold (draft)
+        doc.setTextColor(...statusColor);
+        doc.text(`Status: ${statusLabel}`, lm, 51);
+
+        // Reset colour
+        setCol([0, 0, 0]);
+        y = 72;
+
+        /* ── KPI strip ───────────────────────────────────────────────────────── */
+        const kpiCount = 5;
+        const kpiW = (pw - (kpiCount - 1) * 3) / kpiCount;
+        const byStatus = m.byStatus || {};
+        const outcomeMap = m.outcomeMap || {};
+        const riskMap = m.riskMap || {};
+        const slaOverdue = m.slaOverdueNow ?? m.slaOverdue ?? '—';
+        const closureRate = (typeof m.total === 'number' && m.total > 0 && typeof byStatus.closed === 'number')
+            ? Math.round((byStatus.closed / m.total) * 100) + '%'
+            : '—';
+
+        renderKpiBox('Total Cases', m.total ?? 0, lm, kpiW);
+        renderKpiBox('High Risk', m.highRisk ?? 0, lm + (kpiW + 3), kpiW);
+        renderKpiBox('Closed', byStatus.closed ?? 0, lm + (kpiW + 3) * 2, kpiW);
+        renderKpiBox('SLA Overdue', slaOverdue, lm + (kpiW + 3) * 3, kpiW);
+        renderKpiBox('Closure Rate', closureRate, lm + (kpiW + 3) * 4, kpiW);
+        y += 26;
+
+        // Secondary metrics row (smaller text)
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'normal');
+        setCol(slate);
+        const metaLine = [
+            `New: ${byStatus.new ?? 0}`,
+            `In Review: ${byStatus.in_review ?? 0}`,
+            `Avg Review: ${m.avgReview ?? '—'}`,
+            `Avg Close: ${m.avgClose ?? '—'}`,
+            `Scam Confirmed: ${m.scamConfirmed ?? 0}`,
+        ].join('   ·   ');
+        doc.text(sanitisePdfText(metaLine), lm, y);
+        y += 10;
+
+        /* ── AI narrative sections ─────────────────────────────────────────── */
+        // Prefer the AI narrative from metrics.aiNarrative; fall back to legacy fields
+        const ai = m.aiNarrative || {};
+
+        const narrativeSections = [
+            { title: 'Executive Summary', text: ai.execSummary || report.ai_summary, isList: false },
+            { title: 'Safeguarding Trends', text: ai.safeguardingTrends || m.keyTrends, isList: false },
+            { title: 'Emerging Risks', text: ai.emergingRisks, isList: false },
+            { title: 'Operational Pressure', text: ai.operationalPressure, isList: false },
+            { title: 'Positive Signals', text: ai.positiveSignals, isList: false },
+            { title: 'Recommended Actions', text: ai.recommendedActions || report.recommendations, isList: true },
+            { title: 'Inspection Summary', text: ai.inspectionSummary, isList: false },
+            { title: 'Leadership Summary', text: ai.leadershipSummary, isList: false },
+        ];
+
+        for (const section of narrativeSections) {
+            if (!section.text) continue; // skip empty sections quietly
+            renderSectionTitle(section.title);
+            if (section.isList) {
+                renderBulletList(section.text, '');
+            } else {
+                renderBodyText(section.text, '');
+            }
+        }
+
+        /* ── Supporting data tables ─────────────────────────────────────────── */
+        renderTable('Top Concern Categories', m.categories);
         renderTable('Submission Channels', m.channels);
 
-        // Risk distribution
         if (riskMap && Object.keys(riskMap).length > 0) {
-            renderTable(
-                'Risk Distribution',
-                Object.entries(riskMap).map(([k, v]) => [k, v])
-            );
+            renderTable('Risk Distribution', Object.entries(riskMap).map(([k, v]) => [k, v]));
         } else {
             renderTable('Risk Distribution', []);
         }
 
-        // Decisions
         renderTable('Decisions Distribution', m.decisions);
 
-        // ── Helper: render a text section ───────────────────────────────────
-        function renderTextSection(title, text, fallback) {
-            if (y > 250) { doc.addPage(); y = 20; }
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.text(sanitisePdfText(title), lm, y);
-            y += 6;
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-
-            const content = sanitisePdfText(text) || fallback || 'No content recorded.';
-            const lines = doc.splitTextToSize(content, pw);
-            for (const line of lines) {
-                if (y > 275) { doc.addPage(); y = 20; }
-                doc.text(line, lm, y);
-                y += 5;
-            }
-            y += 4;
-        }
-
-        renderTextSection(
-            'Executive Summary',
-            report.ai_summary,
-            'No executive summary was provided for this period.'
-        );
-        renderTextSection(
-            'Key Trends This Month',
-            m.keyTrends,
-            'No key trends were recorded for this period.'
-        );
-        renderTextSection(
-            'Recommendations',
-            report.recommendations,
-            'No recommendations were recorded for this period.'
-        );
-
-        // ── Inspection Ready Notes ───────────────────────────────────────────
-        if (y > 250) { doc.addPage(); y = 20; }
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Inspection Ready Notes', lm, y);
-        y += 6;
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-
-        // ASCII-safe checkmarks — jsPDF Helvetica (Latin-1) cannot render Unicode
-        const inspectionNotes = [
-            '[x] All case submissions contain timestamped evidence in case_actions',
-            '[x] Audit timeline shows chronological actions + reviews per case',
-            '[x] Row-level security enforced — users cannot access data outside their organisation',
-            '[x] Compliance notes are append-only and immutable',
-            '[x] Reports can be locked to prevent post-hoc editing',
-            '[x] All case statuses and reviews traceable via case_reviews',
+        /* ── Inspection Ready Notes ──────────────────────────────────────────── */
+        renderSectionTitle('Inspection Ready Notes');
+        const inspectionLines = [
+            'All case submissions contain timestamped evidence in case actions',
+            'Audit timeline shows chronological actions and reviews per case',
+            'Row-level security enforced — users cannot access data outside their organisation',
+            'Compliance notes are append-only and immutable',
+            'Reports can be locked to prevent post-hoc editing',
+            'All case statuses and reviews are traceable via case reviews',
         ];
-        for (const note of inspectionNotes) {
-            if (y > 275) { doc.addPage(); y = 20; }
-            doc.text(note, lm, y);
-            y += 4.5;
+        doc.setFontSize(9.5);
+        doc.setFont('helvetica', 'normal');
+        setCol(slate);
+        for (const note of inspectionLines) {
+            checkY(6);
+            doc.text('[x]', lm + 1, y);
+            doc.text(sanitisePdfText(note), lm + 9, y);
+            y += 5.5;
         }
+        y += 4;
 
-        // ── Footer on every page ─────────────────────────────────────────────
+        /* ── Footer on every page ────────────────────────────────────────────── */
         const pageCount = doc.internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
-            doc.setFontSize(8);
-            doc.setTextColor(150);
+            doc.setFontSize(7.5);
+            doc.setTextColor(148, 163, 184);
             doc.text(
-                `Generated ${new Date().toISOString().slice(0, 10)} | ${sanitisePdfText(orgName)} | Period: ${periodStart} to ${periodEnd} | Page ${i} of ${pageCount}`,
+                sanitisePdfText(
+                    `Generated ${new Date().toISOString().slice(0, 10)}  ·  ${orgName}  ·  Period: ${periodStart} to ${periodEnd}  ·  Page ${i} of ${pageCount}`
+                ),
                 lm, 290
             );
-            doc.setTextColor(0);
+            doc.setTextColor(0, 0, 0);
         }
 
         /* ── Export to buffer ──────────────────────────────────────────────── */
