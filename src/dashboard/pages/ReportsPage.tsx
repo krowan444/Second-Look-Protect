@@ -404,6 +404,21 @@ export function ReportsPage() {
         };
     }, [cases]);
 
+    /* ── Previous month metrics from report history (for trend comparison) ──── */
+    const prevMonthMetrics = useMemo(() => {
+        if (reportHistory.length < 2) return null;
+        // reportHistory is sorted descending — index 0 is current or most recent,
+        // index 1 is the prior period.
+        const prev = reportHistory[1];
+        if (!prev?.metrics) return null;
+        return prev.metrics as {
+            total?: number;
+            highRisk?: number;
+            slaOverdueNow?: number;
+            categories?: [string, number][];
+        };
+    }, [reportHistory]);
+
     /* ── Auto-generate key trends bullet points ──────────────────────────── */
     useEffect(() => {
         if (keyTrends || isLocked) return;
@@ -1008,22 +1023,246 @@ export function ReportsPage() {
                             </div>
                         </div>
 
-                        {/* D) Inspection Ready Notes */}
-                        <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
-                            <div className="dashboard-panel-header">
-                                <h2 className="dashboard-panel-title"><CheckCircle2 size={16} className="dashboard-panel-title-icon" /> Inspection Ready Notes</h2>
-                            </div>
-                            <div style={{ padding: '1rem', fontSize: '0.82rem', color: '#334155' }}>
-                                <ul style={{ margin: 0, paddingLeft: '1.25rem', lineHeight: 1.8 }}>
-                                    <li>✅ All case submissions contain timestamped evidence in <code>case_actions</code></li>
-                                    <li>✅ Audit timeline shows chronological actions + reviews per case</li>
-                                    <li>✅ Row-level security enforced — users cannot access data outside their organisation</li>
-                                    <li>✅ Compliance notes are append-only and immutable</li>
-                                    <li>✅ Reports can be locked to prevent post-hoc editing</li>
-                                    <li>✅ All case statuses and reviews traceable via <code>case_reviews</code></li>
-                                </ul>
-                            </div>
-                        </div>
+                        {/* D) Inspection Ready Notes — insight-led summary */}
+                        {(() => {
+                            const hasData = metrics.total > 0;
+                            const monthLabel = selectedMonthLabel;
+
+                            // ── Trend signals from prior month ────────────────────────
+                            const prevTotal = prevMonthMetrics?.total ?? null;
+                            const prevHighRisk = prevMonthMetrics?.highRisk ?? null;
+                            const caseDelta = prevTotal !== null ? metrics.total - prevTotal : null;
+                            const highRiskDelta = prevHighRisk !== null ? metrics.highRisk - prevHighRisk : null;
+                            const closureRate = metrics.total > 0
+                                ? Math.round((metrics.byStatus.closed / metrics.total) * 100)
+                                : null;
+                            const topCategory = metrics.categories[0]?.[0] ?? null;
+                            const topCategoryCount = metrics.categories[0]?.[1] ?? 0;
+                            const topCategoryPct = metrics.total > 0
+                                ? Math.round((topCategoryCount / metrics.total) * 100)
+                                : 0;
+                            const reviewPressure = slaOverdueNow > 0;
+                            const highRiskPct = metrics.total > 0
+                                ? Math.round((metrics.highRisk / metrics.total) * 100)
+                                : 0;
+
+                            // ── Summary sentence ──────────────────────────────────────
+                            let summaryLine = '';
+                            if (!hasData) {
+                                summaryLine = `No cases were recorded for ${monthLabel}. Insights will appear once activity is logged.`;
+                            } else {
+                                const parts: string[] = [];
+                                parts.push(`${metrics.total} ${metrics.total === 1 ? 'case was' : 'cases were'} recorded in ${monthLabel}`);
+                                if (caseDelta !== null) {
+                                    if (caseDelta > 0) parts.push(`an increase of ${caseDelta} compared to the previous period`);
+                                    else if (caseDelta < 0) parts.push(`a reduction of ${Math.abs(caseDelta)} compared to the previous period`);
+                                    else parts.push(`consistent with the previous period`);
+                                }
+                                summaryLine = parts.join(', ') + '.';
+
+                                if (metrics.highRisk > 0) {
+                                    summaryLine += ` ${metrics.highRisk} ${metrics.highRisk === 1 ? 'case' : 'cases'} ${metrics.highRisk === 1 ? 'was' : 'were'} classified as high or critical risk`;
+                                    if (highRiskDelta !== null && highRiskDelta > 0) summaryLine += `, up ${highRiskDelta} from the prior month`;
+                                    else if (highRiskDelta !== null && highRiskDelta < 0) summaryLine += `, down ${Math.abs(highRiskDelta)} from the prior month`;
+                                    summaryLine += '.';
+                                }
+                                if (metrics.byStatus.closed > 0) {
+                                    summaryLine += ` ${metrics.byStatus.closed} ${metrics.byStatus.closed === 1 ? 'case' : 'cases'} ${metrics.byStatus.closed === 1 ? 'was' : 'were'} closed this period`;
+                                    if (closureRate !== null) summaryLine += ` (${closureRate}% closure rate)`;
+                                    summaryLine += '.';
+                                }
+                            }
+
+                            // ── Insight chips ──────────────────────────────────────────
+                            type Chip = { label: string; value: string; tone: 'red' | 'amber' | 'green' | 'blue' | 'neutral' };
+                            const chips: Chip[] = [];
+
+                            if (hasData) {
+                                // Most common concern
+                                if (topCategory) {
+                                    chips.push({
+                                        label: 'Most Common Concern',
+                                        value: `${topCategory.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} — ${topCategoryPct}% of cases`,
+                                        tone: 'blue',
+                                    });
+                                }
+
+                                // High-risk signal
+                                if (metrics.highRisk > 0) {
+                                    const trend = highRiskDelta === null ? '' :
+                                        highRiskDelta > 0 ? ` ▲ up ${highRiskDelta} vs prior month` :
+                                            highRiskDelta < 0 ? ` ▼ down ${Math.abs(highRiskDelta)} vs prior month` : ' — stable';
+                                    chips.push({
+                                        label: 'High-Risk Signal',
+                                        value: `${metrics.highRisk} high or critical ${metrics.highRisk === 1 ? 'case' : 'cases'} (${highRiskPct}%)${trend}`,
+                                        tone: highRiskPct >= 30 ? 'red' : 'amber',
+                                    });
+                                }
+
+                                // Response pressure
+                                if (reviewPressure) {
+                                    chips.push({
+                                        label: 'Response Pressure',
+                                        value: `${slaOverdueNow} open ${slaOverdueNow === 1 ? 'case' : 'cases'} awaiting review beyond 3 days`,
+                                        tone: slaOverdueNow >= 5 ? 'red' : 'amber',
+                                    });
+                                }
+
+                                // Positive signal — good closure rate or no high-risk
+                                if (closureRate !== null && closureRate >= 70) {
+                                    chips.push({
+                                        label: 'Positive Signal',
+                                        value: `${closureRate}% of cases closed this period — strong throughput`,
+                                        tone: 'green',
+                                    });
+                                } else if (metrics.highRisk === 0 && metrics.total > 0) {
+                                    chips.push({
+                                        label: 'Positive Signal',
+                                        value: 'No high or critical risk cases recorded this period',
+                                        tone: 'green',
+                                    });
+                                }
+
+                                // Watch area — open backlog
+                                const openBacklog = metrics.byStatus.new + metrics.byStatus.in_review;
+                                if (openBacklog > 0 && (closureRate === null || closureRate < 50)) {
+                                    chips.push({
+                                        label: 'Watch Area',
+                                        value: `${openBacklog} ${openBacklog === 1 ? 'case' : 'cases'} still open — consider prioritising review queue`,
+                                        tone: 'neutral',
+                                    });
+                                }
+                            }
+
+                            // ── Recommended attention ────────────────────────────────────
+                            const attention: string[] = [];
+                            if (hasData) {
+                                if (slaOverdueNow >= 3) attention.push('Prioritise the review queue — several cases have been open for more than 3 days.');
+                                if (metrics.highRisk >= 2) attention.push('Schedule a safeguarding lead review of high-risk cases before month-end.');
+                                if (highRiskDelta !== null && highRiskDelta > 2) attention.push('High-risk case volume has increased significantly — consider a team briefing.');
+                                if (caseDelta !== null && caseDelta > 5) attention.push('Case volume has risen noticeably — check whether staffing and response capacity remains sufficient.');
+                                if (topCategory && topCategoryPct >= 40) {
+                                    const readableCat = topCategory.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                                    attention.push(`${readableCat} accounts for a high share of this period's cases — consider a focused review of this concern area.`);
+                                }
+                                if (attention.length === 0 && metrics.total > 0) {
+                                    attention.push('No significant pressure points identified this period. Maintain current response standards and ensure all open cases are reviewed promptly.');
+                                }
+                            }
+
+                            // ── Tone helpers ───────────────────────────────────────────
+                            const chipColors: Record<NonNullable<Chip['tone']>, { bg: string; border: string; label: string; dot: string }> = {
+                                red: { bg: '#fef2f2', border: '#fecaca', label: '#991b1b', dot: '#ef4444' },
+                                amber: { bg: '#fffbeb', border: '#fde68a', label: '#92400e', dot: '#f59e0b' },
+                                green: { bg: '#f0fdf4', border: '#bbf7d0', label: '#166534', dot: '#22c55e' },
+                                blue: { bg: '#eff6ff', border: '#bfdbfe', label: '#1e40af', dot: '#3b82f6' },
+                                neutral: { bg: '#f8fafc', border: '#e2e8f0', label: '#475569', dot: '#94a3b8' },
+                            };
+
+                            return (
+                                <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
+                                    <div className="dashboard-panel-header" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                        <h2 className="dashboard-panel-title">
+                                            <CheckCircle2 size={16} className="dashboard-panel-title-icon" />
+                                            Inspection Ready Notes
+                                        </h2>
+                                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginLeft: 'auto', fontWeight: 400 }}>
+                                            {monthLabel} · auto-generated from live data
+                                        </span>
+                                    </div>
+
+                                    <div style={{ padding: '1.25rem 1rem' }}>
+
+                                        {/* Summary paragraph */}
+                                        <p style={{
+                                            fontSize: '0.875rem', color: '#334155',
+                                            lineHeight: 1.7, margin: '0 0 1.25rem',
+                                            fontWeight: hasData ? 400 : 400,
+                                        }}>
+                                            {summaryLine}
+                                            {!hasData && (
+                                                <span style={{ display: 'block', marginTop: '0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>
+                                                    Insights will strengthen as more cases and reviews are recorded.
+                                                </span>
+                                            )}
+                                        </p>
+
+                                        {/* Insight chips */}
+                                        {chips.length > 0 && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                                                {chips.map((chip) => {
+                                                    const c = chipColors[chip.tone];
+                                                    return (
+                                                        <div key={chip.label} style={{
+                                                            display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+                                                            background: c.bg,
+                                                            border: `1px solid ${c.border}`,
+                                                            borderRadius: 8,
+                                                            padding: '0.6rem 0.85rem',
+                                                        }}>
+                                                            <span style={{
+                                                                width: 8, height: 8, borderRadius: '50%',
+                                                                background: c.dot, flexShrink: 0, marginTop: 5,
+                                                            }} />
+                                                            <div>
+                                                                <span style={{
+                                                                    fontSize: '0.7rem', fontWeight: 700,
+                                                                    textTransform: 'uppercase', letterSpacing: '0.05em',
+                                                                    color: c.label, display: 'block', marginBottom: 2,
+                                                                }}>
+                                                                    {chip.label}
+                                                                </span>
+                                                                <span style={{ fontSize: '0.83rem', color: '#334155', lineHeight: 1.5 }}>
+                                                                    {chip.value}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {/* Recommended attention */}
+                                        {attention.length > 0 && (
+                                            <div style={{
+                                                background: '#0B1E36',
+                                                borderRadius: 10,
+                                                padding: '0.85rem 1rem',
+                                            }}>
+                                                <p style={{
+                                                    fontSize: '0.7rem', fontWeight: 700,
+                                                    textTransform: 'uppercase', letterSpacing: '0.07em',
+                                                    color: '#C9A84C', margin: '0 0 0.6rem',
+                                                }}>
+                                                    Recommended Attention
+                                                </p>
+                                                <ul style={{ margin: 0, paddingLeft: '1.1rem', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                    {attention.map((item, i) => (
+                                                        <li key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                                                            <span style={{ color: '#C9A84C', flexShrink: 0, marginTop: 2 }}>›</span>
+                                                            <span style={{ fontSize: '0.83rem', color: '#e2e8f0', lineHeight: 1.6 }}>{item}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* Low-data fallback note */}
+                                        {!hasData && (
+                                            <div style={{
+                                                marginTop: '0.75rem', padding: '0.75rem 1rem',
+                                                background: '#f8fafc', borderRadius: 8,
+                                                border: '1px solid #e2e8f0',
+                                                fontSize: '0.8rem', color: '#64748b',
+                                            }}>
+                                                Trend comparisons, insight signals, and recommended actions will appear here once cases are recorded for this organisation and period.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                     </div>
 
 
