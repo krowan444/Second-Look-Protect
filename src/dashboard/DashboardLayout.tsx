@@ -45,6 +45,25 @@ export function DashboardLayout({
     () => localStorage.getItem('slp_active_org_id') ?? '',
   );
 
+  // Fetch branding for the currently viewed org (super admin view-as)
+  const [activeOrgBranding, setActiveOrgBranding] = useState<{
+    logo_url: string | null;
+    logo_preset: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!isSuperAdmin || !activeOrgId) { setActiveOrgBranding(null); return; }
+    const supabase = getSupabase();
+    supabase
+      .from('organisations')
+      .select('logo_url, logo_preset')
+      .eq('id', activeOrgId)
+      .single()
+      .then(({ data }) => {
+        setActiveOrgBranding(data ? { logo_url: data.logo_url ?? null, logo_preset: data.logo_preset ?? null } : null);
+      });
+  }, [isSuperAdmin, activeOrgId]);
+
   useEffect(() => {
     if (!isSuperAdmin) return;
 
@@ -200,10 +219,16 @@ export function DashboardLayout({
                     e.currentTarget.style.borderColor = 'rgba(201,168,76,0.28)';
                   }}
                 >
-                  {/* Avatar — shows org logo, preset, or user initials */}
+                  {/* Avatar — shows viewed org logo (super admin) or own org logo, preset, or user initials */}
                   {(() => {
-                    const logoUrl = organisation?.logo_url;
-                    const preset = findPreset(organisation?.logo_preset);
+                    // For super admin viewing an org, prefer that org's branding
+                    const logoUrl = (isSuperAdmin && activeOrgId && activeOrgBranding?.logo_url)
+                      ? activeOrgBranding.logo_url
+                      : organisation?.logo_url;
+                    const presetKey = (isSuperAdmin && activeOrgId && activeOrgBranding?.logo_preset)
+                      ? activeOrgBranding.logo_preset
+                      : organisation?.logo_preset;
+                    const preset = findPreset(presetKey);
                     if (logoUrl) {
                       return (
                         <div style={{
