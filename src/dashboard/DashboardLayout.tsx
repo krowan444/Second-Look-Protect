@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getSupabase } from '../lib/supabaseClient';
-import { Upload, LogOut, User, Menu, Eye } from 'lucide-react';
+import { Upload, LogOut, User, Menu, Eye, ChevronDown } from 'lucide-react';
 import { DashboardSidebar } from './DashboardSidebar';
 import { StapeLeeChat } from './assistant/StapeLeeChat';
 import { StapeLeeDataProvider } from './assistant/StapeLeeDataContext';
@@ -129,173 +129,213 @@ export function DashboardLayout({
 
   return (
     <StapeLeeDataProvider>
-    <div className="dashboard-shell">
-      {/* Sidebar */}
-      <DashboardSidebar
-        role={user.role}
-        currentPath={currentPath}
-        onNavigate={onNavigate}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
+      <div className="dashboard-shell">
+        {/* Sidebar */}
+        <DashboardSidebar
+          role={user.role}
+          currentPath={currentPath}
+          onNavigate={onNavigate}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
 
-      {/* Content */}
-      <div className="dashboard-content">
-        {/* Top Bar */}
-        <header className="dashboard-topbar">
-          <div className="dashboard-topbar-left">
-            <button
-              className="dashboard-sidebar-toggle"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open sidebar"
-            >
-              <Menu size={20} />
-            </button>
-
-            <span className="dashboard-topbar-org">
-              {activeOrgName}
-            </span>
-          </div>
-
-          <div className="dashboard-topbar-right">
-            {/* Notification bell */}
-            {user.id && (
-              <NotificationBell userId={user.id} onNavigate={onNavigate} />
-            )}
-
-            {/* User menu */}
-            <div className="dashboard-user-menu">
+        {/* Content */}
+        <div className="dashboard-content">
+          {/* Top Bar */}
+          <header className="dashboard-topbar">
+            <div className="dashboard-topbar-left">
               <button
-                className="dashboard-user-btn"
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                aria-expanded={userMenuOpen}
-                aria-haspopup="true"
-                aria-label="Account menu"
-                style={{ padding: '4px' }}
+                className="dashboard-sidebar-toggle"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open sidebar"
               >
-                <div className="dashboard-user-avatar">{initials}</div>
+                <Menu size={20} />
               </button>
 
-              {userMenuOpen && (
-                <div className="dashboard-user-dropdown">
-                  <div
-                    className="dashboard-user-dropdown-item"
+              <span className="dashboard-topbar-org">
+                {activeOrgName}
+              </span>
+            </div>
+
+            <div className="dashboard-topbar-right">
+              {/* Notification bell */}
+              {user.id && (
+                <NotificationBell userId={user.id} onNavigate={onNavigate} />
+              )}
+
+              {/* User menu */}
+              <div className="dashboard-user-menu">
+                <button
+                  className="dashboard-user-btn"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  aria-expanded={userMenuOpen}
+                  aria-haspopup="true"
+                  aria-label="Account menu"
+                  style={{
+                    padding: '0.28rem 0.6rem 0.28rem 0.32rem',
+                    background: '#0B1E36',
+                    border: '1px solid rgba(201,168,76,0.28)',
+                    borderRadius: '40px',
+                    color: '#e2e8f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    height: '36px',
+                    transition: 'border-color 0.15s, background 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#16324F';
+                    e.currentTarget.style.borderColor = 'rgba(201,168,76,0.5)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#0B1E36';
+                    e.currentTarget.style.borderColor = 'rgba(201,168,76,0.28)';
+                  }}
+                >
+                  <div className="dashboard-user-avatar">{initials}</div>
+                  <span style={{
+                    fontSize: '0.8rem',
+                    fontWeight: 500,
+                    color: '#e2e8f0',
+                    maxWidth: '110px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    letterSpacing: '-0.01em',
+                  }}>
+                    {user.full_name?.split(' ')[0] ?? 'Account'}
+                  </span>
+                  <ChevronDown
+                    size={13}
                     style={{
-                      cursor: 'default',
-                      color: '#64748b',
-                      fontSize: '0.75rem',
+                      color: '#94a3b8',
+                      flexShrink: 0,
+                      transition: 'transform 0.18s ease',
+                      transform: userMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                     }}
-                  >
-                    {user.email}
+                  />
+                </button>
+
+                {userMenuOpen && (
+                  <div className="dashboard-user-dropdown">
+                    <div
+                      className="dashboard-user-dropdown-item"
+                      style={{
+                        cursor: 'default',
+                        color: '#64748b',
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      {user.email}
+                    </div>
+
+                    <div className="dashboard-user-dropdown-divider" />
+
+                    <button
+                      className="dashboard-user-dropdown-item"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        onNavigate('/dashboard/settings');
+                      }}
+                    >
+                      <User size={14} />
+                      Profile &amp; Settings
+                    </button>
+
+                    <div className="dashboard-user-dropdown-divider" />
+
+                    <button
+                      className="dashboard-user-dropdown-item"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        onSignOut();
+                      }}
+                      style={{ color: '#991b1b' }}
+                    >
+                      <LogOut size={14} />
+                      Sign Out
+                    </button>
                   </div>
+                )}
+              </div>
+            </div>
 
-                  <div className="dashboard-user-dropdown-divider" />
+            {/* Mobile-stackable row: org switcher + submit CTA */}
+            <div className="dashboard-topbar-mobile-row">
+              {/* Super-admin org switcher */}
+              {isSuperAdmin && allOrgs.length > 0 && (
+                <div className="dashboard-topbar-switcher">
+                  <span className="dashboard-topbar-switcher-label">
+                    Viewing as
+                  </span>
 
-                  <button
-                    className="dashboard-user-dropdown-item"
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      onNavigate('/dashboard/settings');
-                    }}
+                  <select
+                    className="dashboard-topbar-switcher-select"
+                    value={activeOrgId || '__global__'}
+                    onChange={handleOrgSwitch}
                   >
-                    <User size={14} />
-                    Profile &amp; Settings
-                  </button>
-
-                  <div className="dashboard-user-dropdown-divider" />
-
-                  <button
-                    className="dashboard-user-dropdown-item"
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      onSignOut();
-                    }}
-                    style={{ color: '#991b1b' }}
-                  >
-                    <LogOut size={14} />
-                    Sign Out
-                  </button>
+                    <option value="__global__">Super Admin (Global)</option>
+                    {allOrgs.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
+
+              {/* Submit Case button */}
+              <button
+                className="dashboard-submit-btn"
+                onClick={() => onNavigate('/dashboard/submit')}
+              >
+                <Upload size={16} />
+                Submit Case
+              </button>
             </div>
-          </div>
+          </header>
 
-          {/* Mobile-stackable row: org switcher + submit CTA */}
-          <div className="dashboard-topbar-mobile-row">
-            {/* Super-admin org switcher */}
-            {isSuperAdmin && allOrgs.length > 0 && (
-              <div className="dashboard-topbar-switcher">
-                <span className="dashboard-topbar-switcher-label">
-                  Viewing as
-                </span>
+          {/* View As banner */}
+          {isSuperAdmin && activeOrgId && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+              padding: '8px 16px', background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+              color: '#fff', fontSize: '0.82rem', fontWeight: 600,
+              borderBottom: '1px solid rgba(0,0,0,0.1)',
+              flexWrap: 'wrap',
+            }}>
+              <Eye size={16} style={{ flexShrink: 0 }} />
+              <span>Viewing as: <strong>{activeOrgName}</strong> · Role: Org Admin (simulated)</span>
+              <button
+                onClick={handleExitViewAs}
+                style={{
+                  background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)',
+                  color: '#fff', padding: '3px 12px', borderRadius: '6px', cursor: 'pointer',
+                  fontSize: '0.75rem', fontWeight: 600, transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.35)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}
+              >
+                ✕ Exit View As
+              </button>
+            </div>
+          )}
 
-                <select
-                  className="dashboard-topbar-switcher-select"
-                  value={activeOrgId || '__global__'}
-                  onChange={handleOrgSwitch}
-                >
-                  <option value="__global__">Super Admin (Global)</option>
-                  {allOrgs.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+          {/* Main content */}
+          <main className="dashboard-main">{children}</main>
+        </div>
 
-            {/* Submit Case button */}
-            <button
-              className="dashboard-submit-btn"
-              onClick={() => onNavigate('/dashboard/submit')}
-            >
-              <Upload size={16} />
-              Submit Case
-            </button>
-          </div>
-        </header>
+        {/* Stape-Lee floating assistant */}
+        <StapeLeeChat currentPath={currentPath} />
 
-        {/* View As banner */}
-        {isSuperAdmin && activeOrgId && (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-            padding: '8px 16px', background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-            color: '#fff', fontSize: '0.82rem', fontWeight: 600,
-            borderBottom: '1px solid rgba(0,0,0,0.1)',
-            flexWrap: 'wrap',
-          }}>
-            <Eye size={16} style={{ flexShrink: 0 }} />
-            <span>Viewing as: <strong>{activeOrgName}</strong> · Role: Org Admin (simulated)</span>
-            <button
-              onClick={handleExitViewAs}
-              style={{
-                background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)',
-                color: '#fff', padding: '3px 12px', borderRadius: '6px', cursor: 'pointer',
-                fontSize: '0.75rem', fontWeight: 600, transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.35)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}
-            >
-              ✕ Exit View As
-            </button>
-          </div>
+        {/* Close user menu on outside click */}
+        {userMenuOpen && (
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 25 }}
+            onClick={() => setUserMenuOpen(false)}
+          />
         )}
-
-        {/* Main content */}
-        <main className="dashboard-main">{children}</main>
       </div>
-
-      {/* Stape-Lee floating assistant */}
-      <StapeLeeChat currentPath={currentPath} />
-
-      {/* Close user menu on outside click */}
-      {userMenuOpen && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 25 }}
-          onClick={() => setUserMenuOpen(false)}
-        />
-      )}
-    </div>
     </StapeLeeDataProvider>
   );
 }
