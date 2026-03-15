@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     BarChart3, Loader2, AlertTriangle, Calendar, ShieldAlert, PieChart,
     CheckCircle2, TrendingUp, Info, Printer, Save, Lock, Eye,
@@ -170,6 +170,20 @@ const PRINT_STYLE = `
   body:not(.slp-rv-printing) thead   { display: table-header-group; }
   body:not(.slp-rv-printing) tfoot   { display: table-footer-group; }
   body:not(.slp-rv-printing) tr      { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Typography orphan/widow protection */
+  body:not(.slp-rv-printing) p,
+  body:not(.slp-rv-printing) li { orphans: 3; widows: 3; }
+
+  /* Hide interactive controls in print output */
+  body:not(.slp-rv-printing) button,
+  body:not(.slp-rv-printing) select,
+  body:not(.slp-rv-printing) input { display: none !important; }
+
+  /* Overlay narrative print improvements */
+  body.slp-rv-printing .report-view-overlay p,
+  body.slp-rv-printing .report-view-overlay li { orphans: 3; widows: 3; }
+  body.slp-rv-printing .report-view-overlay .report-narrative-card { break-inside: avoid; page-break-inside: avoid; }
 
   /* Min-height on narrative card body causes blank space in export — collapse it */
   body:not(.slp-rv-printing) .report-narrative-card > div:last-child { min-height: 0 !important; }
