@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getSupabase } from '../lib/supabaseClient';
 import { Upload, LogOut, User, Menu, Eye, ChevronDown } from 'lucide-react';
+import { PresetSvg, findPreset } from './orgLogoPresets';
 import { DashboardSidebar } from './DashboardSidebar';
 import { StapeLeeChat } from './assistant/StapeLeeChat';
 import { StapeLeeDataProvider } from './assistant/StapeLeeDataContext';
@@ -192,7 +193,39 @@ export function DashboardLayout({
                     e.currentTarget.style.borderColor = 'rgba(201,168,76,0.28)';
                   }}
                 >
-                  <div className="dashboard-user-avatar">{initials}</div>
+                  {/* Avatar — shows org logo, preset, or user initials */}
+                  {(() => {
+                    const logoUrl = organisation?.logo_url;
+                    const preset = findPreset(organisation?.logo_preset);
+                    if (logoUrl) {
+                      return (
+                        <div style={{
+                          width: 28, height: 28, borderRadius: '6px',
+                          overflow: 'hidden', flexShrink: 0,
+                          background: '#1e3a5f',
+                        }}>
+                          <img
+                            src={logoUrl}
+                            alt="Organisation logo"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          />
+                        </div>
+                      );
+                    }
+                    if (preset) {
+                      return (
+                        <div style={{
+                          width: 28, height: 28, borderRadius: '6px',
+                          background: 'rgba(201,168,76,0.15)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0,
+                        }}>
+                          <PresetSvg preset={preset} color="#C9A84C" size={17} />
+                        </div>
+                      );
+                    }
+                    return <div className="dashboard-user-avatar">{initials}</div>;
+                  })()}
                   <span style={{
                     fontSize: '0.8rem',
                     fontWeight: 500,

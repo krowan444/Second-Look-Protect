@@ -18,6 +18,8 @@ export interface DashboardUser {
 export interface Organisation {
   id: string;
   name: string;
+  logo_url?: string | null;
+  logo_preset?: string | null;
 }
 
 export interface NavItem {

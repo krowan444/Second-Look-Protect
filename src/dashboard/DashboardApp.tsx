@@ -400,11 +400,11 @@ export function DashboardApp() {
 
     setUser(dashUser);
 
-    // Fetch organisation name only if organisation_id is set
+    // Fetch organisation details (including branding) if organisation_id is set
     if (profile.organisation_id) {
       const { data: org } = await supabase
         .from('organisations')
-        .select('id, name')
+        .select('id, name, logo_url, logo_preset')
         .eq('id', profile.organisation_id)
         .maybeSingle();
 
