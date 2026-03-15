@@ -478,7 +478,7 @@ export function ReportsPage() {
         } finally {
             setLoading(false);
         }
-    }, [selectedMonth, orgId]);
+    }, [selectedMonth, orgId, orgResolved]);
 
     useEffect(() => { fetchData(); }, [fetchData, orgResolved]);
 
