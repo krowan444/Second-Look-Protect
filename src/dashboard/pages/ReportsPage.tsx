@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     BarChart3, Loader2, AlertTriangle, Calendar, ShieldAlert, PieChart,
     CheckCircle2, TrendingUp, Info, Printer, Save, Lock, Eye,
