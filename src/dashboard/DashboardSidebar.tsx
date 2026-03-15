@@ -88,7 +88,7 @@ export function DashboardSidebar({
           </div>
           <div>
             <div className="dashboard-sidebar-brand-text">Second Look</div>
-            <div className="dashboard-sidebar-brand-sub">Dashboard</div>
+            <div className="dashboard-sidebar-brand-sub">Protect</div>
           </div>
         </div>
 

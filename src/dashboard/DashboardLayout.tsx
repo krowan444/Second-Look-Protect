@@ -153,9 +153,10 @@ export function DashboardLayout({
                 <Menu size={20} />
               </button>
 
-              <span className="dashboard-topbar-org">
-                {activeOrgName}
-              </span>
+              <div className="dashboard-topbar-org-block">
+                <span className="dashboard-topbar-org-label">Workspace</span>
+                <span className="dashboard-topbar-org">{activeOrgName}</span>
+              </div>
             </div>
 
             <div className="dashboard-topbar-right">
