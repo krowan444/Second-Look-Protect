@@ -1093,7 +1093,7 @@ export function ReportsPage() {
                     </div>
 
                     {/* ── INTELLIGENCE & ANALYSIS ── */}
-                    <div className="report-section-divider"><span>Intelligence &amp; Analysis</span></div>
+                    <div className="report-section-divider"><span>Intelligence &amp; Analysis</span><span style={{ fontWeight: 400, fontSize: '0.65rem', color: '#94a3b8', marginLeft: '0.6rem', letterSpacing: 0 }}>{selectedMonthLabel} &middot; {dataSourceLabel}</span></div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 390px), 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
                         {grid5rv.map(section => {
                             const aiText = goodAiText(aiNarrative?.[section.key as keyof typeof aiNarrative] as string);
@@ -1190,15 +1190,25 @@ export function ReportsPage() {
                             </select>
                         )}
 
-                        <div className="dashboard-reports-month-select">
-                            <Calendar size={16} />
-                            <select
-                                value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(e.target.value)}
-                                className="dashboard-reports-select"
-                            >
-                                {monthOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                            </select>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            <div className="dashboard-reports-month-select">
+                                <Calendar size={16} />
+                                <select
+                                    value={selectedMonth}
+                                    onChange={(e) => setSelectedMonth(e.target.value)}
+                                    className="dashboard-reports-select"
+                                    aria-label="Select reporting period"
+                                >
+                                    {monthOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                </select>
+                            </div>
+                            {/* Phase 11 — period helper text */}
+                            <p style={{ margin: 0, fontSize: '0.67rem', color: '#94a3b8', paddingLeft: '0.2rem', display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                                <span>{selectedDateRange}</span>
+                                <span style={{ color: isLocked ? '#16a34a' : isCurrentPeriod ? '#C9A84C' : '#64748b', fontWeight: 600 }}>
+                                    {isLocked ? '· Snapshot' : isCurrentPeriod ? '· Live' : '· Historical'}
+                                </span>
+                            </p>
                         </div>
 
                         <button
@@ -1241,6 +1251,17 @@ export function ReportsPage() {
                                     <p style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#C9A84C', margin: '0 0 0.4rem' }}>Second Look Protect · Safeguarding Report</p>
                                     <h1 style={{ fontSize: '1.45rem', fontWeight: 800, color: '#f8fafc', margin: '0 0 0.4rem', letterSpacing: '-0.03em', lineHeight: 1.2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{orgName || 'Organisation Report'}</h1>
                                     <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>Monthly Safeguarding Summary · {selectedMonthLabel}</p>
+                                    {/* Phase 11 — reporting range + data source */}
+                                    <div style={{ display: 'flex', gap: '1.25rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                                        <div>
+                                            <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#475569', margin: '0 0 2px' }}>Reporting Range</p>
+                                            <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#e2e8f0', margin: 0 }}>{selectedDateRange}</p>
+                                        </div>
+                                        <div>
+                                            <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#475569', margin: '0 0 2px' }}>Data Source</p>
+                                            <p style={{ fontSize: '0.78rem', fontWeight: 600, color: isLocked ? '#86efac' : '#94a3b8', margin: 0 }}>{dataSourceLabel}</p>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                     {reportStatus && (
@@ -1309,12 +1330,17 @@ export function ReportsPage() {
                                             </p>
                                             <p style={{ margin: '0.1rem 0 0', fontSize: '0.72rem', color: '#64748b' }}>
                                                 {regeneratingAi
-                                                    ? 'Refreshing report narrative using current data…'
+                                                    ? `Refreshing narrative from ${selectedMonthLabel} case data…`
                                                     : onCooldown
-                                                        ? `Available in ${fmtCooldown} — narrative was refreshed recently.`
+                                                        ? `Available in ${fmtCooldown} — narrative refreshed recently.`
                                                         : hasNarrative
-                                                            ? 'Re-run AI analysis to update or improve the written narrative.'
-                                                            : 'Use AI to turn structured report data into polished, inspection-ready narrative.'}
+                                                            ? `Narrative informed by ${selectedMonthLabel} case data. Re-run to update.`
+                                                            : `Generate AI-informed narrative from ${selectedMonthLabel} case data.`}
+                                            </p>
+                                            {/* Phase 11 — coverage period */}
+                                            <p style={{ margin: '0.2rem 0 0', fontSize: '0.67rem', color: '#94a3b8' }}>
+                                                Coverage: {selectedDateRange} &middot; {dataSourceLabel}
+                                                {aiLastRefresh && !regeneratingAi ? ` · Last refreshed ${aiLastRefresh}` : ''}
                                             </p>
                                             {fmtLastRefresh && !regeneratingAi && (
                                                 <p style={{ margin: '0.2rem 0 0', fontSize: '0.68rem', color: '#94a3b8' }}>
@@ -1741,6 +1767,26 @@ export function ReportsPage() {
                             );
                         })()}
 
+
+                        {/* Phase 11 — Period Context Strip */}
+                        <div className="reports-no-print" style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', padding: '0.5rem 0.25rem 0.25rem', borderTop: '1px solid #f1f5f9', marginTop: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                <Calendar size={11} style={{ color: '#94a3b8' }} />
+                                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748b' }}>{selectedMonthLabel}</span>
+                                <span style={{ fontSize: '0.67rem', color: '#94a3b8' }}>· {selectedDateRange}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                {isLocked
+                                    ? <Lock size={10} style={{ color: '#16a34a' }} />
+                                    : <FileText size={10} style={{ color: '#C9A84C' }} />}
+                                <span style={{ fontSize: '0.67rem', fontWeight: 600, color: isLocked ? '#16a34a' : '#d97706' }}>
+                                    {statusLabelFull ?? dataSourceLabel}
+                                </span>
+                            </div>
+                            <span style={{ fontSize: '0.67rem', color: '#94a3b8' }}>
+                                {isLocked ? 'Frozen snapshot — inspection integrity preserved' : isCurrentPeriod ? 'Live data — reflects current submissions' : 'Historical period — read only'}
+                            </span>
+                        </div>
 
                         {/* ACTION BAR */}
                         <div className="reports-no-print" style={{ height: '84px' }} />
