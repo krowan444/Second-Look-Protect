@@ -1,10 +1,10 @@
 // /api/reports-compose-ai.js
 // AI narrative composer for safeguarding monthly reports.
 // Uses OpenAI gpt-4o-mini to produce 8 structured narrative sections from structured report data.
-// Rate-limited: 1 request per reportId per 60 seconds (in-memory, good for Vercel serverless).
+// Rate-limited: 1 request per reportId per 5 minutes (in-memory, good for Vercel serverless).
 
 const rateLimitMap = new Map(); // Map<reportId, expiresAtMs>
-const COOLDOWN_MS = 60_000;
+const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -239,7 +239,7 @@ ${Array.isArray(p.trendSignals) && p.trendSignals.length > 0
         const reportRows = await reportFetch.json().catch(() => []);
         const currentMetrics = reportRows?.[0]?.metrics ?? {};
 
-        const updatedMetrics = { ...currentMetrics, aiNarrative };
+        const updatedMetrics = { ...currentMetrics, aiNarrative, ai_generated_at: new Date().toISOString() };
 
         const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/reports?id=eq.${reportId}`, {
             method: 'PATCH',

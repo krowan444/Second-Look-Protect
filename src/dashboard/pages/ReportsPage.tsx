@@ -120,7 +120,9 @@ const PRINT_STYLE = `
   .dashboard-panel,
   .dashboard-stat-card,
   .dashboard-overview-cards,
-  .dashboard-page-header {
+  .dashboard-page-header,
+  .report-kpi-box,
+  .report-narrative-card {
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -177,7 +179,36 @@ export function ReportsPage() {
     const [aiNarrative, setAiNarrative] = useState<AiNarrative | null>(null);
     const [regeneratingAi, setRegeneratingAi] = useState(false);
     const [aiCooldownUntil, setAiCooldownUntil] = useState<number | null>(null);
+    const [cooldownRemaining, setCooldownRemaining] = useState(0);
     const [aiError, setAiError] = useState<string | null>(null);
+    // Raw metrics snapshot from the DB — used for ai_generated_at, cooldown restore etc.
+    const [reportMetricsSnapshot, setReportMetricsSnapshot] = useState<Record<string, any> | null>(null);
+
+    // Live countdown ticker — ticks once per second while cooldown is active
+    useEffect(() => {
+        if (!aiCooldownUntil) { setCooldownRemaining(0); return; }
+        const tick = () => {
+            const remaining = Math.max(0, Math.ceil((aiCooldownUntil - Date.now()) / 1000));
+            setCooldownRemaining(remaining);
+            if (remaining === 0) clearInterval(id);
+        };
+        tick(); // immediate first tick
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [aiCooldownUntil]);
+
+    // Restore cooldown from DB on report load — if ai_generated_at is within the 5-min window,
+    // re-apply the cooldown so it persists across page refreshes.
+    useEffect(() => {
+        const generatedAt = reportMetricsSnapshot?.ai_generated_at;
+        if (!generatedAt) return;
+        const COOLDOWN_MS = 5 * 60 * 1000;
+        const generatedTime = new Date(generatedAt).getTime();
+        const expiresAt = generatedTime + COOLDOWN_MS;
+        if (Date.now() < expiresAt) {
+            setAiCooldownUntil(expiresAt);
+        }
+    }, [reportMetricsSnapshot]);
 
     // Inspection mode
     const [inspectionMode, setInspectionMode] = useState(false);
@@ -308,6 +339,7 @@ export function ReportsPage() {
                 setReportPdfUrl(savedReport.pdf_url ?? null);
                 setExecSummary(savedReport.ai_summary ?? '');
                 setRecommendations(savedReport.recommendations ?? '');
+                setReportMetricsSnapshot(savedReport.metrics ?? null);
 
                 if (savedReport.metrics?.keyTrends) setKeyTrends(savedReport.metrics.keyTrends);
                 setAiNarrative(savedReport.metrics?.aiNarrative ?? null);
@@ -320,6 +352,7 @@ export function ReportsPage() {
                 setRecommendations('');
                 setKeyTrends('');
                 setAiNarrative(null);
+                setReportMetricsSnapshot(null);
             }
         } catch (err: any) {
             setError(err?.message ?? 'Failed to load report data');
@@ -504,13 +537,14 @@ export function ReportsPage() {
             const result = await resp.json();
 
             if (resp.status === 429) {
-                const retryAfter = result.retryAfterSeconds ?? 60;
+                const retryAfter = result.retryAfterSeconds ?? 300;
                 setAiCooldownUntil(Date.now() + retryAfter * 1000);
-                setAiError(`Please wait ${retryAfter} seconds before regenerating.`);
+                const mins = Math.ceil(retryAfter / 60);
+                setAiError(`Narrative was refreshed recently. Please wait ${mins > 1 ? `${mins} minutes` : 'a moment'} before refreshing again.`);
                 return;
             }
             if (result.fallback) {
-                setAiError('AI narrative generation is temporarily unavailable. Your report data is complete.');
+                setAiError('AI narrative generation is temporarily unavailable. Your structured report data is complete and visible below.');
                 return;
             }
             if (!resp.ok) {
@@ -519,10 +553,11 @@ export function ReportsPage() {
             }
             if (result.aiNarrative) {
                 setAiNarrative(result.aiNarrative);
-                setAiCooldownUntil(Date.now() + 60_000);
+                // 5-minute cooldown matching server
+                setAiCooldownUntil(Date.now() + 5 * 60 * 1000);
             }
         } catch {
-            setAiError('AI generation failed. Please try again.');
+            setAiError('Narrative refresh encountered an issue. Your existing report content is preserved.');
         } finally {
             setRegeneratingAi(false);
         }
@@ -736,6 +771,28 @@ export function ReportsPage() {
 
     const selectedMonthLabel = monthOptions.find(o => o.value === selectedMonth)?.label ?? selectedMonth;
 
+    /**
+     * AI quality filter — returns null if the text is absent, too short to be
+     * meaningful (< 40 chars), or matches known stub phrases that indicate a
+     * weak or placeholder model response. Consumers fall back to deterministic
+     * copy when this returns null.
+     */
+    function goodAiText(v: string | null | undefined): string | null {
+        if (!v || typeof v !== 'string') return null;
+        const t = v.trim();
+        if (t.length < 40) return null;
+        // Known stub/placeholder patterns from weak model responses
+        const stubs = [
+            /^no (data|content|information)/i,
+            /^n\/a$/i,
+            /^none\.?$/i,
+            /^not available/i,
+            /^(this section|this report|the report) (will|has not)/i,
+        ];
+        if (stubs.some(re => re.test(t))) return null;
+        return t;
+    }
+
     // Fetch delivery history for the selected month
     const fetchDeliveries = useCallback(async () => {
         if (!orgId || !selectedMonth) { setDeliveries([]); return; }
@@ -877,621 +934,516 @@ export function ReportsPage() {
                         </div>
                     )}
 
-                    {/* Inspection Ready indicator */}
-                    {(() => {
-                        const slaTotal = metrics.total;
-                        const slaClosed = metrics.byStatus.closed;
-                        const slaCompliancePct = slaTotal > 0 ? Math.round((slaClosed / slaTotal) * 100) : 100;
-                        const ready = slaCompliancePct >= 90 && slaOverdueNow === 0;
+                    {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                        1. BRANDED REPORT HEADER
+                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                    <div style={{ background: 'linear-gradient(135deg,#0B1E36 0%,#162d4a 100%)', borderRadius: 14, padding: '1.75rem 2rem', marginBottom: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg,#C9A84C,#e6c96e,#C9A84C)' }} />
+                        <div style={{ position: 'absolute', right: 24, top: '50%', transform: 'translateY(-50%)', opacity: 0.04, fontSize: '7rem', fontWeight: 900, color: '#fff', pointerEvents: 'none', userSelect: 'none', letterSpacing: '-0.05em' }}>SLP</div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', position: 'relative' }}>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                                <p style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#C9A84C', margin: '0 0 0.4rem' }}>Second Look Protect · Safeguarding Report</p>
+                                <h1 style={{ fontSize: '1.45rem', fontWeight: 800, color: '#f8fafc', margin: '0 0 0.4rem', letterSpacing: '-0.03em', lineHeight: 1.2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{orgName || 'Organisation Report'}</h1>
+                                <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>Monthly Safeguarding Summary · {selectedMonthLabel}</p>
+                            </div>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                {reportStatus && (
+                                    <span style={{ display: 'inline-block', padding: '0.3rem 0.9rem', borderRadius: 99, fontSize: '0.72rem', fontWeight: 700, background: isLocked ? 'rgba(34,197,94,0.15)' : 'rgba(201,168,76,0.15)', color: isLocked ? '#4ade80' : '#C9A84C', border: `1px solid ${isLocked ? 'rgba(34,197,94,0.3)' : 'rgba(201,168,76,0.3)'}`, letterSpacing: '0.03em' }}>
+                                        {reportStatus === 'approved' ? '✓ Approved' : reportStatus === 'locked' ? '⊘ Locked' : '✎ Draft'}
+                                    </span>
+                                )}
+                                <p style={{ fontSize: '0.68rem', color: '#475569', margin: '0.4rem 0 0', whiteSpace: 'nowrap' }}>
+                                    Generated {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* AI error alert */}
+                    {aiError && (
+                        <div style={{ marginBottom: '1rem', padding: '0.65rem 0.9rem', borderRadius: 8, background: '#fffbeb', border: '1px solid #fde68a', fontSize: '0.8rem', color: '#92400e' }}>
+                            {aiError}
+                        </div>
+                    )}
+
+                    {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                        REFRESH AI NARRATIVE PANEL
+                        Shown to org_admin / super_admin only, when not in inspection mode
+                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                    {reportId && (userRole === 'org_admin' || userRole === 'super_admin') && !inspectionMode && (() => {
+                        const onCooldown = cooldownRemaining > 0;
+                        const aiGeneratedAt: string | undefined =
+                            reportMetricsSnapshot?.ai_generated_at ?? undefined;
+                        const fmtLastRefresh = aiGeneratedAt
+                            ? new Date(aiGeneratedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                            : null;
+
+                        // Format cooldown as "4m 23s" or "42s"
+                        const fmtCooldown = onCooldown
+                            ? cooldownRemaining >= 60
+                                ? `${Math.floor(cooldownRemaining / 60)}m ${cooldownRemaining % 60}s`
+                                : `${cooldownRemaining}s`
+                            : null;
+
+                        const hasNarrative = !!aiNarrative;
+
                         return (
-                            <div className="dashboard-stat-card" style={{ marginBottom: '1rem', border: `1px solid ${ready ? '#bbf7d0' : '#fde68a'}`, background: ready ? '#f0fdf4' : '#fffbeb' }}>
-                                <div className="dashboard-stat-card-accent" style={{ background: ready ? '#16a34a' : '#d97706' }} />
-                                <div className="dashboard-stat-card-body">
-                                    <div className="dashboard-stat-icon" style={{ color: ready ? '#16a34a' : '#d97706' }}><CheckCircle2 size={20} /></div>
-                                    <div className="dashboard-stat-value" style={{ color: ready ? '#16a34a' : '#d97706', fontSize: '1.1rem' }}>{ready ? '✓ Inspection Ready' : '⚠ Attention Required'}</div>
-                                    <div className="dashboard-stat-label">Based on SLA compliance and overdue cases in this report.</div>
+                            <div
+                                className="reports-no-print"
+                                style={{
+                                    background: '#fafafa',
+                                    border: '1px solid #e2e8f0',
+                                    borderLeft: '4px solid #5b21b6',
+                                    borderRadius: 10,
+                                    padding: '1rem 1.25rem',
+                                    marginBottom: '1.25rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '1rem',
+                                    flexWrap: 'wrap',
+                                }}
+                            >
+                                {/* Left — label + context */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
+                                    <Sparkles size={15} style={{ color: '#5b21b6', flexShrink: 0 }} />
+                                    <div>
+                                        <p style={{ margin: 0, fontWeight: 600, fontSize: '0.85rem', color: '#1e1b4b' }}>
+                                            {hasNarrative ? 'Refresh AI Narrative' : 'Generate AI Narrative'}
+                                        </p>
+                                        <p style={{ margin: '0.1rem 0 0', fontSize: '0.72rem', color: '#64748b' }}>
+                                            {regeneratingAi
+                                                ? 'Refreshing report narrative using current data…'
+                                                : onCooldown
+                                                    ? `Available in ${fmtCooldown} — narrative was refreshed recently.`
+                                                    : hasNarrative
+                                                        ? 'Re-run AI analysis to update or improve the written narrative.'
+                                                        : 'Use AI to turn structured report data into polished, inspection-ready narrative.'}
+                                        </p>
+                                        {fmtLastRefresh && !regeneratingAi && (
+                                            <p style={{ margin: '0.2rem 0 0', fontSize: '0.68rem', color: '#94a3b8' }}>
+                                                Last refreshed {fmtLastRefresh}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Right — action button */}
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateAiNarrative}
+                                    disabled={regeneratingAi || onCooldown}
+                                    style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.4rem',
+                                        padding: '0.5rem 1.1rem',
+                                        borderRadius: 7,
+                                        fontSize: '0.82rem',
+                                        fontWeight: 600,
+                                        border: 'none',
+                                        cursor: (regeneratingAi || onCooldown) ? 'not-allowed' : 'pointer',
+                                        background: (regeneratingAi || onCooldown) ? '#e2e8f0' : '#5b21b6',
+                                        color: (regeneratingAi || onCooldown) ? '#94a3b8' : '#fff',
+                                        transition: 'background 0.15s, color 0.15s',
+                                        flexShrink: 0,
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {regeneratingAi
+                                        ? <><Loader2 size={14} className="dsf-spinner" /> Refreshing…</>
+                                        : onCooldown
+                                            ? <><RefreshCw size={14} /> Cooling down…</>
+                                            : <><Sparkles size={14} /> {hasNarrative ? 'Refresh Narrative' : 'Generate Narrative'}</>}
+                                </button>
+                            </div>
+                        );
+                    })()}
+
+                    {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                        2. EXECUTIVE SUMMARY (prominent, full-width)
+                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                    {(() => {
+                        const closureRateEs = metrics.total > 0 ? Math.round((metrics.byStatus.closed / metrics.total) * 100) : null;
+                        const aiExecText = goodAiText(aiNarrative?.execSummary);
+                        const execText = aiExecText || goodAiText(execSummary) || (
+                            metrics.total === 0
+                                ? `No cases were submitted during ${selectedMonthLabel}. Safeguarding protocols remained active throughout this period, with no submissions requiring review. This report is available for record and inspection purposes.`
+                                : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were recorded during ${selectedMonthLabel}.${metrics.highRisk > 0
+                                    ? ` ${metrics.highRisk} ${metrics.highRisk !== 1 ? 'were' : 'was'} classified as high or critical risk.`
+                                    : ' No high-risk cases were identified during this period.'
+                                }${closureRateEs !== null
+                                    ? ` The closure rate for the period was ${closureRateEs}%.`
+                                    : ''
+                                }${slaOverdueNow > 0
+                                    ? ` ${slaOverdueNow} case${slaOverdueNow !== 1 ? 's remain' : ' remains'} open beyond the standard 3-day review threshold.`
+                                    : ''
+                                }`
+                        );
+                        const isAiExecText = !!aiExecText;
+                        return (
+                            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', borderLeft: '4px solid #0B1E36', padding: '1.5rem 1.75rem', marginBottom: '1rem', boxShadow: '0 1px 4px rgba(11,30,54,0.06)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <FileText size={15} style={{ color: isAiExecText ? '#7c3aed' : '#64748b' }} />
+                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>Executive Summary</span>
+                                    {isAiExecText && (
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '0.62rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#7c3aed', background: 'rgba(124,58,237,0.08)', borderRadius: 4, padding: '0.1rem 0.4rem' }}>
+                                            <Sparkles size={9} /> AI
+                                        </span>
+                                    )}
+                                </div>
+                                <p style={{ margin: 0, fontSize: '0.97rem', color: '#0f172a', lineHeight: 1.8, fontWeight: 450 }}>
+                                    {regeneratingAi ? (
+                                        <span style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            {[90, 78, 60].map((w, i) => (
+                                                <span key={i} style={{ display: 'block', height: 12, borderRadius: 4, width: `${w}%`, background: 'linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)', backgroundSize: '200% 100%', animation: 'dashboard-shimmer 1.5s infinite linear' }} />
+                                            ))}
+                                        </span>
+                                    ) : execText}
+                                </p>
+                            </div>
+                        );
+                    })()}
+
+                    {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                        3. INSPECTION STATUS + KPI STRIP
+                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                    {(() => {
+                        const ready = metrics.total === 0 || (metrics.byStatus.closed / metrics.total >= 0.9 && slaOverdueNow === 0);
+                        const closureRateKpi = metrics.total > 0 ? Math.round((metrics.byStatus.closed / metrics.total) * 100) : null;
+                        const openCount = metrics.byStatus.new + metrics.byStatus.in_review;
+                        return (
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.28rem 0.75rem', borderRadius: 99, fontSize: '0.72rem', fontWeight: 700, background: ready ? '#f0fdf4' : '#fffbeb', border: `1px solid ${ready ? '#bbf7d0' : '#fde68a'}`, color: ready ? '#16a34a' : '#d97706' }}>
+                                        <CheckCircle2 size={12} />
+                                        {ready ? 'Inspection Ready' : 'Attention Required'}
+                                    </span>
+                                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                        {ready ? 'SLA compliance and case review within expected thresholds.' : `${slaOverdueNow} case${slaOverdueNow !== 1 ? 's' : ''} overdue · review required.`}
+                                    </span>
+                                </div>
+                                <div className="report-kpi-strip">
+                                    {[
+                                        { label: 'Total Cases', value: metrics.total, accent: '#0B1E36' },
+                                        { label: 'Open Cases', value: openCount, accent: '#d97706' },
+                                        { label: 'High / Critical Risk', value: metrics.highRisk, accent: '#dc2626' },
+                                        { label: 'SLA Overdue', value: slaOverdueNow, accent: slaOverdueNow > 0 ? '#dc2626' : '#16a34a' },
+                                        { label: 'Closure Rate', value: closureRateKpi !== null ? `${closureRateKpi}%` : '—', accent: closureRateKpi !== null && closureRateKpi >= 70 ? '#16a34a' : '#C9A84C' },
+                                    ].map(kpi => (
+                                        <div key={kpi.label} className="report-kpi-box">
+                                            <div style={{ height: 3, background: kpi.accent, borderRadius: '4px 4px 0 0', margin: '-1px -1px 0' }} />
+                                            <div style={{ padding: '0.85rem 1rem 0.75rem' }}>
+                                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.04em', lineHeight: 1 }}>{kpi.value}</div>
+                                                <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '0.3rem' }}>{kpi.label}</div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         );
                     })()}
 
-                    {/* METRIC CARDS */}
-                    <div className="dashboard-overview-cards">
-                        <div className="dashboard-stat-card">
-                            <div className="dashboard-stat-card-accent accent-blue" />
-                            <div className="dashboard-stat-card-body">
-                                <div className="dashboard-stat-icon blue"><BarChart3 size={20} /></div>
-                                <div className="dashboard-stat-value">{metrics.total}</div>
-                                <div className="dashboard-stat-label">Total Cases</div>
+                    {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                        4. AI NARRATIVE — 5 SECTION GRID
+                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                    {(() => {
+                        const n = aiNarrative;
+                        // hasAi: true only when at least one section passes the quality filter
+                        const hasAi = !!n && Object.values(n).some(v => !!goodAiText(v as string));
+                        const closureRateFb = metrics.total > 0 ? Math.round((metrics.byStatus.closed / metrics.total) * 100) : null;
+                        const AiBadge = () => (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '0.62rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#7c3aed', background: 'rgba(124,58,237,0.08)', borderRadius: 4, padding: '0.1rem 0.4rem', marginLeft: 'auto', flexShrink: 0 }}>
+                                <Sparkles size={9} /> AI
+                            </span>
+                        );
+                        const Skeleton = () => (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0.25rem 0' }}>
+                                {[85, 95, 70].map((w, i) => (
+                                    <div key={i} style={{ height: 11, borderRadius: 4, width: `${w}%`, background: 'linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)', backgroundSize: '200% 100%', animation: 'dashboard-shimmer 1.5s infinite linear' }} />
+                                ))}
                             </div>
-                        </div>
-
-                        <div className="dashboard-stat-card">
-                            <div className="dashboard-stat-card-accent accent-amber" />
-                            <div className="dashboard-stat-card-body">
-                                <div className="dashboard-stat-icon amber"><ClipboardList size={20} /></div>
-                                <div className="dashboard-stat-value" style={{ fontSize: '0.95rem' }}>
-                                    {metrics.byStatus.new} / {metrics.byStatus.in_review} / {metrics.byStatus.closed}
-                                </div>
-                                <div className="dashboard-stat-label">New / Review / Closed</div>
-                            </div>
-                        </div>
-
-                        <div className="dashboard-stat-card">
-                            <div className="dashboard-stat-card-accent accent-red" />
-                            <div className="dashboard-stat-card-body">
-                                <div className="dashboard-stat-icon red"><ShieldAlert size={20} /></div>
-                                <div className="dashboard-stat-value">{metrics.highRisk}</div>
-                                <div className="dashboard-stat-label">High / Critical Risk</div>
-                            </div>
-                        </div>
-
-                        <div className="dashboard-stat-card">
-                            <div className="dashboard-stat-card-accent accent-gold" />
-                            <div className="dashboard-stat-card-body">
-                                <div className="dashboard-stat-icon gold"><PieChart size={20} /></div>
-                                <div className="dashboard-stat-value">{metrics.scamConfirmed}</div>
-                                <div className="dashboard-stat-label">Scam Confirmed</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Second row */}
-                    <div className="dashboard-overview-cards" style={{ marginTop: '0.75rem' }}>
-                        <div className="dashboard-stat-card">
-                            <div className="dashboard-stat-card-accent accent-blue" />
-                            <div className="dashboard-stat-card-body">
-                                <div className="dashboard-stat-icon blue"><TrendingUp size={20} /></div>
-                                <div className="dashboard-stat-value" style={{ fontSize: '0.95rem' }}>
-                                    {metrics.outcomeMap.prevented} / {metrics.outcomeMap.lost} / {metrics.outcomeMap.escalated}
-                                </div>
-                                <div className="dashboard-stat-label">Prevented / Lost / Escalated</div>
-                            </div>
-                        </div>
-
-                        <div className="dashboard-stat-card">
-                            <div className="dashboard-stat-card-accent accent-amber" />
-                            <div className="dashboard-stat-card-body">
-                                <div className="dashboard-stat-icon amber"><Clock size={20} /></div>
-                                <div className="dashboard-stat-value">{metrics.avgReview}</div>
-                                <div className="dashboard-stat-label">Avg Time to Review</div>
-                            </div>
-                        </div>
-
-                        <div className="dashboard-stat-card">
-                            <div className="dashboard-stat-card-accent accent-amber" />
-                            <div className="dashboard-stat-card-body">
-                                <div className="dashboard-stat-icon amber"><Clock size={20} /></div>
-                                <div className="dashboard-stat-value">{metrics.avgClose}</div>
-                                <div className="dashboard-stat-label">Avg Time to Close</div>
-                            </div>
-                        </div>
-
-                        <div className="dashboard-stat-card">
-                            <div className="dashboard-stat-card-accent accent-red" />
-                            <div className="dashboard-stat-card-body">
-                                <div className="dashboard-stat-icon red"><AlertTriangle size={20} /></div>
-                                <div className="dashboard-stat-value">{slaOverdueNow}</div>
-                                <div className="dashboard-stat-label">SLA Overdue Now (&gt;3 days)</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* BREAKDOWNS */}
-                    <div className="dashboard-reports-breakdowns" style={{ marginTop: '1.5rem' }}>
-                        {/* Categories */}
-                        <div className="dashboard-panel">
-                            <div className="dashboard-panel-header">
-                                <h2 className="dashboard-panel-title"><PieChart size={16} className="dashboard-panel-title-icon" /> Top Categories</h2>
-                            </div>
-                            {metrics.categories.length === 0 ? (
-                                <div className="dashboard-panel-empty">No data</div>
-                            ) : (
-                                <div className="dashboard-panel-table-wrap">
-                                    <table className="dashboard-panel-table">
-                                        <thead><tr><th>Category</th><th>Count</th><th>%</th></tr></thead>
-                                        <tbody>
-                                            {metrics.categories.map(([cat, count]) => (
-                                                <tr key={cat}>
-                                                    <td>{cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</td>
-                                                    <td>{count}</td>
-                                                    <td>{metrics.total > 0 ? `${Math.round((count / metrics.total) * 100)}%` : '—'}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Channels */}
-                        <div className="dashboard-panel">
-                            <div className="dashboard-panel-header">
-                                <h2 className="dashboard-panel-title"><Activity size={16} className="dashboard-panel-title-icon" /> Submission Channels</h2>
-                            </div>
-                            {metrics.channels.length === 0 ? (
-                                <div className="dashboard-panel-empty">No data</div>
-                            ) : (
-                                <div className="dashboard-panel-table-wrap">
-                                    <table className="dashboard-panel-table">
-                                        <thead><tr><th>Channel</th><th>Count</th><th>%</th></tr></thead>
-                                        <tbody>
-                                            {metrics.channels.map(([ch, count]) => (
-                                                <tr key={ch}>
-                                                    <td>{ch.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</td>
-                                                    <td>{count}</td>
-                                                    <td>{metrics.total > 0 ? `${Math.round((count / metrics.total) * 100)}%` : '—'}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="dashboard-reports-breakdowns" style={{ marginTop: '0.75rem' }}>
-                        {/* Risk distribution */}
-                        <div className="dashboard-panel">
-                            <div className="dashboard-panel-header">
-                                <h2 className="dashboard-panel-title"><ShieldAlert size={16} className="dashboard-panel-title-icon" /> Risk Distribution</h2>
-                            </div>
-                            <div className="dashboard-panel-table-wrap">
-                                <table className="dashboard-panel-table">
-                                    <thead><tr><th>Level</th><th>Count</th></tr></thead>
-                                    <tbody>
-                                        {Object.entries(metrics.riskMap).map(([level, count]) => (
-                                            <tr key={level}><td>{capitalize(level)}</td><td>{count}</td></tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* Decisions */}
-                        <div className="dashboard-panel">
-                            <div className="dashboard-panel-header">
-                                <h2 className="dashboard-panel-title"><CheckCircle2 size={16} className="dashboard-panel-title-icon" /> Decisions Distribution</h2>
-                            </div>
-                            {metrics.decisions.length === 0 ? (
-                                <div className="dashboard-panel-empty">No decisions recorded</div>
-                            ) : (
-                                <div className="dashboard-panel-table-wrap">
-                                    <table className="dashboard-panel-table">
-                                        <thead><tr><th>Decision</th><th>Count</th></tr></thead>
-                                        <tbody>
-                                            {metrics.decisions.map(([dec, count]) => (
-                                                <tr key={dec}><td>{dec.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</td><td>{count}</td></tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* REPORT CONTENT — AI-powered narrative */}
-                    <div style={{ marginTop: '2rem' }}>
-
-                        {/* Branded report hero */}
-                        <div style={{
-                            background: 'linear-gradient(135deg, #0B1E36 0%, #16324F 100%)',
-                            borderRadius: 14,
-                            padding: '1.5rem 1.75rem',
-                            marginBottom: '1.5rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: '1rem',
-                            flexWrap: 'wrap',
-                        }}>
-                            <div>
-                                <p style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#C9A84C', margin: '0 0 0.3rem' }}>
-                                    Second Look Protect
-                                </p>
-                                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#f8fafc', margin: '0 0 0.25rem', lineHeight: 1.2 }}>
-                                    Safeguarding Monthly Report
-                                </h2>
-                                <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>
-                                    <Building2 size={12} style={{ verticalAlign: 'middle', marginRight: 4, color: '#C9A84C' }} />
-                                    {orgName}{orgName ? ' · ' : ''}{selectedMonthLabel}
-                                </p>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                                {reportStatus && (
-                                    <span style={{
-                                        display: 'inline-block', padding: '0.3rem 0.85rem',
-                                        borderRadius: 99, fontSize: '0.72rem', fontWeight: 600,
-                                        background: isLocked ? 'rgba(34,197,94,0.15)' : 'rgba(201,168,76,0.15)',
-                                        color: isLocked ? '#4ade80' : '#C9A84C',
-                                        border: `1px solid ${isLocked ? 'rgba(34,197,94,0.3)' : 'rgba(201,168,76,0.3)'}`,
-                                    }}>
-                                        {reportStatus === 'approved' ? '✓ Approved' : reportStatus === 'locked' ? '⊘ Locked' : '✎ Draft'}
-                                    </span>
-                                )}
-                                <p style={{ fontSize: '0.7rem', color: '#64748b', margin: '0.4rem 0 0' }}>
-                                    {metrics.total} case{metrics.total !== 1 ? 's' : ''} · {metrics.highRisk} high-risk · {metrics.byStatus.closed} closed
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* AI error message */}
-                        {aiError && (
-                            <div style={{
-                                marginBottom: '1rem', padding: '0.65rem 0.9rem',
-                                borderRadius: 8, background: '#fffbeb', border: '1px solid #fde68a',
-                                fontSize: '0.8rem', color: '#92400e',
-                            }}>
-                                {aiError}
-                            </div>
-                        )}
-
-                        {/* AI narrative sections */}
-                        {((): React.ReactNode => {
-                            const n = aiNarrative;
-                            const hasAi = !!n && Object.values(n).some(v => !!v);
-                            const closureRate = metrics.total > 0
-                                ? Math.round((metrics.byStatus.closed / metrics.total) * 100)
-                                : null;
-
-                            const AiBadge = () => (
-                                <span style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: 3,
-                                    fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase',
-                                    letterSpacing: '0.05em', color: '#7c3aed',
-                                    background: 'rgba(124,58,237,0.08)', borderRadius: 4,
-                                    padding: '0.1rem 0.4rem', marginLeft: 'auto', flexShrink: 0,
-                                }}>
-                                    <Sparkles size={9} /> AI
-                                </span>
-                            );
-
-                            const Skeleton = () => (
-                                <div style={{ padding: '0.25rem 0' }}>
-                                    {[85, 95, 72].map((w, i) => (
-                                        <div key={i} style={{
-                                            height: 11, borderRadius: 4, marginBottom: 8, width: `${w}%`,
-                                            background: 'linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)',
-                                            backgroundSize: '200% 100%',
-                                            animation: 'dashboard-shimmer 1.5s infinite linear',
-                                        }} />
-                                    ))}
-                                </div>
-                            );
-
-                            // Deterministic fallback per section
-                            const fallbacks: Partial<AiNarrative> = {
-                                execSummary: execSummary || (metrics.total === 0
-                                    ? `No cases were recorded for ${selectedMonthLabel}. The organisation maintained safeguarding protocols throughout this period with no submissions requiring active review.`
-                                    : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were recorded during ${selectedMonthLabel}.${metrics.highRisk > 0 ? ` ${metrics.highRisk} case${metrics.highRisk !== 1 ? 's were' : ' was'} classified as high or critical risk.` : ' No high-risk cases were identified.'} ${closureRate !== null ? `The closure rate for the period was ${closureRate}%.` : ''}`),
-                                safeguardingTrends: keyTrends
-                                    ? keyTrends.split('\n').filter(l => l.trim()).join(' ')
-                                    : `Case volume for ${selectedMonthLabel}: ${metrics.total} total case${metrics.total !== 1 ? 's' : ''}. Generate AI narrative for a full trend analysis.`,
-                                emergingRisks: metrics.highRisk > 0
-                                    ? `${metrics.highRisk} case${metrics.highRisk !== 1 ? 's' : ''} were classified as high or critical risk this period${metrics.categories[0] ? `, with ${metrics.categories[0][0].replace(/_/g, ' ')} as the most common concern category` : ''}.`
-                                    : 'No high or critical risk cases were recorded during this period.',
-                                operationalPressure: `Average time to first review: ${metrics.avgReview}. Average time to close: ${metrics.avgClose}.${slaOverdueNow > 0 ? ` ${slaOverdueNow} case${slaOverdueNow !== 1 ? 's remain' : ' remains'} open beyond the 3-day SLA threshold.` : ' All cases are within SLA thresholds.'}`,
-                                positiveSignals: closureRate !== null && closureRate >= 60
-                                    ? `${closureRate}% of cases were closed during this period, reflecting strong review throughput.`
-                                    : metrics.highRisk === 0 && metrics.total > 0
-                                        ? 'No high or critical risk cases were reported, reflecting a safe and well-managed period.'
-                                        : 'Case processing continued within normal operational parameters.',
-                                recommendedActions: recommendations || '- Ensure all open cases are reviewed and progressed promptly.\n- Confirm SLA compliance across all active cases.\n- Review any high-risk cases with the safeguarding lead.',
-                                inspectionSummary: 'This report has been prepared in accordance with safeguarding reporting standards. All case records, timelines, and decisions are available for inspection review.',
-                                leadershipSummary: metrics.total === 0
-                                    ? `No safeguarding cases were recorded in ${selectedMonthLabel}. No escalation action is required at this time.`
-                                    : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were managed during ${selectedMonthLabel}. ${metrics.highRisk > 0 ? 'Leadership attention is recommended for high-risk case review.' : 'No high-risk concerns require immediate leadership action.'}`,
-                            };
-
-                            type SectionDef = { key: keyof AiNarrative; title: string; icon: React.ReactNode; isList?: boolean };
-                            const sections: SectionDef[] = [
-                                { key: 'execSummary', title: 'Executive Summary', icon: <FileText size={15} /> },
-                                { key: 'safeguardingTrends', title: 'Safeguarding Trends', icon: <TrendingUp size={15} /> },
-                                { key: 'emergingRisks', title: 'Emerging Risks', icon: <ShieldAlert size={15} /> },
-                                { key: 'operationalPressure', title: 'Operational Pressure', icon: <Clock size={15} /> },
-                                { key: 'positiveSignals', title: 'Positive Signals', icon: <CheckCircle2 size={15} /> },
-                                { key: 'recommendedActions', title: 'Recommended Actions', icon: <ClipboardList size={15} />, isList: true },
-                                { key: 'inspectionSummary', title: 'Inspection Summary', icon: <Lock size={15} /> },
-                                { key: 'leadershipSummary', title: 'Leadership Summary', icon: <Building2 size={15} /> },
-                            ];
-
-                            return (
-                                <>
-                                    {!hasAi && !regeneratingAi && reportId && (userRole === 'org_admin' || userRole === 'super_admin') && (
-                                        <div style={{
-                                            marginBottom: '1.25rem', padding: '0.9rem 1.1rem',
-                                            borderRadius: 10, border: '1px dashed #c4b5fd',
-                                            background: 'rgba(124,58,237,0.03)',
-                                            display: 'flex', alignItems: 'center', gap: '0.75rem',
-                                        }}>
-                                            <Sparkles size={18} style={{ color: '#7c3aed', flexShrink: 0 }} />
-                                            <div>
-                                                <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#5b21b6' }}>AI narrative not yet generated</p>
-                                                <p style={{ margin: '0.1rem 0 0', fontSize: '0.78rem', color: '#7c3aed' }}>Click &ldquo;Generate AI Narrative&rdquo; in the toolbar below to create polished report sections from this period&apos;s data.</p>
-                                            </div>
+                        );
+                        // Deterministic fallbacks — calm, professional, non-apologetic
+                        const hasPrevComparison = prevMonthMetrics?.total != null;
+                        const fb = {
+                            safeguardingTrends: goodAiText(keyTrends
+                                ? keyTrends.split('\n').filter(l => l.trim()).join(' ')
+                                : null) ??
+                                (metrics.total === 0
+                                    ? `No submissions were recorded during ${selectedMonthLabel}. Historic comparison data will become available as further reporting periods are recorded.`
+                                    : hasPrevComparison
+                                        ? `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were recorded during ${selectedMonthLabel}, compared with ${prevMonthMetrics!.total} in the previous period.`
+                                        : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were recorded during ${selectedMonthLabel}. Historic comparison data is still building for this organisation — comparative trend confidence will increase as further periods are recorded.`),
+                            emergingRisks: metrics.highRisk > 0
+                                ? `${metrics.highRisk} case${metrics.highRisk !== 1 ? 's' : ''} were classified as high or critical risk during ${selectedMonthLabel}${metrics.categories[0]
+                                    ? `, with ${metrics.categories[0][0].replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} as the most frequently recorded concern category`
+                                    : ''
+                                }. These cases are recommended for priority review.`
+                                : metrics.total === 0
+                                    ? 'No cases were submitted during this period, so no elevated risk signals were present.'
+                                    : 'No high or critical risk cases were recorded during this period — a positive indicator for the organisation.',
+                            operationalPressure: metrics.total === 0
+                                ? 'No active cases were recorded during this period, so no operational pressure metrics apply.'
+                                : `Average time to first review: ${metrics.avgReview}. Average time to close: ${metrics.avgClose}.${slaOverdueNow > 0
+                                    ? ` ${slaOverdueNow} case${slaOverdueNow !== 1 ? 's remain' : ' remains'} open beyond the standard 3-day review threshold and should be progressed promptly.`
+                                    : ' All cases are within SLA thresholds, reflecting sustained operational throughput.'
+                                }`,
+                            positiveSignals: metrics.total === 0
+                                ? `No safeguarding cases were submitted during ${selectedMonthLabel}. This may reflect a quiet period or effective early intervention within the organisation.`
+                                : closureRateFb !== null && closureRateFb >= 60
+                                    ? `${closureRateFb}% of cases recorded during this period were closed, reflecting strong case review throughput and effective team response.`
+                                    : metrics.highRisk === 0
+                                        ? 'No high or critical risk cases were reported during this period, which is a positive indicator of a well-managed safeguarding environment.'
+                                        : 'Case processing continued within normal operational parameters during this period.',
+                            // Only use hardcoded default if no saved recommendations exist
+                            recommendedActions: recommendations || '- Ensure all open cases are reviewed and progressed promptly.\n- Confirm SLA compliance across all active cases.\n- Review any high-risk cases with the safeguarding lead.',
+                        };
+                        type Grid5 = { key: keyof AiNarrative; title: string; icon: React.ReactNode; isList?: boolean };
+                        const grid5: Grid5[] = [
+                            { key: 'safeguardingTrends', title: 'Safeguarding Trends', icon: <TrendingUp size={14} /> },
+                            { key: 'emergingRisks', title: 'Emerging Risks', icon: <ShieldAlert size={14} /> },
+                            { key: 'operationalPressure', title: 'Operational Pressure', icon: <Clock size={14} /> },
+                            { key: 'positiveSignals', title: 'Positive Signals', icon: <CheckCircle2 size={14} /> },
+                            { key: 'recommendedActions', title: 'Recommended Actions', icon: <ClipboardList size={14} />, isList: true },
+                        ];
+                        const canGenerateAi = userRole === 'org_admin' || userRole === 'super_admin' || userRole === 'safeguarding_lead';
+                        return (
+                            <>
+                                <div className="report-section-divider"><span>Intelligence &amp; Analysis</span></div>
+                                {!hasAi && !regeneratingAi && reportId && canGenerateAi && (
+                                    <div style={{ marginBottom: '1rem', padding: '0.85rem 1.1rem', borderRadius: 10, border: '1px dashed #c4b5fd', background: 'rgba(124,58,237,0.03)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <Sparkles size={18} style={{ color: '#7c3aed', flexShrink: 0 }} />
+                                        <div>
+                                            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#5b21b6' }}>AI-enhanced narrative available</p>
+                                            <p style={{ margin: '0.1rem 0 0', fontSize: '0.78rem', color: '#7c3aed' }}>Use the &ldquo;Generate AI Narrative&rdquo; button below to produce polished, insight-led sections from this period&apos;s data. Structured summaries are shown below in the meantime.</p>
                                         </div>
-                                    )}
-
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-                                        {sections.map(section => {
-                                            const aiText = n?.[section.key];
-                                            const text = aiText || fallbacks[section.key] || '';
-                                            const isAiText = !!aiText;
-
-                                            return (
-                                                <div key={section.key} className="dashboard-panel" style={{ marginBottom: 0 }}>
-                                                    <div className="dashboard-panel-header" style={{ borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center' }}>
-                                                        <h2 className="dashboard-panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flex: 1, minWidth: 0 }}>
-                                                            <span style={{ color: isAiText ? '#7c3aed' : '#94a3b8', flexShrink: 0 }}>{section.icon}</span>
-                                                            {section.title}
-                                                        </h2>
-                                                        {isAiText && <AiBadge />}
-                                                    </div>
-                                                    <div style={{ padding: '1rem 1rem', fontSize: '0.875rem', color: '#334155', lineHeight: 1.75 }}>
-                                                        {regeneratingAi ? <Skeleton /> : (
-                                                            section.isList ? (
-                                                                <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                                                                    {(text || '').split('\n').filter(l => l.trim()).map((line, i) => (
-                                                                        <li key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                                                                            <span style={{ color: '#C9A84C', flexShrink: 0, marginTop: 2, fontWeight: 700 }}>›</span>
-                                                                            <span>{line.replace(/^[-–—•]\s*/, '')}</span>
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            ) : (
-                                                                <p style={{ margin: 0 }}>{text}</p>
-                                                            )
-                                                        )}
-                                                    </div>
+                                    </div>
+                                )}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 390px), 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                                    {grid5.map(section => {
+                                        const aiText = goodAiText(n?.[section.key] as string);
+                                        const text = aiText || fb[section.key as keyof typeof fb] || '';
+                                        const isAiText = !!aiText;
+                                        return (
+                                            <div key={section.key} className="report-narrative-card" style={{ background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                                                <div style={{ padding: '0.85rem 1rem 0.65rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    <span style={{ color: isAiText ? '#7c3aed' : '#94a3b8', flexShrink: 0, display: 'flex' }}>{section.icon}</span>
+                                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#374151', flex: 1 }}>{section.title}</span>
+                                                    {isAiText && <AiBadge />}
                                                 </div>
-                                            );
-                                        })}
+                                                <div style={{ padding: '1rem', fontSize: '0.875rem', color: '#334155', lineHeight: 1.75, minHeight: '7rem' }}>
+                                                    {regeneratingAi ? <Skeleton /> : (
+                                                        section.isList ? (
+                                                            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                                {(text || '').split('\n').filter(l => l.trim()).map((line, i) => (
+                                                                    <li key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                                                                        <span style={{ color: '#C9A84C', flexShrink: 0, marginTop: 2, fontWeight: 700 }}>›</span>
+                                                                        <span>{line.replace(/^[-–—•]\s*/, '')}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        ) : (
+                                                            <p style={{ margin: 0 }}>{text}</p>
+                                                        )
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
+                        );
+                    })()}
+
+                    {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                        5. INSPECTION + LEADERSHIP CLOSER
+                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                    <div className="report-section-divider"><span>Inspection &amp; Leadership</span></div>
+                    {(() => {
+                        const n = aiNarrative;
+                        const inspText = goodAiText(n?.inspectionSummary) ||
+                            'This report has been prepared in accordance with safeguarding reporting standards. All case records, review timelines, decisions, and supporting evidence are available for inspection purposes. Data is organisation-scoped and access-controlled throughout.';
+                        const leaderText = goodAiText(n?.leadershipSummary) || (
+                            metrics.total === 0
+                                ? `No safeguarding cases were recorded during ${selectedMonthLabel}. No escalation or immediate leadership action is required for this period. The organisation maintained normal safeguarding oversight throughout.`
+                                : metrics.highRisk > 0
+                                    ? `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were managed during ${selectedMonthLabel}, including ${metrics.highRisk} classified as high or critical risk. Leadership review of high-risk cases is recommended before this report is finalised.`
+                                    : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were managed during ${selectedMonthLabel}. No high-risk cases were identified, and case review throughput remained within expected parameters. No immediate leadership escalation is required.`
+                        );
+                        const hasAiCloser = !!(goodAiText(n?.inspectionSummary) || goodAiText(n?.leadershipSummary));
+                        const AiBadge = () => (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '0.62rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#7c3aed', background: 'rgba(124,58,237,0.08)', borderRadius: 4, padding: '0.1rem 0.4rem' }}>
+                                <Sparkles size={9} /> AI
+                            </span>
+                        );
+                        return (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                                <div style={{ background: '#0B1E36', borderRadius: 10, padding: '1.25rem 1.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                                        <Lock size={13} style={{ color: '#C9A84C' }} />
+                                        <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#C9A84C' }}>Inspection Summary</span>
+                                        {hasAiCloser && n?.inspectionSummary && <AiBadge />}
                                     </div>
-                                </>
-                            );
-                        })()}
+                                    {regeneratingAi ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            {[90, 75, 85].map((w, i) => (
+                                                <div key={i} style={{ height: 11, borderRadius: 4, width: `${w}%`, background: 'linear-gradient(90deg,rgba(255,255,255,0.1) 25%,rgba(255,255,255,0.2) 50%,rgba(255,255,255,0.1) 75%)', backgroundSize: '200% 100%', animation: 'dashboard-shimmer 1.5s infinite linear' }} />
+                                            ))}
+                                        </div>
+                                    ) : <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.8, color: '#cbd5e1' }}>{inspText}</p>}
+                                </div>
+                                <div style={{ background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', padding: '1.25rem 1.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                                        <Building2 size={13} style={{ color: '#0B1E36' }} />
+                                        <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#0B1E36' }}>Leadership Summary</span>
+                                        {hasAiCloser && n?.leadershipSummary && <AiBadge />}
+                                    </div>
+                                    {regeneratingAi ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            {[85, 95, 70].map((w, i) => (
+                                                <div key={i} style={{ height: 11, borderRadius: 4, width: `${w}%`, background: 'linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)', backgroundSize: '200% 100%', animation: 'dashboard-shimmer 1.5s infinite linear' }} />
+                                            ))}
+                                        </div>
+                                    ) : <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.8, color: '#334155' }}>{leaderText}</p>}
+                                </div>
+                            </div>
+                        );
+                    })()}
 
-                        {/* D) Inspection Ready Notes — insight-led summary */}
-                        {(() => {
-                            const hasData = metrics.total > 0;
-                            const monthLabel = selectedMonthLabel;
+                    {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                        6. SUPPORTING DATA APPENDIX
+                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                    <div className="report-section-divider"><span>Supporting Detail</span></div>
 
-                            // ── Trend signals from prior month ────────────────────────
-                            const prevTotal = prevMonthMetrics?.total ?? null;
-                            const prevHighRisk = prevMonthMetrics?.highRisk ?? null;
-                            const caseDelta = prevTotal !== null ? metrics.total - prevTotal : null;
-                            const highRiskDelta = prevHighRisk !== null ? metrics.highRisk - prevHighRisk : null;
-                            const closureRate = metrics.total > 0
-                                ? Math.round((metrics.byStatus.closed / metrics.total) * 100)
-                                : null;
-                            const topCategory = metrics.categories[0]?.[0] ?? null;
-                            const topCategoryCount = metrics.categories[0]?.[1] ?? 0;
-                            const topCategoryPct = metrics.total > 0
-                                ? Math.round((topCategoryCount / metrics.total) * 100)
-                                : 0;
-                            const reviewPressure = slaOverdueNow > 0;
-                            const highRiskPct = metrics.total > 0
-                                ? Math.round((metrics.highRisk / metrics.total) * 100)
-                                : 0;
+                    {/* Secondary metrics chips — only shown when there is actual case volume */}
+                    {metrics.total > 0 && (
+                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                            {[
+                                { label: 'New', value: metrics.byStatus.new, col: '#3b82f6' },
+                                { label: 'In Review', value: metrics.byStatus.in_review, col: '#d97706' },
+                                { label: 'Closed', value: metrics.byStatus.closed, col: '#16a34a' },
+                                { label: 'Review Time', value: metrics.avgReview, col: '#7c3aed' },
+                                { label: 'Close Time', value: metrics.avgClose, col: '#0891b2' },
+                                { label: 'Scam Confirmed', value: metrics.scamConfirmed, col: '#be185d' },
+                            ].map(m => (
+                                <div key={m.label} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.5rem 0.85rem', minWidth: 90, boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: m.col, letterSpacing: '-0.02em' }}>{m.value}</div>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{m.label}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
-                            // ── Summary sentence ──────────────────────────────────────
-                            let summaryLine = '';
-                            if (!hasData) {
-                                summaryLine = `No cases were recorded for ${monthLabel}. Insights will appear once activity is logged.`;
-                            } else {
-                                const parts: string[] = [];
-                                parts.push(`${metrics.total} ${metrics.total === 1 ? 'case was' : 'cases were'} recorded in ${monthLabel}`);
-                                if (caseDelta !== null) {
-                                    if (caseDelta > 0) parts.push(`an increase of ${caseDelta} compared to the previous period`);
-                                    else if (caseDelta < 0) parts.push(`a reduction of ${Math.abs(caseDelta)} compared to the previous period`);
-                                    else parts.push(`consistent with the previous period`);
-                                }
-                                summaryLine = parts.join(', ') + '.';
+                    {/* Data table breakdowns — only rendered when there is data to show */}
+                    {(() => {
+                        const hasCategories = metrics.categories.length > 0;
+                        const hasChannels = metrics.channels.length > 0;
+                        const hasRisk = Object.keys(metrics.riskMap).length > 0;
+                        const hasDecisions = metrics.decisions.length > 0;
+                        const hasAnyData = hasCategories || hasChannels || hasRisk || hasDecisions;
 
-                                if (metrics.highRisk > 0) {
-                                    summaryLine += ` ${metrics.highRisk} ${metrics.highRisk === 1 ? 'case' : 'cases'} ${metrics.highRisk === 1 ? 'was' : 'were'} classified as high or critical risk`;
-                                    if (highRiskDelta !== null && highRiskDelta > 0) summaryLine += `, up ${highRiskDelta} from the prior month`;
-                                    else if (highRiskDelta !== null && highRiskDelta < 0) summaryLine += `, down ${Math.abs(highRiskDelta)} from the prior month`;
-                                    summaryLine += '.';
-                                }
-                                if (metrics.byStatus.closed > 0) {
-                                    summaryLine += ` ${metrics.byStatus.closed} ${metrics.byStatus.closed === 1 ? 'case' : 'cases'} ${metrics.byStatus.closed === 1 ? 'was' : 'were'} closed this period`;
-                                    if (closureRate !== null) summaryLine += ` (${closureRate}% closure rate)`;
-                                    summaryLine += '.';
-                                }
-                            }
-
-                            // ── Insight chips ──────────────────────────────────────────
-                            type Chip = { label: string; value: string; tone: 'red' | 'amber' | 'green' | 'blue' | 'neutral' };
-                            const chips: Chip[] = [];
-
-                            if (hasData) {
-                                // Most common concern
-                                if (topCategory) {
-                                    chips.push({
-                                        label: 'Most Common Concern',
-                                        value: `${topCategory.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} — ${topCategoryPct}% of cases`,
-                                        tone: 'blue',
-                                    });
-                                }
-
-                                // High-risk signal
-                                if (metrics.highRisk > 0) {
-                                    const trend = highRiskDelta === null ? '' :
-                                        highRiskDelta > 0 ? ` ▲ up ${highRiskDelta} vs prior month` :
-                                            highRiskDelta < 0 ? ` ▼ down ${Math.abs(highRiskDelta)} vs prior month` : ' — stable';
-                                    chips.push({
-                                        label: 'High-Risk Signal',
-                                        value: `${metrics.highRisk} high or critical ${metrics.highRisk === 1 ? 'case' : 'cases'} (${highRiskPct}%)${trend}`,
-                                        tone: highRiskPct >= 30 ? 'red' : 'amber',
-                                    });
-                                }
-
-                                // Response pressure
-                                if (reviewPressure) {
-                                    chips.push({
-                                        label: 'Response Pressure',
-                                        value: `${slaOverdueNow} open ${slaOverdueNow === 1 ? 'case' : 'cases'} awaiting review beyond 3 days`,
-                                        tone: slaOverdueNow >= 5 ? 'red' : 'amber',
-                                    });
-                                }
-
-                                // Positive signal — good closure rate or no high-risk
-                                if (closureRate !== null && closureRate >= 70) {
-                                    chips.push({
-                                        label: 'Positive Signal',
-                                        value: `${closureRate}% of cases closed this period — strong throughput`,
-                                        tone: 'green',
-                                    });
-                                } else if (metrics.highRisk === 0 && metrics.total > 0) {
-                                    chips.push({
-                                        label: 'Positive Signal',
-                                        value: 'No high or critical risk cases recorded this period',
-                                        tone: 'green',
-                                    });
-                                }
-
-                                // Watch area — open backlog
-                                const openBacklog = metrics.byStatus.new + metrics.byStatus.in_review;
-                                if (openBacklog > 0 && (closureRate === null || closureRate < 50)) {
-                                    chips.push({
-                                        label: 'Watch Area',
-                                        value: `${openBacklog} ${openBacklog === 1 ? 'case' : 'cases'} still open — consider prioritising review queue`,
-                                        tone: 'neutral',
-                                    });
-                                }
-                            }
-
-                            // ── Recommended attention ────────────────────────────────────
-                            const attention: string[] = [];
-                            if (hasData) {
-                                if (slaOverdueNow >= 3) attention.push('Prioritise the review queue — several cases have been open for more than 3 days.');
-                                if (metrics.highRisk >= 2) attention.push('Schedule a safeguarding lead review of high-risk cases before month-end.');
-                                if (highRiskDelta !== null && highRiskDelta > 2) attention.push('High-risk case volume has increased significantly — consider a team briefing.');
-                                if (caseDelta !== null && caseDelta > 5) attention.push('Case volume has risen noticeably — check whether staffing and response capacity remains sufficient.');
-                                if (topCategory && topCategoryPct >= 40) {
-                                    const readableCat = topCategory.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                                    attention.push(`${readableCat} accounts for a high share of this period's cases — consider a focused review of this concern area.`);
-                                }
-                                if (attention.length === 0 && metrics.total > 0) {
-                                    attention.push('No significant pressure points identified this period. Maintain current response standards and ensure all open cases are reviewed promptly.');
-                                }
-                            }
-
-                            // ── Tone helpers ───────────────────────────────────────────
-                            const chipColors: Record<NonNullable<Chip['tone']>, { bg: string; border: string; label: string; dot: string }> = {
-                                red: { bg: '#fef2f2', border: '#fecaca', label: '#991b1b', dot: '#ef4444' },
-                                amber: { bg: '#fffbeb', border: '#fde68a', label: '#92400e', dot: '#f59e0b' },
-                                green: { bg: '#f0fdf4', border: '#bbf7d0', label: '#166534', dot: '#22c55e' },
-                                blue: { bg: '#eff6ff', border: '#bfdbfe', label: '#1e40af', dot: '#3b82f6' },
-                                neutral: { bg: '#f8fafc', border: '#e2e8f0', label: '#475569', dot: '#94a3b8' },
-                            };
-
+                        if (!hasAnyData) {
+                            // Sparse/quiet period — show a calm note instead of empty shell panels
                             return (
-                                <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
-                                    <div className="dashboard-panel-header" style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                        <h2 className="dashboard-panel-title">
-                                            <CheckCircle2 size={16} className="dashboard-panel-title-icon" />
-                                            Inspection Ready Notes
-                                        </h2>
-                                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginLeft: 'auto', fontWeight: 400 }}>
-                                            {monthLabel} · auto-generated from live data
-                                        </span>
-                                    </div>
-
-                                    <div style={{ padding: '1.25rem 1rem' }}>
-
-                                        {/* Summary paragraph */}
-                                        <p style={{
-                                            fontSize: '0.875rem', color: '#334155',
-                                            lineHeight: 1.7, margin: '0 0 1.25rem',
-                                            fontWeight: hasData ? 400 : 400,
-                                        }}>
-                                            {summaryLine}
-                                            {!hasData && (
-                                                <span style={{ display: 'block', marginTop: '0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>
-                                                    Insights will strengthen as more cases and reviews are recorded.
-                                                </span>
-                                            )}
-                                        </p>
-
-                                        {/* Insight chips */}
-                                        {chips.length > 0 && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                                                {chips.map((chip) => {
-                                                    const c = chipColors[chip.tone];
-                                                    return (
-                                                        <div key={chip.label} style={{
-                                                            display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
-                                                            background: c.bg,
-                                                            border: `1px solid ${c.border}`,
-                                                            borderRadius: 8,
-                                                            padding: '0.6rem 0.85rem',
-                                                        }}>
-                                                            <span style={{
-                                                                width: 8, height: 8, borderRadius: '50%',
-                                                                background: c.dot, flexShrink: 0, marginTop: 5,
-                                                            }} />
-                                                            <div>
-                                                                <span style={{
-                                                                    fontSize: '0.7rem', fontWeight: 700,
-                                                                    textTransform: 'uppercase', letterSpacing: '0.05em',
-                                                                    color: c.label, display: 'block', marginBottom: 2,
-                                                                }}>
-                                                                    {chip.label}
-                                                                </span>
-                                                                <span style={{ fontSize: '0.83rem', color: '#334155', lineHeight: 1.5 }}>
-                                                                    {chip.value}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-
-                                        {/* Recommended attention */}
-                                        {attention.length > 0 && (
-                                            <div style={{
-                                                background: '#0B1E36',
-                                                borderRadius: 10,
-                                                padding: '0.85rem 1rem',
-                                            }}>
-                                                <p style={{
-                                                    fontSize: '0.7rem', fontWeight: 700,
-                                                    textTransform: 'uppercase', letterSpacing: '0.07em',
-                                                    color: '#C9A84C', margin: '0 0 0.6rem',
-                                                }}>
-                                                    Recommended Attention
-                                                </p>
-                                                <ul style={{ margin: 0, paddingLeft: '1.1rem', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                                    {attention.map((item, i) => (
-                                                        <li key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                                                            <span style={{ color: '#C9A84C', flexShrink: 0, marginTop: 2 }}>›</span>
-                                                            <span style={{ fontSize: '0.83rem', color: '#e2e8f0', lineHeight: 1.6 }}>{item}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-
-                                        {/* Low-data fallback note */}
-                                        {!hasData && (
-                                            <div style={{
-                                                marginTop: '0.75rem', padding: '0.75rem 1rem',
-                                                background: '#f8fafc', borderRadius: 8,
-                                                border: '1px solid #e2e8f0',
-                                                fontSize: '0.8rem', color: '#64748b',
-                                            }}>
-                                                Trend comparisons, insight signals, and recommended actions will appear here once cases are recorded for this organisation and period.
-                                            </div>
-                                        )}
-                                    </div>
+                                <div style={{ padding: '1.25rem 1.5rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.85rem', lineHeight: 1.6, marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                                    <BarChart3 size={16} style={{ color: '#94a3b8', flexShrink: 0, marginTop: 2 }} />
+                                    <p style={{ margin: 0 }}>
+                                        No detailed breakdown data is available for {selectedMonthLabel}. Breakdown tables will populate as case data is recorded for this reporting period.
+                                    </p>
                                 </div>
                             );
-                        })()}
+                        }
 
-                    </div>
+                        return (
+                            <>
+                                {(hasCategories || hasChannels) && (
+                                    <div className="dashboard-reports-breakdowns" style={{ marginBottom: '0.75rem' }}>
+                                        {hasCategories && (
+                                            <div className="dashboard-panel">
+                                                <div className="dashboard-panel-header">
+                                                    <h2 className="dashboard-panel-title"><PieChart size={14} className="dashboard-panel-title-icon" /> Top Categories</h2>
+                                                </div>
+                                                <div className="dashboard-panel-table-wrap">
+                                                    <table className="dashboard-panel-table">
+                                                        <thead><tr><th>Category</th><th>Count</th><th>%</th></tr></thead>
+                                                        <tbody>
+                                                            {metrics.categories.map(([cat, count]) => (
+                                                                <tr key={cat}>
+                                                                    <td>{cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</td>
+                                                                    <td>{count}</td>
+                                                                    <td>{metrics.total > 0 ? `${Math.round((count / metrics.total) * 100)}%` : '—'}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {hasChannels && (
+                                            <div className="dashboard-panel">
+                                                <div className="dashboard-panel-header">
+                                                    <h2 className="dashboard-panel-title"><Activity size={14} className="dashboard-panel-title-icon" /> Submission Channels</h2>
+                                                </div>
+                                                <div className="dashboard-panel-table-wrap">
+                                                    <table className="dashboard-panel-table">
+                                                        <thead><tr><th>Channel</th><th>Count</th><th>%</th></tr></thead>
+                                                        <tbody>
+                                                            {metrics.channels.map(([ch, count]) => (
+                                                                <tr key={ch}>
+                                                                    <td>{ch.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</td>
+                                                                    <td>{count}</td>
+                                                                    <td>{metrics.total > 0 ? `${Math.round((count / metrics.total) * 100)}%` : '—'}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {(hasRisk || hasDecisions) && (
+                                    <div className="dashboard-reports-breakdowns" style={{ marginBottom: '1.5rem' }}>
+                                        {hasRisk && (
+                                            <div className="dashboard-panel">
+                                                <div className="dashboard-panel-header">
+                                                    <h2 className="dashboard-panel-title"><ShieldAlert size={14} className="dashboard-panel-title-icon" /> Risk Distribution</h2>
+                                                </div>
+                                                <div className="dashboard-panel-table-wrap">
+                                                    <table className="dashboard-panel-table">
+                                                        <thead><tr><th>Level</th><th>Count</th></tr></thead>
+                                                        <tbody>
+                                                            {Object.entries(metrics.riskMap).map(([level, count]) => (
+                                                                <tr key={level}><td>{capitalize(level)}</td><td>{count}</td></tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {hasDecisions && (
+                                            <div className="dashboard-panel">
+                                                <div className="dashboard-panel-header">
+                                                    <h2 className="dashboard-panel-title"><CheckCircle2 size={14} className="dashboard-panel-title-icon" /> Decisions</h2>
+                                                </div>
+                                                <div className="dashboard-panel-table-wrap">
+                                                    <table className="dashboard-panel-table">
+                                                        <thead><tr><th>Decision</th><th>Count</th></tr></thead>
+                                                        <tbody>
+                                                            {metrics.decisions.map(([dec, count]) => (
+                                                                <tr key={dec}><td>{dec.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</td><td>{count}</td></tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </>
+                        );
+                    })()}
 
 
                     {/* ACTION BAR */}
@@ -1508,11 +1460,8 @@ export function ReportsPage() {
                         zIndex: 50,
                         marginTop: '1rem'
                     }}>
-                        {/* Generate AI Narrative — org_admin + super_admin only */}
+                        {/* Generate / Refresh AI Narrative — org_admin + super_admin only — compact secondary shortcut */}
                         {reportId && (userRole === 'org_admin' || userRole === 'super_admin') && !inspectionMode && (() => {
-                            const cooldownRemaining = aiCooldownUntil
-                                ? Math.max(0, Math.ceil((aiCooldownUntil - Date.now()) / 1000))
-                                : 0;
                             const onCooldown = cooldownRemaining > 0;
                             return (
                                 <button
@@ -1520,13 +1469,14 @@ export function ReportsPage() {
                                     className="dashboard-reports-action-btn"
                                     onClick={handleGenerateAiNarrative}
                                     disabled={regeneratingAi || onCooldown}
-                                    style={{ background: '#5b21b6', color: '#fff', minWidth: 164, gap: '0.4rem' }}
+                                    title={onCooldown ? `Refresh available in ${cooldownRemaining}s` : 'Refresh AI Narrative'}
+                                    style={{ background: '#5b21b6', color: '#fff', minWidth: 148, gap: '0.4rem', opacity: onCooldown ? 0.55 : 1 }}
                                 >
                                     {regeneratingAi
-                                        ? <><Loader2 size={15} className="dsf-spinner" /> Generating…</>
+                                        ? <><Loader2 size={15} className="dsf-spinner" /> Refreshing…</>
                                         : onCooldown
-                                            ? <><RefreshCw size={15} /> Wait {cooldownRemaining}s</>
-                                            : <><Sparkles size={15} /> Generate AI Narrative</>}
+                                            ? <><RefreshCw size={15} /> In cooldown</>
+                                            : <><Sparkles size={15} /> Refresh Narrative</>}
                                 </button>
                             );
                         })()}

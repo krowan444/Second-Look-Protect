@@ -3272,3 +3272,59 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ─── Premium Report Layout — Phase 3 ────────────────────────────────────── */
+
+/* KPI / Snapshot strip — horizontal row of metric boxes */
+.report-kpi-strip {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.report-kpi-box {
+    flex: 1 1 130px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.15s ease;
+}
+
+.report-kpi-box:hover {
+    box-shadow: 0 3px 10px rgba(11, 30, 54, 0.08);
+}
+
+/* Section divider — thin rule with centred label */
+.report-section-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.75rem 0 1.25rem;
+}
+
+.report-section-divider::before,
+.report-section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+}
+
+.report-section-divider span {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+    white-space: nowrap;
+    padding: 0 0.25rem;
+}
+
+@media (max-width: 640px) {
+    .report-kpi-strip {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
