@@ -113,11 +113,17 @@ export function DashboardLayout({
   const activeOrgName = useMemo(() => {
     if (isSuperAdmin && activeOrgId) {
       const found = allOrgs.find((o) => o.id === activeOrgId);
-      return found?.name ?? 'Dashboard';
+      return found?.name ?? 'Second Look Protect';
     }
 
-    return organisation?.name ?? 'Dashboard';
+    return organisation?.name ?? 'Second Look Protect';
   }, [isSuperAdmin, activeOrgId, allOrgs, organisation]);
+
+  // Eyebrow label: 'Organisation' when an org is in context, 'Platform' for global super admin view
+  const topbarEyebrow = useMemo(() => {
+    if (isSuperAdmin && !activeOrgId) return 'Platform';
+    return 'Organisation';
+  }, [isSuperAdmin, activeOrgId]);
 
   const initials = user.full_name
     ? user.full_name
@@ -154,7 +160,7 @@ export function DashboardLayout({
               </button>
 
               <div className="dashboard-topbar-org-block">
-                <span className="dashboard-topbar-org-label">Workspace</span>
+                <span className="dashboard-topbar-org-label">{topbarEyebrow}</span>
                 <span className="dashboard-topbar-org">{activeOrgName}</span>
               </div>
             </div>
