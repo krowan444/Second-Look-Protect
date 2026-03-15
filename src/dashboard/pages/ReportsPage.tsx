@@ -105,29 +105,117 @@ function avgHours(pairs: { start: string; end: string | null }[]): string {
 
 /* ─── Print CSS (scoped) ─────────────────────────────────────────────────── */
 
+// ─── PREMIUM EXPORT RENDERER — Phase 9 ────────────────────────────────────────
+// Two-mode print system:
+//   MODE A: Main-page print (window.print() without overlay) — body:not(.slp-rv-printing)
+//   MODE B: View Report overlay print (body.slp-rv-printing)
+// Inspection pack migration: when Send Inspection Pack adopts this renderer (Phase 10),
+// it should call /api/reports-generate-pdf.js with the same data payload used here.
+// ─────────────────────────────────────────────────────────────────────────────
 const PRINT_STYLE = `
 @media print {
-  @page { margin: 12mm; }
+  /* ── PAGE SETUP ───────────────────────────────────────────────────────────── */
+  @page { margin: 14mm 12mm; size: A4 portrait; }
 
-  .dashboard-shell > *:not(.dashboard-content) { display: none !important; }
-  .dashboard-topbar, .dashboard-sidebar, .dashboard-sidebar-toggle,
-  .reports-no-print { display: none !important; }
+  /* ── COLOUR PRESERVATION — required for premium coloured cards ─────────────── */
+  body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 
-  .dashboard-content { margin: 0 !important; padding: 0 !important; }
-  .dashboard-main { padding: 0 !important; }
-  .reports-page { max-width: 100% !important; }
+  /* ══════════════════════════════════════════════════════════════════════════════
+     MODE A — Main page export (no overlay open)
+  ══════════════════════════════════════════════════════════════════════════════ */
+  body:not(.slp-rv-printing) .dashboard-topbar,
+  body:not(.slp-rv-printing) .dashboard-sidebar,
+  body:not(.slp-rv-printing) .dashboard-sidebar-toggle,
+  body:not(.slp-rv-printing) .reports-no-print,
+  body:not(.slp-rv-printing) .dashboard-page-header,
+  body:not(.slp-rv-printing) .dashboard-reports-actions,
+  body:not(.slp-rv-printing) .dashboard-reports-month-select,
+  body:not(.slp-rv-printing) .report-view-overlay { display: none !important; }
 
-  .dashboard-panel,
-  .dashboard-stat-card,
-  .dashboard-overview-cards,
-  .dashboard-page-header,
-  .report-kpi-box,
-  .report-narrative-card {
-    break-inside: avoid;
-    page-break-inside: avoid;
+  body:not(.slp-rv-printing) .dashboard-shell > *:not(.dashboard-content) { display: none !important; }
+  body:not(.slp-rv-printing) .dashboard-content  { margin: 0 !important; padding: 0 !important; }
+  body:not(.slp-rv-printing) .dashboard-main     { padding: 0 !important; }
+  body:not(.slp-rv-printing) .reports-page       { max-width: 100% !important; padding: 0.5rem 0 !important; }
+
+  /* Fix overflow/scrollbar artefacts — no clipped containers in export */
+  body:not(.slp-rv-printing) *,
+  body:not(.slp-rv-printing) *::before,
+  body:not(.slp-rv-printing) *::after { overflow: visible !important; max-height: none !important; }
+
+  /* Fix table wrapper heights that cause scrollbar ghost space */
+  body:not(.slp-rv-printing) .dashboard-panel-table-wrap { height: auto !important; max-height: none !important; overflow: visible !important; }
+
+  /* Remove fixed-height spacers */
+  body:not(.slp-rv-printing) [style*="height: 84px"] { display: none !important; }
+
+  /* Hide inspector-mode banner in export — it is a UI-only cue */
+  body:not(.slp-rv-printing) .inspection-mode-banner { display: none !important; }
+
+  /* KPI & narrative card page break rules */
+  body:not(.slp-rv-printing) .report-kpi-strip     { break-inside: avoid; page-break-inside: avoid; }
+  body:not(.slp-rv-printing) .report-kpi-box       { break-inside: avoid; page-break-inside: avoid; }
+  body:not(.slp-rv-printing) .report-narrative-card { break-inside: avoid; page-break-inside: avoid; }
+  body:not(.slp-rv-printing) .report-section-divider { break-after: avoid; page-break-after: avoid; }
+  body:not(.slp-rv-printing) .dashboard-panel       { break-inside: avoid; page-break-inside: avoid; }
+  body:not(.slp-rv-printing) .dashboard-reports-breakdowns { break-inside: auto; }
+
+  /* Branded header must not split */
+  body:not(.slp-rv-printing) [style*="linear-gradient(135deg,#0B1E36"] { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Table print hygiene */
+  body:not(.slp-rv-printing) table   { border-collapse: collapse; width: 100%; }
+  body:not(.slp-rv-printing) thead   { display: table-header-group; }
+  body:not(.slp-rv-printing) tfoot   { display: table-footer-group; }
+  body:not(.slp-rv-printing) tr      { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Min-height on narrative card body causes blank space in export — collapse it */
+  body:not(.slp-rv-printing) .report-narrative-card > div:last-child { min-height: 0 !important; }
+
+  /* ══════════════════════════════════════════════════════════════════════════════
+     MODE B — View Report overlay export (body.slp-rv-printing)
+  ══════════════════════════════════════════════════════════════════════════════ */
+
+  /* Hide main page entirely — the overlay is the document */
+  body.slp-rv-printing .reports-page,
+  body.slp-rv-printing .dashboard-topbar,
+  body.slp-rv-printing .dashboard-sidebar,
+  body.slp-rv-printing .dashboard-sidebar-toggle { display: none !important; }
+  body.slp-rv-printing .dashboard-shell > *:not(.dashboard-content) { display: none !important; }
+  body.slp-rv-printing .dashboard-content { margin: 0 !important; padding: 0 !important; }
+  body.slp-rv-printing .dashboard-main    { padding: 0 !important; }
+
+  /* Make overlay behave as document flow, not fixed viewport layer */
+  body.slp-rv-printing .report-view-overlay {
+    position: static !important;
+    inset: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    z-index: auto !important;
+    font-family: Inter, system-ui, sans-serif;
   }
 
-  body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  /* Hide overlay sticky chrome — top bar, close/print buttons */
+  body.slp-rv-printing .report-view-overlay .reports-no-print { display: none !important; }
+
+  /* Fix all overflow inside overlay */
+  body.slp-rv-printing .report-view-overlay *,
+  body.slp-rv-printing .report-view-overlay *::before,
+  body.slp-rv-printing .report-view-overlay *::after { overflow: visible !important; max-height: none !important; }
+
+  /* Overlay body content — no padding from fixed-overlay context */
+  body.slp-rv-printing .report-view-overlay > div:last-child { padding-top: 0 !important; }
+
+  /* Page break rules inside overlay */
+  body.slp-rv-printing .report-view-overlay .report-kpi-box      { break-inside: avoid; page-break-inside: avoid; }
+  body.slp-rv-printing .report-view-overlay .report-kpi-strip    { break-inside: avoid; page-break-inside: avoid; }
+  body.slp-rv-printing .report-view-overlay .report-narrative-card { break-inside: avoid; page-break-inside: avoid; }
+  body.slp-rv-printing .report-view-overlay .report-section-divider { break-after: avoid; page-break-after: avoid; }
+  body.slp-rv-printing .report-view-overlay .report-narrative-card > div:last-child { min-height: 0 !important; }
+
+  /* Table hygiene in overlay */
+  body.slp-rv-printing .report-view-overlay table  { border-collapse: collapse; width: 100%; }
+  body.slp-rv-printing .report-view-overlay thead  { display: table-header-group; }
+  body.slp-rv-printing .report-view-overlay tr     { break-inside: avoid; page-break-inside: avoid; }
 }
 `;
 
@@ -863,201 +951,201 @@ export function ReportsPage() {
     }
 
     const rvOverlay = !reportViewOpen ? null : (() => {
-                    const [rvY, rvM] = selectedMonth.split('-').map(Number);
-                    const rvFirst = new Date(rvY, rvM - 1, 1);
-                    const rvLast = new Date(rvY, rvM, 0);
-                    const fmtRv = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                    const rvRange = `${fmtRv(rvFirst)} \u2013 ${fmtRv(rvLast)}`;
-                    const rvIsLocked = reportStatus === 'locked' || reportStatus === 'approved' || reportLocked;
-                    const rvStatus = reportStatus === 'approved' ? 'Approved and locked'
-                        : reportStatus === 'locked' ? 'Locked for review'
-                            : reportStatus === 'draft' ? 'Draft'
-                                : 'Current data \u2014 unsaved';
-                    const rvDataSource = rvIsLocked ? 'Monthly inspection snapshot (locked)' : 'Live case data';
-                    const hasAiNarrative = !!aiNarrative && Object.values(aiNarrative).some(v => !!goodAiText(v as string));
-                    const rvAiGenAt = reportMetricsSnapshot?.ai_generated_at;
-                    const rvAiFmt = rvAiGenAt ? new Date(rvAiGenAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
-                    const closureRvPct = metrics.total > 0 ? Math.round((metrics.byStatus.closed / metrics.total) * 100) : null;
-                    const aiExecRv = goodAiText(aiNarrative?.execSummary);
-                    const execRv = aiExecRv || goodAiText(execSummary) || (metrics.total === 0
-                        ? `No cases were submitted during ${selectedMonthLabel}. Safeguarding protocols remained active throughout this period.`
-                        : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were recorded during ${selectedMonthLabel}.${metrics.highRisk > 0 ? ` ${metrics.highRisk} classified as high or critical risk.` : ' No high-risk cases identified.'}${closureRvPct !== null ? ` Closure rate: ${closureRvPct}%.` : ''}`);
-                    const openRv = metrics.byStatus.new + metrics.byStatus.in_review;
-                    const rvReadyBadge = metrics.total === 0 || (metrics.byStatus.closed / metrics.total >= 0.9 && slaOverdueNow === 0);
-                    const fb5: Record<string, string> = {
-                        safeguardingTrends: goodAiText(keyTrends ? keyTrends.split('\n').filter(l => l.trim()).join(' ') : null) ?? (metrics.total === 0 ? `No submissions were recorded during ${selectedMonthLabel}.` : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were recorded during ${selectedMonthLabel}.`),
-                        emergingRisks: metrics.highRisk > 0 ? `${metrics.highRisk} case${metrics.highRisk !== 1 ? 's' : ''} classified as high or critical risk during ${selectedMonthLabel}.` : metrics.total === 0 ? 'No cases submitted \u2014 no elevated risk signals present.' : 'No high or critical risk cases were recorded.',
-                        operationalPressure: metrics.total === 0 ? 'No active cases \u2014 no operational pressure metrics apply.' : `Avg time to review: ${metrics.avgReview}. Avg time to close: ${metrics.avgClose}.${slaOverdueNow > 0 ? ` ${slaOverdueNow} case${slaOverdueNow !== 1 ? 's' : ''} overdue.` : ' All cases within SLA.'}`,
-                        positiveSignals: closureRvPct !== null && closureRvPct >= 60 ? `${closureRvPct}% closure rate \u2014 strong review throughput.` : metrics.highRisk === 0 ? 'No high-risk cases reported \u2014 positive safeguarding indicator.' : 'Case processing continued within normal parameters.',
-                        recommendedActions: recommendations || '- Progress all open cases promptly.\n- Confirm SLA compliance across active cases.\n- Review any high-risk cases with the safeguarding lead.',
-                    };
-                    type RvSection = { key: string; title: string; icon: React.ReactNode; isList?: boolean };
-                    const grid5rv: RvSection[] = [
-                        { key: 'safeguardingTrends', title: 'Safeguarding Trends', icon: <TrendingUp size={13} /> },
-                        { key: 'emergingRisks', title: 'Emerging Risks', icon: <ShieldAlert size={13} /> },
-                        { key: 'operationalPressure', title: 'Operational Pressure', icon: <Clock size={13} /> },
-                        { key: 'positiveSignals', title: 'Positive Signals', icon: <CheckCircle2 size={13} /> },
-                        { key: 'recommendedActions', title: 'Recommended Actions', icon: <ClipboardList size={13} />, isList: true },
-                    ];
-                    const inspRv = goodAiText(aiNarrative?.inspectionSummary) || 'This report has been prepared in accordance with safeguarding reporting standards. All case records, review timelines, decisions, and supporting evidence are available for inspection.';
-                    const leaderRv = goodAiText(aiNarrative?.leadershipSummary) || (metrics.total === 0 ? `No safeguarding cases were recorded during ${selectedMonthLabel}. No escalation required.` : metrics.highRisk > 0 ? `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were managed, including ${metrics.highRisk} high or critical risk. Leadership review recommended.` : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} managed during ${selectedMonthLabel}. No high-risk cases. No immediate escalation required.`);
-                    const AiBadgeRv = () => <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '0.62rem', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em', color: '#7c3aed', background: 'rgba(124,58,237,0.08)', borderRadius: 4, padding: '0.1rem 0.4rem', marginLeft: 'auto', flexShrink: 0 }}><Sparkles size={9} /> AI</span>;
-                    return (
-                        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#f1f5f9', overflowY: 'auto', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                            {/* Sticky top bar */}
-                            <div className="reports-no-print" style={{ position: 'sticky', top: 0, zIndex: 100, background: '#0B1E36', padding: '0.7rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', boxShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
-                                    <span style={{ color: '#C9A84C', fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>Report View</span>
-                                    <span style={{ color: '#475569' }}>·</span>
-                                    <span style={{ color: '#e2e8f0', fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{orgName}</span>
-                                    <span style={{ color: '#475569' }}>·</span>
-                                    <span style={{ color: '#94a3b8', fontSize: '0.8rem', flexShrink: 0 }}>{selectedMonthLabel}</span>
+        const [rvY, rvM] = selectedMonth.split('-').map(Number);
+        const rvFirst = new Date(rvY, rvM - 1, 1);
+        const rvLast = new Date(rvY, rvM, 0);
+        const fmtRv = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const rvRange = `${fmtRv(rvFirst)} \u2013 ${fmtRv(rvLast)}`;
+        const rvIsLocked = reportStatus === 'locked' || reportStatus === 'approved' || reportLocked;
+        const rvStatus = reportStatus === 'approved' ? 'Approved and locked'
+            : reportStatus === 'locked' ? 'Locked for review'
+                : reportStatus === 'draft' ? 'Draft'
+                    : 'Current data \u2014 unsaved';
+        const rvDataSource = rvIsLocked ? 'Monthly inspection snapshot (locked)' : 'Live case data';
+        const hasAiNarrative = !!aiNarrative && Object.values(aiNarrative).some(v => !!goodAiText(v as string));
+        const rvAiGenAt = reportMetricsSnapshot?.ai_generated_at;
+        const rvAiFmt = rvAiGenAt ? new Date(rvAiGenAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+        const closureRvPct = metrics.total > 0 ? Math.round((metrics.byStatus.closed / metrics.total) * 100) : null;
+        const aiExecRv = goodAiText(aiNarrative?.execSummary);
+        const execRv = aiExecRv || goodAiText(execSummary) || (metrics.total === 0
+            ? `No cases were submitted during ${selectedMonthLabel}. Safeguarding protocols remained active throughout this period.`
+            : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were recorded during ${selectedMonthLabel}.${metrics.highRisk > 0 ? ` ${metrics.highRisk} classified as high or critical risk.` : ' No high-risk cases identified.'}${closureRvPct !== null ? ` Closure rate: ${closureRvPct}%.` : ''}`);
+        const openRv = metrics.byStatus.new + metrics.byStatus.in_review;
+        const rvReadyBadge = metrics.total === 0 || (metrics.byStatus.closed / metrics.total >= 0.9 && slaOverdueNow === 0);
+        const fb5: Record<string, string> = {
+            safeguardingTrends: goodAiText(keyTrends ? keyTrends.split('\n').filter(l => l.trim()).join(' ') : null) ?? (metrics.total === 0 ? `No submissions were recorded during ${selectedMonthLabel}.` : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were recorded during ${selectedMonthLabel}.`),
+            emergingRisks: metrics.highRisk > 0 ? `${metrics.highRisk} case${metrics.highRisk !== 1 ? 's' : ''} classified as high or critical risk during ${selectedMonthLabel}.` : metrics.total === 0 ? 'No cases submitted \u2014 no elevated risk signals present.' : 'No high or critical risk cases were recorded.',
+            operationalPressure: metrics.total === 0 ? 'No active cases \u2014 no operational pressure metrics apply.' : `Avg time to review: ${metrics.avgReview}. Avg time to close: ${metrics.avgClose}.${slaOverdueNow > 0 ? ` ${slaOverdueNow} case${slaOverdueNow !== 1 ? 's' : ''} overdue.` : ' All cases within SLA.'}`,
+            positiveSignals: closureRvPct !== null && closureRvPct >= 60 ? `${closureRvPct}% closure rate \u2014 strong review throughput.` : metrics.highRisk === 0 ? 'No high-risk cases reported \u2014 positive safeguarding indicator.' : 'Case processing continued within normal parameters.',
+            recommendedActions: recommendations || '- Progress all open cases promptly.\n- Confirm SLA compliance across active cases.\n- Review any high-risk cases with the safeguarding lead.',
+        };
+        type RvSection = { key: string; title: string; icon: React.ReactNode; isList?: boolean };
+        const grid5rv: RvSection[] = [
+            { key: 'safeguardingTrends', title: 'Safeguarding Trends', icon: <TrendingUp size={13} /> },
+            { key: 'emergingRisks', title: 'Emerging Risks', icon: <ShieldAlert size={13} /> },
+            { key: 'operationalPressure', title: 'Operational Pressure', icon: <Clock size={13} /> },
+            { key: 'positiveSignals', title: 'Positive Signals', icon: <CheckCircle2 size={13} /> },
+            { key: 'recommendedActions', title: 'Recommended Actions', icon: <ClipboardList size={13} />, isList: true },
+        ];
+        const inspRv = goodAiText(aiNarrative?.inspectionSummary) || 'This report has been prepared in accordance with safeguarding reporting standards. All case records, review timelines, decisions, and supporting evidence are available for inspection.';
+        const leaderRv = goodAiText(aiNarrative?.leadershipSummary) || (metrics.total === 0 ? `No safeguarding cases were recorded during ${selectedMonthLabel}. No escalation required.` : metrics.highRisk > 0 ? `${metrics.total} case${metrics.total !== 1 ? 's' : ''} were managed, including ${metrics.highRisk} high or critical risk. Leadership review recommended.` : `${metrics.total} case${metrics.total !== 1 ? 's' : ''} managed during ${selectedMonthLabel}. No high-risk cases. No immediate escalation required.`);
+        const AiBadgeRv = () => <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '0.62rem', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em', color: '#7c3aed', background: 'rgba(124,58,237,0.08)', borderRadius: 4, padding: '0.1rem 0.4rem', marginLeft: 'auto', flexShrink: 0 }}><Sparkles size={9} /> AI</span>;
+        return (
+            <div className="report-view-overlay" style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#f1f5f9', overflowY: 'auto', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                {/* Sticky top bar */}
+                <div className="reports-no-print" style={{ position: 'sticky', top: 0, zIndex: 100, background: '#0B1E36', padding: '0.7rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', boxShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+                        <span style={{ color: '#C9A84C', fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>Report View</span>
+                        <span style={{ color: '#475569' }}>·</span>
+                        <span style={{ color: '#e2e8f0', fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{orgName}</span>
+                        <span style={{ color: '#475569' }}>·</span>
+                        <span style={{ color: '#94a3b8', fontSize: '0.8rem', flexShrink: 0 }}>{selectedMonthLabel}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexShrink: 0 }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.65rem', borderRadius: 99, fontSize: '0.68rem', fontWeight: 700, background: rvIsLocked ? 'rgba(22,101,52,0.35)' : 'rgba(71,85,105,0.4)', color: rvIsLocked ? '#86efac' : '#94a3b8', border: `1px solid ${rvIsLocked ? 'rgba(134,239,172,0.25)' : 'rgba(148,163,184,0.15)'}` }}>
+                            {rvIsLocked && <Lock size={9} />}{rvStatus}
+                        </span>
+                        <button type="button" onClick={() => { document.body.classList.add('slp-rv-printing'); window.print(); window.addEventListener('afterprint', () => document.body.classList.remove('slp-rv-printing'), { once: true }); }} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.38rem 0.9rem', borderRadius: 7, fontSize: '0.78rem', fontWeight: 600, background: '#1e40af', color: '#fff', border: 'none', cursor: 'pointer' }}><Printer size={13} /> Print</button>
+                        <button type="button" onClick={() => setReportViewOpen(false)} aria-label="Close report view" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.38rem 0.9rem', borderRadius: 7, fontSize: '0.78rem', fontWeight: 600, background: 'rgba(255,255,255,0.07)', color: '#cbd5e1', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}>&#x2715; Close</button>
+                    </div>
+                </div>
+
+                <div style={{ maxWidth: 920, margin: '0 auto', padding: '2rem 1.5rem 5rem' }}>
+
+                    {/* ── PREMIUM CONTEXT HEADER ── */}
+                    <div style={{ background: 'linear-gradient(135deg,#0B1E36 0%,#162d4a 100%)', borderRadius: 14, padding: '2rem 2.25rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg,#C9A84C,#e6c96e,#C9A84C)' }} />
+                        <div style={{ position: 'absolute', right: 28, top: '50%', transform: 'translateY(-50%)', opacity: 0.04, fontSize: '6rem', fontWeight: 900, color: '#fff', pointerEvents: 'none', userSelect: 'none' }}>SLP</div>
+                        {/* Zone A — Identity */}
+                        <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                            <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.13em', color: '#C9A84C', margin: '0 0 0.4rem' }}>Second Look Protect · Safeguarding Report</p>
+                            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f8fafc', margin: '0 0 0.3rem', letterSpacing: '-0.03em', lineHeight: 1.2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{orgName || 'Organisation Report'}</h1>
+                            <p style={{ fontSize: '0.88rem', color: '#94a3b8', margin: 0 }}>Monthly Safeguarding Summary · {selectedMonthLabel}</p>
+                        </div>
+                        {/* Zone B — Metadata grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.75rem 2rem', marginBottom: '1.25rem', position: 'relative' }}>
+                            {([
+                                { label: 'Reporting Month', value: selectedMonthLabel, color: '#e2e8f0' },
+                                { label: 'Reporting Range', value: rvRange, color: '#e2e8f0' },
+                                { label: 'Report Status', value: rvStatus, color: rvIsLocked ? '#86efac' : '#fbbf24' },
+                                { label: 'Data Source', value: rvDataSource, color: rvIsLocked ? '#93c5fd' : '#a5b4fc' },
+                            ] as { label: string; value: string; color: string }[]).map(item => (
+                                <div key={item.label}>
+                                    <div style={{ fontSize: '0.58rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#475569', marginBottom: '0.2rem' }}>{item.label}</div>
+                                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: item.color }}>{item.value}</div>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexShrink: 0 }}>
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.65rem', borderRadius: 99, fontSize: '0.68rem', fontWeight: 700, background: rvIsLocked ? 'rgba(22,101,52,0.35)' : 'rgba(71,85,105,0.4)', color: rvIsLocked ? '#86efac' : '#94a3b8', border: `1px solid ${rvIsLocked ? 'rgba(134,239,172,0.25)' : 'rgba(148,163,184,0.15)'}` }}>
-                                        {rvIsLocked && <Lock size={9} />}{rvStatus}
-                                    </span>
-                                    <button type="button" onClick={() => window.print()} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.38rem 0.9rem', borderRadius: 7, fontSize: '0.78rem', fontWeight: 600, background: '#1e40af', color: '#fff', border: 'none', cursor: 'pointer' }}><Printer size={13} /> Print</button>
-                                    <button type="button" onClick={() => setReportViewOpen(false)} aria-label="Close report view" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.38rem 0.9rem', borderRadius: 7, fontSize: '0.78rem', fontWeight: 600, background: 'rgba(255,255,255,0.07)', color: '#cbd5e1', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}>&#x2715; Close</button>
-                                </div>
+                            ))}
+                        </div>
+                        {/* Zone C — AI context */}
+                        <div style={{ position: 'relative', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
+                                <Sparkles size={12} style={{ color: '#a78bfa' }} />
+                                <span style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#a78bfa' }}>AI Report Intelligence</span>
                             </div>
-
-                            <div style={{ maxWidth: 920, margin: '0 auto', padding: '2rem 1.5rem 5rem' }}>
-
-                                {/* ── PREMIUM CONTEXT HEADER ── */}
-                                <div style={{ background: 'linear-gradient(135deg,#0B1E36 0%,#162d4a 100%)', borderRadius: 14, padding: '2rem 2.25rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden' }}>
-                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg,#C9A84C,#e6c96e,#C9A84C)' }} />
-                                    <div style={{ position: 'absolute', right: 28, top: '50%', transform: 'translateY(-50%)', opacity: 0.04, fontSize: '6rem', fontWeight: 900, color: '#fff', pointerEvents: 'none', userSelect: 'none' }}>SLP</div>
-                                    {/* Zone A — Identity */}
-                                    <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-                                        <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.13em', color: '#C9A84C', margin: '0 0 0.4rem' }}>Second Look Protect · Safeguarding Report</p>
-                                        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f8fafc', margin: '0 0 0.3rem', letterSpacing: '-0.03em', lineHeight: 1.2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{orgName || 'Organisation Report'}</h1>
-                                        <p style={{ fontSize: '0.88rem', color: '#94a3b8', margin: 0 }}>Monthly Safeguarding Summary · {selectedMonthLabel}</p>
-                                    </div>
-                                    {/* Zone B — Metadata grid */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.75rem 2rem', marginBottom: '1.25rem', position: 'relative' }}>
-                                        {([
-                                            { label: 'Reporting Month', value: selectedMonthLabel, color: '#e2e8f0' },
-                                            { label: 'Reporting Range', value: rvRange, color: '#e2e8f0' },
-                                            { label: 'Report Status', value: rvStatus, color: rvIsLocked ? '#86efac' : '#fbbf24' },
-                                            { label: 'Data Source', value: rvDataSource, color: rvIsLocked ? '#93c5fd' : '#a5b4fc' },
-                                        ] as { label: string; value: string; color: string }[]).map(item => (
-                                            <div key={item.label}>
-                                                <div style={{ fontSize: '0.58rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#475569', marginBottom: '0.2rem' }}>{item.label}</div>
-                                                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: item.color }}>{item.value}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {/* Zone C — AI context */}
-                                    <div style={{ position: 'relative', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '1rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
-                                            <Sparkles size={12} style={{ color: '#a78bfa' }} />
-                                            <span style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#a78bfa' }}>AI Report Intelligence</span>
-                                        </div>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
-                                            {([
-                                                { label: hasAiNarrative ? 'AI Narrative: Generated' : 'AI Narrative: Not yet generated', ok: hasAiNarrative },
-                                                { label: `Coverage: ${selectedMonthLabel} case activity`, ok: true },
-                                                rvAiFmt ? { label: `Last refreshed: ${rvAiFmt}`, ok: true } : null,
-                                                rvIsLocked ? { label: 'Report locked — narrative frozen at approval', ok: false } : null,
-                                            ] as ({ label: string; ok: boolean } | null)[]).filter(Boolean).map((chip) => (
-                                                <span key={chip!.label} style={{ display: 'inline-flex', alignItems: 'center', padding: '0.2rem 0.65rem', borderRadius: 99, fontSize: '0.68rem', fontWeight: 600, background: chip!.ok ? 'rgba(124,58,237,0.2)' : 'rgba(71,85,105,0.3)', color: chip!.ok ? '#c4b5fd' : '#94a3b8', border: `1px solid ${chip!.ok ? 'rgba(167,139,250,0.3)' : 'rgba(148,163,184,0.15)'}` }}>{chip!.label}</span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* ── INSPECTION READY + KPI STRIP ── */}
-                                <div style={{ marginBottom: '1.5rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.28rem 0.75rem', borderRadius: 99, fontSize: '0.72rem', fontWeight: 700, background: rvReadyBadge ? '#f0fdf4' : '#fffbeb', border: `1px solid ${rvReadyBadge ? '#bbf7d0' : '#fde68a'}`, color: rvReadyBadge ? '#16a34a' : '#d97706' }}>
-                                            <CheckCircle2 size={12} />{rvReadyBadge ? 'Inspection Ready' : 'Attention Required'}
-                                        </span>
-                                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{rvReadyBadge ? 'SLA compliance and case review within expected thresholds.' : `${slaOverdueNow} case${slaOverdueNow !== 1 ? 's' : ''} overdue · review required.`}</span>
-                                    </div>
-                                    <div className="report-kpi-strip">
-                                        {([
-                                            { label: 'Total Cases', value: metrics.total, accent: '#0B1E36' },
-                                            { label: 'Open Cases', value: openRv, accent: '#d97706' },
-                                            { label: 'High / Critical', value: metrics.highRisk, accent: '#dc2626' },
-                                            { label: 'SLA Overdue', value: slaOverdueNow, accent: slaOverdueNow > 0 ? '#dc2626' : '#16a34a' },
-                                            { label: 'Closure Rate', value: closureRvPct !== null ? `${closureRvPct}%` : '—', accent: closureRvPct !== null && closureRvPct >= 70 ? '#16a34a' : '#C9A84C' },
-                                        ] as { label: string; value: string | number; accent: string }[]).map(kpi => (
-                                            <div key={kpi.label} className="report-kpi-box">
-                                                <div style={{ height: 3, background: kpi.accent, borderRadius: '4px 4px 0 0', margin: '-1px -1px 0' }} />
-                                                <div style={{ padding: '0.85rem 1rem 0.75rem' }}>
-                                                    <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.04em', lineHeight: 1 }}>{kpi.value}</div>
-                                                    <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '0.3rem' }}>{kpi.label}</div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* ── EXECUTIVE SUMMARY ── */}
-                                <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', borderLeft: '4px solid #0B1E36', padding: '1.5rem 1.75rem', marginBottom: '1rem', boxShadow: '0 1px 4px rgba(11,30,54,0.06)' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                        <FileText size={15} style={{ color: aiExecRv ? '#7c3aed' : '#64748b' }} />
-                                        <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>Executive Summary</span>
-                                        {aiExecRv && <AiBadgeRv />}
-                                    </div>
-                                    <p style={{ margin: 0, fontSize: '0.97rem', color: '#0f172a', lineHeight: 1.8, fontWeight: 450 }}>{execRv}</p>
-                                </div>
-
-                                {/* ── INTELLIGENCE & ANALYSIS ── */}
-                                <div className="report-section-divider"><span>Intelligence &amp; Analysis</span></div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 390px), 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-                                    {grid5rv.map(section => {
-                                        const aiText = goodAiText(aiNarrative?.[section.key as keyof typeof aiNarrative] as string);
-                                        const text = aiText || fb5[section.key] || '';
-                                        const isAi = !!aiText;
-                                        return (
-                                            <div key={section.key} className="report-narrative-card" style={{ background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-                                                <div style={{ padding: '0.85rem 1rem 0.65rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                    <span style={{ color: isAi ? '#7c3aed' : '#94a3b8', flexShrink: 0, display: 'flex' }}>{section.icon}</span>
-                                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#374151', flex: 1 }}>{section.title}</span>
-                                                    {isAi && <AiBadgeRv />}
-                                                </div>
-                                                <div style={{ padding: '1rem', fontSize: '0.875rem', color: '#334155', lineHeight: 1.75, minHeight: '7rem' }}>
-                                                    {section.isList ? (
-                                                        <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                                            {(text || '').split('\n').filter(l => l.trim()).map((line, i) => (
-                                                                <li key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                                                                    <span style={{ color: '#C9A84C', flexShrink: 0, marginTop: 2, fontWeight: 700 }}>›</span>
-                                                                    <span>{line.replace(/^[-–—•]\s*/, '')}</span>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    ) : <p style={{ margin: 0 }}>{text}</p>}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* ── INSPECTION & LEADERSHIP ── */}
-                                <div className="report-section-divider"><span>Inspection &amp; Leadership</span></div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                                    <div style={{ background: '#0B1E36', borderRadius: 10, padding: '1.25rem 1.5rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-                                            <Lock size={13} style={{ color: '#C9A84C' }} />
-                                            <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#C9A84C' }}>Inspection Summary</span>
-                                            {goodAiText(aiNarrative?.inspectionSummary) && <AiBadgeRv />}
-                                        </div>
-                                        <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.8, color: '#cbd5e1' }}>{inspRv}</p>
-                                    </div>
-                                    <div style={{ background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', padding: '1.25rem 1.5rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-                                            <Building2 size={13} style={{ color: '#0B1E36' }} />
-                                            <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#0B1E36' }}>Leadership Summary</span>
-                                            {goodAiText(aiNarrative?.leadershipSummary) && <AiBadgeRv />}
-                                        </div>
-                                        <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.8, color: '#334155' }}>{leaderRv}</p>
-                                    </div>
-                                </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
+                                {([
+                                    { label: hasAiNarrative ? 'AI Narrative: Generated' : 'AI Narrative: Not yet generated', ok: hasAiNarrative },
+                                    { label: `Coverage: ${selectedMonthLabel} case activity`, ok: true },
+                                    rvAiFmt ? { label: `Last refreshed: ${rvAiFmt}`, ok: true } : null,
+                                    rvIsLocked ? { label: 'Report locked — narrative frozen at approval', ok: false } : null,
+                                ] as ({ label: string; ok: boolean } | null)[]).filter(Boolean).map((chip) => (
+                                    <span key={chip!.label} style={{ display: 'inline-flex', alignItems: 'center', padding: '0.2rem 0.65rem', borderRadius: 99, fontSize: '0.68rem', fontWeight: 600, background: chip!.ok ? 'rgba(124,58,237,0.2)' : 'rgba(71,85,105,0.3)', color: chip!.ok ? '#c4b5fd' : '#94a3b8', border: `1px solid ${chip!.ok ? 'rgba(167,139,250,0.3)' : 'rgba(148,163,184,0.15)'}` }}>{chip!.label}</span>
+                                ))}
                             </div>
                         </div>
-                    );
+                    </div>
+
+                    {/* ── INSPECTION READY + KPI STRIP ── */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.28rem 0.75rem', borderRadius: 99, fontSize: '0.72rem', fontWeight: 700, background: rvReadyBadge ? '#f0fdf4' : '#fffbeb', border: `1px solid ${rvReadyBadge ? '#bbf7d0' : '#fde68a'}`, color: rvReadyBadge ? '#16a34a' : '#d97706' }}>
+                                <CheckCircle2 size={12} />{rvReadyBadge ? 'Inspection Ready' : 'Attention Required'}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{rvReadyBadge ? 'SLA compliance and case review within expected thresholds.' : `${slaOverdueNow} case${slaOverdueNow !== 1 ? 's' : ''} overdue · review required.`}</span>
+                        </div>
+                        <div className="report-kpi-strip">
+                            {([
+                                { label: 'Total Cases', value: metrics.total, accent: '#0B1E36' },
+                                { label: 'Open Cases', value: openRv, accent: '#d97706' },
+                                { label: 'High / Critical', value: metrics.highRisk, accent: '#dc2626' },
+                                { label: 'SLA Overdue', value: slaOverdueNow, accent: slaOverdueNow > 0 ? '#dc2626' : '#16a34a' },
+                                { label: 'Closure Rate', value: closureRvPct !== null ? `${closureRvPct}%` : '—', accent: closureRvPct !== null && closureRvPct >= 70 ? '#16a34a' : '#C9A84C' },
+                            ] as { label: string; value: string | number; accent: string }[]).map(kpi => (
+                                <div key={kpi.label} className="report-kpi-box">
+                                    <div style={{ height: 3, background: kpi.accent, borderRadius: '4px 4px 0 0', margin: '-1px -1px 0' }} />
+                                    <div style={{ padding: '0.85rem 1rem 0.75rem' }}>
+                                        <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.04em', lineHeight: 1 }}>{kpi.value}</div>
+                                        <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '0.3rem' }}>{kpi.label}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── EXECUTIVE SUMMARY ── */}
+                    <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', borderLeft: '4px solid #0B1E36', padding: '1.5rem 1.75rem', marginBottom: '1rem', boxShadow: '0 1px 4px rgba(11,30,54,0.06)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                            <FileText size={15} style={{ color: aiExecRv ? '#7c3aed' : '#64748b' }} />
+                            <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>Executive Summary</span>
+                            {aiExecRv && <AiBadgeRv />}
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.97rem', color: '#0f172a', lineHeight: 1.8, fontWeight: 450 }}>{execRv}</p>
+                    </div>
+
+                    {/* ── INTELLIGENCE & ANALYSIS ── */}
+                    <div className="report-section-divider"><span>Intelligence &amp; Analysis</span></div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 390px), 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                        {grid5rv.map(section => {
+                            const aiText = goodAiText(aiNarrative?.[section.key as keyof typeof aiNarrative] as string);
+                            const text = aiText || fb5[section.key] || '';
+                            const isAi = !!aiText;
+                            return (
+                                <div key={section.key} className="report-narrative-card" style={{ background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                                    <div style={{ padding: '0.85rem 1rem 0.65rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                        <span style={{ color: isAi ? '#7c3aed' : '#94a3b8', flexShrink: 0, display: 'flex' }}>{section.icon}</span>
+                                        <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#374151', flex: 1 }}>{section.title}</span>
+                                        {isAi && <AiBadgeRv />}
+                                    </div>
+                                    <div style={{ padding: '1rem', fontSize: '0.875rem', color: '#334155', lineHeight: 1.75, minHeight: '7rem' }}>
+                                        {section.isList ? (
+                                            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                {(text || '').split('\n').filter(l => l.trim()).map((line, i) => (
+                                                    <li key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                                                        <span style={{ color: '#C9A84C', flexShrink: 0, marginTop: 2, fontWeight: 700 }}>›</span>
+                                                        <span>{line.replace(/^[-–—•]\s*/, '')}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : <p style={{ margin: 0 }}>{text}</p>}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* ── INSPECTION & LEADERSHIP ── */}
+                    <div className="report-section-divider"><span>Inspection &amp; Leadership</span></div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                        <div style={{ background: '#0B1E36', borderRadius: 10, padding: '1.25rem 1.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                                <Lock size={13} style={{ color: '#C9A84C' }} />
+                                <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#C9A84C' }}>Inspection Summary</span>
+                                {goodAiText(aiNarrative?.inspectionSummary) && <AiBadgeRv />}
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.8, color: '#cbd5e1' }}>{inspRv}</p>
+                        </div>
+                        <div style={{ background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', padding: '1.25rem 1.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                                <Building2 size={13} style={{ color: '#0B1E36' }} />
+                                <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#0B1E36' }}>Leadership Summary</span>
+                                {goodAiText(aiNarrative?.leadershipSummary) && <AiBadgeRv />}
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.8, color: '#334155' }}>{leaderRv}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     })();
 
     return (

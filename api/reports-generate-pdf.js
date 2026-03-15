@@ -1,4 +1,29 @@
 // /api/reports-generate-pdf.js
+//
+// ─── PIPELINE IDENTITY (Phase 8 PDF unification audit) ───────────────────────
+// RENDERER: PREMIUM — Monthly Safeguarding Report PDF (Phases 3-4)
+// DATA SOURCE: reports table (org+period matched row including AI narrative, metrics, exec summary)
+// STYLE: Full premium layout — branded cover, KPI strip, AI narrative sections, inspection closer
+// CALLED BY:
+//   1. "Generate PDF" button (draft reports, no pdf_url yet) → POST /api/reports-generate-pdf
+//   2. "Approve Report" internally may re-trigger PDF generation
+//   Result: PDF is stored in Supabase Storage → pdf_url written back to reports row
+// ACCESSED BY:
+//   - "Open PDF" button: opens reportPdfUrl (Supabase Storage signed/permanent URL) directly in new tab
+//     Does NOT re-render — opens the STORED file from when Generate PDF was last clicked.
+// NOT THE SAME AS: /api/inspection-pack-pdf.js (legacy, inspection_snapshots, plain jsPDF)
+// NOT THE SAME AS: /api/inspection-pack-pdf.js (legacy, inspection_snapshots, plain jsPDF)
+// NEXT PHASE: Also use this renderer from send-inspection-pack.js to unify PDF quality.
+//
+// ─── PHASE 10 MIGRATION TARGET ───────────────────────────────────────────────
+// When Send Inspection Pack is migrated (Phase 10), replace the call to
+// /api/inspection-pack-pdf.js inside send-inspection-pack.js with a POST to
+// THIS file using the following payload shape:
+//   { reportId, organisationId, periodStart: "YYYY-MM-DD", periodEnd: "YYYY-MM-DD" }
+// Data source: reports table (not inspection_snapshots).
+// The resulting pdf_url should be used as the email attachment path.
+// No changes to this file are required for that migration — only the caller changes.
+// ─────────────────────────────────────────────────────────────────────────────
 import { jsPDF } from 'jspdf';
 
 export default async function handler(req, res) {
