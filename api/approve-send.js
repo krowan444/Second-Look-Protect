@@ -101,6 +101,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         from: EMAIL_FROM,
         to: [sub.email],
+        reply_to: process.env.ADMIN_NOTIFY_EMAIL || "hello@learnaifast.co.uk",
         subject: `${verdictLabel.emoji} Your Second Look report — ${verdictLabel.label}`,
         html,
       }),
@@ -120,6 +121,4 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   } catch (e) {
     console.error("[approve-send] Error:", e.message || e);
-    return res.status(500).json({ ok: false, error: "Unexpected error" });
-  }
-}
+  
