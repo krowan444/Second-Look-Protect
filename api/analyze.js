@@ -1,5 +1,4 @@
-// api/analyze.js — the AI scam-check engine, adapted from the original
-// Second Look Protect triage pipeline:
+// api/analyze.js — the AI scam-check engine:
 //   1. OCR any uploaded screenshots (GPT-4o-mini vision)
 //   2. Structured triage → verdict, risk, plain-English report (GPT-4o-mini)
 //   3. Gemini web-research corroboration of extracted numbers/links/emails
@@ -22,7 +21,6 @@ export default async function handler(req, res) {
     const { submission_id } = req.body || {};
     if (!submission_id) return res.status(400).json({ ok: false, error: "submission_id required" });
 
-    /* Idempotency: skip if a report already exists */
     const existRes = await fetch(
       `${SUPABASE_URL}/rest/v1/ai_reports?submission_id=eq.${encodeURIComponent(submission_id)}&select=id&limit=1`,
       { headers: sb }
@@ -31,7 +29,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, skipped: true });
     }
 
-    /* Fetch the submission */
     const subRes = await fetch(
       `${SUPABASE_URL}/rest/v1/submissions?id=eq.${encodeURIComponent(submission_id)}&limit=1`,
       { headers: { ...sb, Accept: "application/vnd.pgrst.object+json" } }
@@ -95,6 +92,7 @@ Rules:
 
     const context = {
       category: sub.category,
+      structured_answers: sub.details && Object.keys(sub.details).length ? sub.details : null,
       customer_description: sub.description,
       pasted_message: sub.pasted_text || null,
       text_extracted_from_screenshots: ocrText || null,
@@ -194,7 +192,6 @@ SOURCES: [comma-separated URLs, or "none"]`,
             search_performed: true,
             marker,
           };
-          /* If the web confirms this exact marker is a known scam, harden the verdict */
           if (cls === "direct_match" && report.verdict !== "likely_scam") {
             report.verdict = "likely_scam";
             report.risk_level = report.risk_level === "low" ? "medium" : report.risk_level;
@@ -242,6 +239,7 @@ SOURCES: [comma-separated URLs, or "none"]`,
 
     const verdictEmoji =
       report.verdict === "likely_scam" ? "🚨" : report.verdict === "suspicious" ? "⚠️" : report.verdict === "likely_safe" ? "✅" : "❓";
+    const caseUrl = `https://second-look-protect.vercel.app/admin?case=${sub.id}`;
     await notifyKieran({
       subject: `${verdictEmoji} AI report ready: ${report.verdict} — ${sub.name}`,
       html:
@@ -249,8 +247,8 @@ SOURCES: [comma-separated URLs, or "none"]`,
         `<p><strong>${sub.name}</strong> · ${sub.email} · ${sub.member_status}</p>` +
         `<p>Verdict: <strong>${report.verdict}</strong> · Risk: ${report.risk_level} · Confidence: ${report.confidence}</p>` +
         `<p>${report.headline || ""}</p>` +
-        `<p>Open the dashboard to review, edit and send.</p>`,
-      whatsappText: `${verdictEmoji} AI report ready for ${sub.name}: ${report.verdict} (${report.risk_level}). Review & approve in the dashboard.`,
+        `<p><a href="${caseUrl}">Review &amp; approve this case</a></p>`,
+      whatsappText: `${verdictEmoji} AI report ready for ${sub.name}: ${report.verdict} (${report.risk_level}). Review & approve: ${caseUrl}`,
     });
 
     return res.status(200).json({ ok: true });

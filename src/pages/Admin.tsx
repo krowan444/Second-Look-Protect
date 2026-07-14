@@ -10,10 +10,23 @@ type Submission = {
   category: string;
   description: string;
   pasted_text: string | null;
+  details: Record<string, string> | null;
   image_paths: string[];
   member_status: string;
   status: string;
 };
+
+const DETAIL_LABELS: Record<string, string> = {
+  caller_number: "Number that called",
+  claimed_to_be: "Claimed to be",
+  sender_number: "Sender number/name",
+  sender_email: "Sender email",
+  subject: "Subject line",
+  website_url: "Website URL",
+  platform: "Platform",
+  profile_name: "Profile name",
+};
+
 type Report = {
   id: string;
   submission_id: string;
@@ -60,6 +73,12 @@ export default function Admin() {
       .order("created_at", { ascending: false })
       .limit(50);
     setSubs((data as Submission[]) || []);
+    /* deep link from WhatsApp/email: /admin?case=<id> opens that case */
+    const caseId = new URLSearchParams(window.location.search).get("case");
+    if (caseId && data) {
+      const match = (data as Submission[]).find((s) => s.id === caseId);
+      if (match) open(match);
+    }
   }
 
   async function open(s: Submission) {
@@ -98,7 +117,7 @@ export default function Admin() {
         personal_note: note || undefined,
       }),
     });
-    const d = await res.json();
+    const d = await res.json().catch(() => ({ ok: false, error: `Server error (${res.status})` }));
     setBusy("");
     if (d.ok) {
       alert("Report sent ✓");
@@ -187,6 +206,15 @@ export default function Admin() {
               <p className="text-sm text-green-soft m-0">
                 {selected.email} {selected.phone && `· ${selected.phone}`} · {badge(selected.member_status)[0]} · {selected.category}
               </p>
+              {selected.details && Object.keys(selected.details).some((k) => selected.details![k]) && (
+                <div className="bg-cream-2 rounded-xl p-4 mt-4">
+                  {Object.entries(selected.details).filter(([, v]) => v).map(([k, v]) => (
+                    <p key={k} className="m-0 mb-1 text-sm">
+                      <strong>{DETAIL_LABELS[k] || k}:</strong> {v}
+                    </p>
+                  ))}
+                </div>
+              )}
               <h3 className="text-base mb-1 mt-4">Their description</h3>
               <p className="whitespace-pre-wrap">{selected.description}</p>
               {selected.pasted_text && (

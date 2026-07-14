@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   };
 
   try {
-    const { name, email, phone, channel, category, description, pasted_text, image_paths } = req.body || {};
+    const { name, email, phone, channel, category, description, pasted_text, image_paths, details } = req.body || {};
     if (!name || !email || !description) {
       return res.status(400).json({ ok: false, error: "name, email and description are required" });
     }
@@ -42,32 +42,50 @@ export default async function handler(req, res) {
     }
 
     /* 2. Store the submission */
-    const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/submissions`, {
+    const basePayload = {
+      name: String(name).trim(),
+      email: cleanEmail,
+      phone: phone ? String(phone).trim() : null,
+      channel: channel || "email",
+      category: category || "message",
+      description: String(description).trim(),
+      pasted_text: pasted_text ? String(pasted_text) : null,
+      image_paths: Array.isArray(image_paths) ? image_paths : [],
+      member_status: memberStatus,
+      status: "new",
+    };
+    const cleanDetails = details && typeof details === "object" ? details : {};
+
+    let insertRes = await fetch(`${SUPABASE_URL}/rest/v1/submissions`, {
       method: "POST",
       headers: { ...sb, Prefer: "return=representation" },
-      body: JSON.stringify({
-        name: String(name).trim(),
-        email: cleanEmail,
-        phone: phone ? String(phone).trim() : null,
-        channel: channel || "email",
-        category: category || "message",
-        description: String(description).trim(),
-        pasted_text: pasted_text ? String(pasted_text) : null,
-        image_paths: Array.isArray(image_paths) ? image_paths : [],
-        member_status: memberStatus,
-        status: "new",
-      }),
+      body: JSON.stringify({ ...basePayload, details: cleanDetails }),
     });
     if (!insertRes.ok) {
       const t = await insertRes.text();
       console.error("[submit] Insert failed:", insertRes.status, t);
-      return res.status(500).json({ ok: false, error: "Could not save your request" });
+      /* fallback: retry without the details column if the DB migration
+         hasn't been run yet — the answers get folded into the description */
+      if (t.includes("details")) {
+        const merged = Object.keys(cleanDetails).length
+          ? basePayload.description + "\n\n[Details] " + JSON.stringify(cleanDetails)
+          : basePayload.description;
+        insertRes = await fetch(`${SUPABASE_URL}/rest/v1/submissions`, {
+          method: "POST",
+          headers: { ...sb, Prefer: "return=representation" },
+          body: JSON.stringify({ ...basePayload, description: merged }),
+        });
+      }
+      if (!insertRes.ok) {
+        return res.status(500).json({ ok: false, error: "Could not save your request" });
+      }
     }
     const [row] = await insertRes.json();
 
     /* 3. Ping Kieran (non-blocking failure) */
     const badge =
       memberStatus === "member" ? "🟢 MEMBER" : memberStatus === "free" ? "🔵 Free check" : "🟠 Free check already used";
+    const caseUrl = `https://second-look-protect.vercel.app/admin?case=${row.id}`;
     await notifyKieran({
       subject: `🔍 New scam check from ${row.name} (${badge})`,
       html:
@@ -76,8 +94,8 @@ export default async function handler(req, res) {
         `<p>Status: <strong>${badge}</strong> · Type: ${row.category}</p>` +
         `<p style="white-space:pre-wrap">${(row.description || "").slice(0, 1000)}</p>` +
         `<p>${Array.isArray(row.image_paths) && row.image_paths.length ? row.image_paths.length + " screenshot(s) attached" : "No screenshots"}</p>` +
-        `<p>The AI report is being generated now — review it in your dashboard.</p>`,
-      whatsappText: `🔍 New scam check from ${row.name} (${badge}). AI report generating — check the dashboard.`,
+        `<p><a href="${caseUrl}">Open this case in your dashboard</a></p>`,
+      whatsappText: `🔍 New scam check from ${row.name} (${badge}). Open the case: ${caseUrl}`,
     });
 
     return res.status(200).json({ ok: true, id: row.id, member_status: memberStatus });

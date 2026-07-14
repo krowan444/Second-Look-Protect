@@ -14,6 +14,7 @@ create table if not exists submissions (
   category      text not null default 'message',    -- message | email | phone_call | letter | website | other
   description   text not null,                      -- what happened, in their words
   pasted_text   text,                               -- the suspicious message pasted in
+  details       jsonb not null default '{}',        -- type-specific answers (caller number, URL…)
   image_paths   jsonb not null default '[]',        -- storage paths of uploaded screenshots
   member_status text not null default 'free',       -- member | free | free_used  (snapshot at submission)
   status        text not null default 'new',        -- new | analyzing | awaiting_review | sent | dismissed
@@ -72,4 +73,4 @@ create policy "Admin read members"       on members     for select to authentica
 --   2. Policy: allow INSERT for role "anon" (uploads only, no listing)
 -- ADMIN LOGIN (do in the Dashboard):
 --   Authentication → Users → Add user → hello@learnaifast.co.uk + password
--- ═══════════════════════════════════════════════════════════════════
+-- ═════════════════════════════════�
