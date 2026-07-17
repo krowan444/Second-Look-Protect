@@ -73,6 +73,8 @@ export default function CheckForm() {
   const [pasted, setPasted] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [contact, setContact] = useState({ name: "", email: "", phone: "" });
+  const [wantsSms, setWantsSms] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const pickType = (t: TypeId) => {
     setType(t);
@@ -88,6 +90,14 @@ export default function CheckForm() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    if (!termsAccepted) {
+      setError("Please tick the box to confirm you understand this is guidance, not financial or legal advice.");
+      return;
+    }
+    if (wantsSms && !contact.phone.trim()) {
+      setError("Please add your mobile number so we can text your report — or untick the text option.");
+      return;
+    }
     try {
       setPhase("uploading");
       const image_paths: string[] = [];
@@ -108,6 +118,8 @@ export default function CheckForm() {
           description,
           pasted_text: pasted || null,
           details,
+          wants_sms: wantsSms,
+          terms_accepted: termsAccepted,
           image_paths,
         }),
       });
@@ -256,9 +268,28 @@ export default function CheckForm() {
               <Field label="Your email (we'll send the report here) *">
                 <input required type="email" className={inputCls} autoComplete="email" value={contact.email} onChange={(e) => setContact({ ...contact, email: e.target.value })} />
               </Field>
-              <Field label="Phone (optional — if you'd rather talk)">
+              <Field label={wantsSms ? "Your mobile number *" : "Phone (optional — if you'd rather talk)"}>
                 <input type="tel" className={inputCls} autoComplete="tel" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} />
               </Field>
+              <label className="flex items-start gap-3 bg-white border-2 border-green/15 rounded-xl px-4 py-3 cursor-pointer">
+                <input type="checkbox" className="mt-1 w-5 h-5 accent-[#c9932b]" checked={wantsSms} onChange={(e) => setWantsSms(e.target.checked)} />
+                <span className="text-sm">
+                  <strong>Also text my report to my phone</strong>
+                  <span className="block text-green-soft">We'll send the verdict by text message as well as the full email report.</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 bg-cream-2 border-2 border-gold/30 rounded-xl px-4 py-3 cursor-pointer">
+                <input type="checkbox" required className="mt-1 w-5 h-5 accent-[#c9932b]" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} />
+                <span className="text-sm">
+                  <strong>I understand this is guidance, not advice *</strong>
+                  <span className="block text-green-soft">
+                    My report is guidance based on the information I provide. It is not legal or
+                    financial advice and cannot guarantee whether something is or isn't a scam.
+                    Any decisions I take — including payments or sharing information — remain my
+                    own responsibility.
+                  </span>
+                </span>
+              </label>
               {error && <p className="text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">{error}</p>}
               <button type="submit" disabled={busy} className="w-full bg-gold hover:bg-gold-soft text-green-deep font-bold text-lg py-3.5 rounded-full disabled:opacity-60">
                 {phase === "uploading" ? "Sending securely…" : phase === "analyzing" ? "Analysing — about 30 seconds…" : "Get my second look"}

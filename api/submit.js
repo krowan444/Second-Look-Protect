@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   };
 
   try {
-    const { name, email, phone, channel, category, description, pasted_text, image_paths, details } = req.body || {};
+    const { name, email, phone, channel, category, description, pasted_text, image_paths, details, wants_sms, terms_accepted } = req.body || {};
     if (!name || !email || !description) {
       return res.status(400).json({ ok: false, error: "name, email and description are required" });
     }
@@ -54,7 +54,9 @@ export default async function handler(req, res) {
       member_status: memberStatus,
       status: "new",
     };
-    const cleanDetails = details && typeof details === "object" ? details : {};
+    const cleanDetails = details && typeof details === "object" ? { ...details } : {};
+    if (wants_sms) cleanDetails._wants_sms = "yes";
+    if (terms_accepted) cleanDetails._terms_accepted_at = new Date().toISOString();
 
     let insertRes = await fetch(`${SUPABASE_URL}/rest/v1/submissions`, {
       method: "POST",

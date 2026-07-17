@@ -92,6 +92,13 @@ export default async function handler(req, res) {
     ${upsell}
     <p style="margin-top:22px">If anything else feels off — even something small — you know where I am.</p>
     <p>Kieran<br/><span style="color:#777">Second Look Protect · part of Learn AI Fast · 07563 887804</span></p>
+    <p style="font-size:11px;color:#888;border-top:1px solid #eee;padding-top:12px;margin-top:18px">
+      Important: this report is guidance only, based on the information you provided. It is not
+      legal or financial advice and cannot guarantee whether something is or isn't a scam.
+      Decisions — including any payments or sharing of information — remain your own
+      responsibility. If you have lost money, contact your bank immediately and report it to
+      Action Fraud on 0300 123 2040 (actionfraud.police.uk).
+    </p>
   </div>
 </div>`;
 
@@ -112,13 +119,49 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: "Email failed to send" });
     }
 
+    /* Optional SMS copy of the verdict (Twilio, env-gated) */
+    let smsResult = "not_requested";
+    const wantsSms = sub.details && sub.details._wants_sms === "yes" && sub.phone;
+    if (wantsSms) {
+      const TW_SID = process.env.TWILIO_ACCOUNT_SID;
+      const TW_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+      const TW_FROM = process.env.TWILIO_FROM;
+      if (TW_SID && TW_TOKEN && TW_FROM) {
+        try {
+          let to = String(sub.phone).replace(/[\s()-]/g, "");
+          if (to.startsWith("07")) to = "+44" + to.slice(1);
+          else if (to.startsWith("44")) to = "+" + to;
+          const smsBody =
+            `Second Look Protect ${verdictLabel.emoji}: ${verdictLabel.label}. ` +
+            `${finalHeadline} Your full report + what to do now is in your email. ` +
+            `Guidance only, not financial advice. Lost money? Call your bank & Action Fraud 0300 123 2040.`;
+          const tw = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TW_SID}/Messages.json`, {
+            method: "POST",
+            headers: {
+              Authorization: "Basic " + Buffer.from(`${TW_SID}:${TW_TOKEN}`).toString("base64"),
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({ To: to, From: TW_FROM, Body: smsBody }),
+          });
+          smsResult = tw.ok ? "sent" : "failed";
+          if (!tw.ok) console.error("[approve-send] Twilio failed:", tw.status, await tw.text().catch(() => ""));
+        } catch (e) {
+          smsResult = "failed";
+          console.error("[approve-send] Twilio error:", e.message || e);
+        }
+      } else {
+        smsResult = "skipped_no_provider";
+        console.warn("[approve-send] SMS requested but Twilio env vars not set — email sent only");
+      }
+    }
+
     await fetch(`${SUPABASE_URL}/rest/v1/submissions?id=eq.${sub.id}`, {
       method: "PATCH",
       headers: sb,
       body: JSON.stringify({ status: "sent", sent_at: new Date().toISOString() }),
     });
 
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true, sms: smsResult });
   } catch (e) {
     console.error("[approve-send] Error:", e.message || e);
     return res.status(500).json({ ok: false, error: "Unexpected error" });

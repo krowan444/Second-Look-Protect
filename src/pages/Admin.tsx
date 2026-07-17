@@ -25,6 +25,8 @@ const DETAIL_LABELS: Record<string, string> = {
   website_url: "Website URL",
   platform: "Platform",
   profile_name: "Profile name",
+  _wants_sms: "📱 Wants report by text",
+  _terms_accepted_at: "✅ Accepted guidance terms",
 };
 
 type Report = {
