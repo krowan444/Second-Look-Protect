@@ -1,12 +1,32 @@
 const PAYMENT_LINK = (import.meta.env.VITE_STRIPE_PAYMENT_LINK as string) || "/check";
 
+export function Logo({ size = 34 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true" className="shrink-0">
+      <defs>
+        <clipPath id="slp-shield">
+          <path d="M50 6 L89 19 V49 C89 72 71 88 50 95 C29 88 11 72 11 49 V19 Z" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#slp-shield)">
+        <rect x="0" y="0" width="50" height="100" fill="#1c3527" />
+        <rect x="50" y="0" width="50" height="100" fill="#c9932b" />
+      </g>
+      <path d="M30 52 L44 66 L72 34" fill="none" stroke="#faf7f0" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function Nav() {
   return (
     <header className="bg-white/90 backdrop-blur border-b border-green/10 sticky top-0 z-20">
       <div className="max-w-5xl mx-auto flex items-center justify-between px-5 py-3">
-        <a href="/" className="no-underline">
-          <span className="font-display font-bold text-xl text-green">Second Look <em className="text-gold not-italic">Protect</em></span>
-          <span className="block text-[11px] font-semibold text-green-soft">A calm second opinion before you act</span>
+        <a href="/" className="no-underline flex items-center gap-2.5">
+          <Logo size={36} />
+          <span>
+            <span className="font-display font-bold text-xl text-green">Second Look <em className="text-gold not-italic">Protect</em></span>
+            <span className="block text-[11px] font-semibold text-green-soft">A calm second opinion before you act</span>
+          </span>
         </a>
         <div className="flex items-center gap-3">
           <a href="tel:07563887804" className="hidden sm:block text-sm font-bold text-green no-underline">07563 887804</a>
@@ -224,8 +244,11 @@ export default function Home() {
       {/* FOOTER */}
       <footer className="bg-green-deep text-cream/80 text-sm">
         <div className="max-w-5xl mx-auto px-5 py-8">
-          <div className="flex flex-wrap justify-between gap-4">
-            <span className="font-display text-cream text-lg">Second Look <span className="text-gold">Protect</span></span>
+          <div className="flex flex-wrap justify-between gap-4 items-center">
+            <span className="flex items-center gap-2.5">
+              <Logo size={28} />
+              <span className="font-display text-cream text-lg">Second Look <span className="text-gold">Protect</span></span>
+            </span>
             <span>
               📞 <a href="tel:07563887804" className="text-cream/90">07563 887804</a> · hello@learnaifast.co.uk ·
               part of <a href="https://www.learnaifast.co.uk" className="text-cream/90">Learn AI Fast</a> · © 2026
