@@ -1,6 +1,6 @@
 const PAYMENT_LINK = (import.meta.env.VITE_STRIPE_PAYMENT_LINK as string) || "/check";
-/* Swap for a Second Look Protect-branded Stripe payment link via env when ready */
-const SESSION_LINK = (import.meta.env.VITE_SESSION_LINK as string) || "https://www.learnaifast.co.uk/ai-scam-safety-session";
+/* Second Look Protect-branded Stripe payment link for the AI Scam Safety Session */
+const SESSION_LINK = (import.meta.env.VITE_SESSION_LINK as string) || "https://buy.stripe.com/dRm6oHei8dlKdfk4i4dby05";
 
 export function Logo({ size = 34 }: { size?: number }) {
   return (
