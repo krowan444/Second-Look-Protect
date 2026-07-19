@@ -38,22 +38,26 @@ export default function Home() {
 
         <div className="relative max-w-5xl mx-auto px-5 py-14 md:py-28">
           <div className="md:max-w-[48%] text-center md:text-left">
-            <p className="uppercase tracking-widest text-gold font-bold text-xs mb-4">No jargon · No judgement · A real person replies</p>
+            <p className="uppercase tracking-widest text-gold font-bold text-xs mb-4">Stay safe from AI-powered scams</p>
             <h1 className="text-4xl md:text-5xl font-bold leading-tight m-0">
-              Not sure if it's a scam? <span className="text-gold italic">We'll tell you</span> — for free.
+              Don't face today's scams alone. <span className="text-gold italic">Get a Second Look</span> first.
             </h1>
             <p className="mt-5 text-lg text-ink/80">
-              Send us any suspicious text, email, phone call, letter or website. You'll get a clear,
-              plain-English answer — <strong>scam or safe</strong> — and exactly what to do next.
-              Usually the same day.
+              Fake bank calls, cloned voices, perfect phishing emails — AI has made scams harder than
+              ever to spot. Send us anything suspicious and we'll tell you, in plain English:
+              <strong> scam or safe</strong>, and exactly what to do next. A real person, on your side,
+              usually the same day.
             </p>
             <div className="mt-8 flex flex-wrap justify-center md:justify-start gap-3">
               <a href="/check" className="bg-green text-cream font-semibold px-7 py-3.5 rounded-full no-underline text-lg">
-                Check something now — free
+                Try your first check free
+              </a>
+              <a href="#peace-of-mind" className="border-2 border-green text-green font-semibold px-6 py-3 rounded-full no-underline">
+                Peace of Mind · £9.99/mo
               </a>
             </div>
             <p className="mt-4 text-sm text-green-soft">
-              No card details. Nothing to install. Reviewed by a real person in Northampton.
+              First check free · No jargon · No judgement · Nothing to install
             </p>
           </div>
         </div>
