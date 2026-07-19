@@ -126,12 +126,8 @@ export default function CheckForm() {
       const subData = await subRes.json().catch(() => ({ ok: false, error: "Something went wrong" }));
       if (!subData.ok) throw new Error(subData.error || "Something went wrong");
 
-      setPhase("analyzing");
-      await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ submission_id: subData.id }),
-      }).catch(() => {});
+      /* AI analysis is deliberately NOT triggered here — Kieran approves each
+         check in /admin first, so the public form can't burn API credits. */
       setPhase("done");
     } catch (err: any) {
       setError(err.message || "Something went wrong — please try again or call 07563 887804.");

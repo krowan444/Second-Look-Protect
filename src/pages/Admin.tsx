@@ -94,11 +94,16 @@ export default function Admin() {
   async function runAnalysis() {
     if (!selected) return;
     setBusy("Running AI analysis…");
-    await fetch("/api/analyze", {
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    const res = await fetch("/api/analyze", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ submission_id: selected.id }),
     });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      alert("Analysis failed: " + (d.error || `server error ${res.status}`));
+    }
     await open(selected);
     setBusy("");
   }
