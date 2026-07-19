@@ -98,6 +98,7 @@ export default async function handler(req, res) {
         `<p>${Array.isArray(row.image_paths) && row.image_paths.length ? row.image_paths.length + " screenshot(s) attached" : "No screenshots"}</p>` +
         `<p><a href="${caseUrl}">Open this case in your dashboard</a></p>`,
       whatsappText: `🔍 New scam check from ${row.name} (${badge}). Open the case: ${caseUrl}`,
+      smsText: `Second Look admin: new check from ${row.name} (${memberStatus}). Approve to run the AI: ${caseUrl}`,
     });
 
     return res.status(200).json({ ok: true, id: row.id, member_status: memberStatus });

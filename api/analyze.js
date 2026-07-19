@@ -3,6 +3,8 @@
 //   2. Structured triage → verdict, risk, plain-English report (GPT-4o-mini)
 //   3. Gemini web-research corroboration of extracted numbers/links/emails
 // Idempotent: safe to call twice for the same submission.
+// Auth: admin-only. Kieran approves each check in /admin before the AI runs,
+// so nobody can burn API credits by spamming the public form or this endpoint.
 import { notifyKieran } from "./_notify.js";
 
 export default async function handler(req, res) {
@@ -16,6 +18,14 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: "Server not configured" });
   }
   const sb = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" };
+
+  /* Verify the caller is the logged-in admin (same check as approve-send) */
+  const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(401).json({ ok: false, error: "Not authorised" });
+  const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${token}` },
+  });
+  if (!userRes.ok) return res.status(401).json({ ok: false, error: "Not authorised" });
 
   try {
     const { submission_id } = req.body || {};
@@ -249,6 +259,7 @@ SOURCES: [comma-separated URLs, or "none"]`,
         `<p>${report.headline || ""}</p>` +
         `<p><a href="${caseUrl}">Review &amp; approve this case</a></p>`,
       whatsappText: `${verdictEmoji} AI report ready for ${sub.name}: ${report.verdict} (${report.risk_level}). Review & approve: ${caseUrl}`,
+      smsText: `Second Look admin: AI report ready for ${sub.name} - ${report.verdict} (${report.risk_level}). Review & approve: ${caseUrl}`,
     });
 
     return res.status(200).json({ ok: true });
