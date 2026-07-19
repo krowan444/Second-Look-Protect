@@ -119,39 +119,38 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: "Email failed to send" });
     }
 
-    /* Optional SMS copy of the verdict (Twilio, env-gated) */
+    /* Optional SMS copy of the verdict (The SMS Works, env-gated) */
     let smsResult = "not_requested";
     const wantsSms = sub.details && sub.details._wants_sms === "yes" && sub.phone;
     if (wantsSms) {
-      const TW_SID = process.env.TWILIO_ACCOUNT_SID;
-      const TW_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-      const TW_FROM = process.env.TWILIO_FROM;
-      if (TW_SID && TW_TOKEN && TW_FROM) {
+      const SMSWORKS_JWT = process.env.SMSWORKS_JWT;
+      const SMS_SENDER = process.env.SMS_SENDER || "SecondLook";
+      if (SMSWORKS_JWT) {
         try {
-          let to = String(sub.phone).replace(/[\s()-]/g, "");
-          if (to.startsWith("07")) to = "+44" + to.slice(1);
-          else if (to.startsWith("44")) to = "+" + to;
+          let to = String(sub.phone).replace(/[\s()+-]/g, "");
+          if (to.startsWith("07")) to = "44" + to.slice(1);
+          /* No emojis in SMS — they force UTF-16 encoding (70-char segments = 4x cost) */
           const smsBody =
-            `Second Look Protect ${verdictLabel.emoji}: ${verdictLabel.label}. ` +
+            `Second Look Protect: ${verdictLabel.label}. ` +
             `${finalHeadline} Your full report + what to do now is in your email. ` +
             `Guidance only, not financial advice. Lost money? Call your bank & Action Fraud 0300 123 2040.`;
-          const tw = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TW_SID}/Messages.json`, {
+          const sw = await fetch("https://api.thesmsworks.co.uk/v1/message/send", {
             method: "POST",
             headers: {
-              Authorization: "Basic " + Buffer.from(`${TW_SID}:${TW_TOKEN}`).toString("base64"),
-              "Content-Type": "application/x-www-form-urlencoded",
+              Authorization: SMSWORKS_JWT,
+              "Content-Type": "application/json",
             },
-            body: new URLSearchParams({ To: to, From: TW_FROM, Body: smsBody }),
+            body: JSON.stringify({ sender: SMS_SENDER, destination: to, content: smsBody }),
           });
-          smsResult = tw.ok ? "sent" : "failed";
-          if (!tw.ok) console.error("[approve-send] Twilio failed:", tw.status, await tw.text().catch(() => ""));
+          smsResult = sw.ok ? "sent" : "failed";
+          if (!sw.ok) console.error("[approve-send] SMS Works failed:", sw.status, await sw.text().catch(() => ""));
         } catch (e) {
           smsResult = "failed";
-          console.error("[approve-send] Twilio error:", e.message || e);
+          console.error("[approve-send] SMS Works error:", e.message || e);
         }
       } else {
         smsResult = "skipped_no_provider";
-        console.warn("[approve-send] SMS requested but Twilio env vars not set — email sent only");
+        console.warn("[approve-send] SMS requested but SMSWORKS_JWT not set — email sent only");
       }
     }
 
