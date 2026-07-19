@@ -91,7 +91,7 @@ export default async function handler(req, res) {
     ${personal_note ? `<p style="background:#eef3ee;border-radius:10px;padding:14px"><strong>A note from Kieran:</strong> ${personal_note}</p>` : ""}
     ${upsell}
     <p style="margin-top:22px">If anything else feels off — even something small — you know where I am.</p>
-    <p>Kieran<br/><span style="color:#777">Second Look Protect · part of Learn AI Fast · 07563 887804</span></p>
+    <p>Kieran<br/><span style="color:#777">Second Look Protect · part of Learn AI Fast · hello@learnaifast.co.uk</span></p>
     <p style="font-size:11px;color:#888;border-top:1px solid #eee;padding-top:12px;margin-top:18px">
       Important: this report is guidance only, based on the information you provided. It is not
       legal or financial advice and cannot guarantee whether something is or isn't a scam.
