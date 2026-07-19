@@ -29,7 +29,6 @@ function Nav() {
           </span>
         </a>
         <div className="flex items-center gap-3">
-          <a href="tel:07563887804" className="hidden sm:block text-sm font-bold text-green no-underline">07563 887804</a>
           <a href="/check" className="bg-gold hover:bg-gold-soft text-green-deep font-semibold text-sm px-4 py-2 rounded-full no-underline">
             Free scam check
           </a>
@@ -163,7 +162,7 @@ export default function Home() {
               <h3 className="text-xl font-bold mt-0 text-cream">Peace of Mind</h3>
               <div className="font-display text-4xl font-bold text-gold">£9.99<span className="text-lg">/month</span></div>
               <ul className="text-left text-cream/90 text-sm space-y-2 my-4 list-none p-0">
-                <li>✓ A real person to call before you act on anything</li>
+                <li>✓ A real person reviewing every check before you act</li>
                 <li>✓ Unlimited scam checks for your whole household</li>
                 <li>✓ Priority review — members go to the front of the queue</li>
                 <li>✓ Family Safe Word set up with you, step by step</li>
@@ -250,7 +249,7 @@ export default function Home() {
               <span className="font-display text-cream text-lg">Second Look <span className="text-gold">Protect</span></span>
             </span>
             <span>
-              📞 <a href="tel:07563887804" className="text-cream/90">07563 887804</a> · hello@learnaifast.co.uk ·
+              hello@learnaifast.co.uk ·
               part of <a href="https://www.learnaifast.co.uk" className="text-cream/90">Learn AI Fast</a> · © 2026
             </span>
           </div>

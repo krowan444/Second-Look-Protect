@@ -130,7 +130,7 @@ export default function CheckForm() {
          check in /admin first, so the public form can't burn API credits. */
       setPhase("done");
     } catch (err: any) {
-      setError(err.message || "Something went wrong — please try again or call 07563 887804.");
+      setError(err.message || "Something went wrong — please try again, or email hello@learnaifast.co.uk.");
       setPhase("error");
     }
   }
@@ -319,7 +319,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <a href="/" className="no-underline font-display font-bold text-xl text-green">
             Second Look <em className="text-gold not-italic">Protect</em>
           </a>
-          <a href="tel:07563887804" className="text-sm font-bold text-green no-underline">07563 887804</a>
+          <span className="text-sm font-semibold text-green-soft">A calm second opinion before you act</span>
         </div>
       </header>
       <main className="px-5">{children}</main>
