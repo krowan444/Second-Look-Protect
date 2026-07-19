@@ -1,8 +1,9 @@
-// api/_notify.js — shared helper: email + WhatsApp + SMS notifications to Kieran.
+// api/_notify.js — shared helper: email + WhatsApp notifications to Kieran.
+// (SMS via The SMS Works is reserved for customer reports — see approve-send.js.)
 // (Files starting with "_" are not exposed as routes by Vercel.)
 
-export async function notifyKieran({ subject, html, whatsappText, smsText }) {
-  const results = { email: false, whatsapp: false, sms: false };
+export async function notifyKieran({ subject, html, whatsappText }) {
+  const results = { email: false, whatsapp: false };
 
   /* Email to hello@learnaifast.co.uk via Resend */
   try {
@@ -43,27 +44,6 @@ export async function notifyKieran({ subject, html, whatsappText, smsText }) {
     }
   } catch (e) {
     console.error("[notify] WhatsApp error:", e.message || e);
-  }
-
-  /* SMS to Kieran's phone via The SMS Works */
-  try {
-    const SMSWORKS_JWT = process.env.SMSWORKS_JWT;
-    const ADMIN_SMS_PHONE = process.env.ADMIN_SMS_PHONE; // e.g. 447563887804
-    const SMS_SENDER = process.env.SMS_SENDER || "SecondLook";
-    const body = smsText || whatsappText;
-    if (SMSWORKS_JWT && ADMIN_SMS_PHONE && body) {
-      const res = await fetch("https://api.thesmsworks.co.uk/v1/message/send", {
-        method: "POST",
-        headers: { Authorization: SMSWORKS_JWT, "Content-Type": "application/json" },
-        body: JSON.stringify({ sender: SMS_SENDER, destination: ADMIN_SMS_PHONE, content: body.slice(0, 640) }),
-      });
-      results.sms = res.ok;
-      if (!res.ok) console.error("[notify] SMS Works error:", res.status, await res.text().catch(() => ""));
-    } else if (!SMSWORKS_JWT || !ADMIN_SMS_PHONE) {
-      console.warn("[notify] SMS skipped — SMSWORKS_JWT / ADMIN_SMS_PHONE not set");
-    }
-  } catch (e) {
-    console.error("[notify] SMS error:", e.message || e);
   }
 
   return results;

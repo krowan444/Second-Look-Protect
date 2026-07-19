@@ -21,6 +21,11 @@ export default async function handler(req, res) {
     if (!name || !email || !description) {
       return res.status(400).json({ ok: false, error: "name, email and description are required" });
     }
+    /* Server-side enforcement of the guidance-not-advice consent —
+       the form requires it, but reject direct API calls without it too. */
+    if (!terms_accepted) {
+      return res.status(400).json({ ok: false, error: "You must confirm you understand this is guidance, not financial or legal advice." });
+    }
     const cleanEmail = String(email).trim().toLowerCase();
 
     /* 1. Membership status */
@@ -97,8 +102,7 @@ export default async function handler(req, res) {
         `<p style="white-space:pre-wrap">${(row.description || "").slice(0, 1000)}</p>` +
         `<p>${Array.isArray(row.image_paths) && row.image_paths.length ? row.image_paths.length + " screenshot(s) attached" : "No screenshots"}</p>` +
         `<p><a href="${caseUrl}">Open this case in your dashboard</a></p>`,
-      whatsappText: `🔍 New scam check from ${row.name} (${badge}). Open the case: ${caseUrl}`,
-      smsText: `Second Look admin: new check from ${row.name} (${memberStatus}). Approve to run the AI: ${caseUrl}`,
+      whatsappText: `🔍 New scam check from ${row.name} (${badge}). Approve to run the AI: ${caseUrl}`,
     });
 
     return res.status(200).json({ ok: true, id: row.id, member_status: memberStatus });

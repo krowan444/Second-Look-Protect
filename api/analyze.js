@@ -259,7 +259,6 @@ SOURCES: [comma-separated URLs, or "none"]`,
         `<p>${report.headline || ""}</p>` +
         `<p><a href="${caseUrl}">Review &amp; approve this case</a></p>`,
       whatsappText: `${verdictEmoji} AI report ready for ${sub.name}: ${report.verdict} (${report.risk_level}). Review & approve: ${caseUrl}`,
-      smsText: `Second Look admin: AI report ready for ${sub.name} - ${report.verdict} (${report.risk_level}). Review & approve: ${caseUrl}`,
     });
 
     return res.status(200).json({ ok: true });
