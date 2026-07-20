@@ -121,7 +121,13 @@ export default async function handler(req, res) {
 
     /* Optional SMS copy of the verdict (The SMS Works, env-gated) */
     let smsResult = "not_requested";
-    const wantsSms = sub.details && sub.details._wants_sms === "yes" && sub.phone;
+    /* The "_wants_sms" flag lives in the details column when the DB migration
+       has been run, but falls back to being folded into the description text
+       otherwise — check both so the SMS fires either way. */
+    const wantsSmsFlag =
+      (sub.details && sub.details._wants_sms === "yes") ||
+      (typeof sub.description === "string" && sub.description.includes('"_wants_sms":"yes"'));
+    const wantsSms = wantsSmsFlag && sub.phone;
     if (wantsSms) {
       const SMSWORKS_JWT = process.env.SMSWORKS_JWT;
       const SMS_SENDER = process.env.SMS_SENDER || "SecondLook";
