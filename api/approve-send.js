@@ -128,6 +128,7 @@ export default async function handler(req, res) {
       (sub.details && sub.details._wants_sms === "yes") ||
       (typeof sub.description === "string" && sub.description.includes('"_wants_sms":"yes"'));
     const wantsSms = wantsSmsFlag && sub.phone;
+    let smsError = null;
     if (wantsSms) {
       const SMSWORKS_JWT = process.env.SMSWORKS_JWT;
       const SMS_SENDER = process.env.SMS_SENDER || "SecondLook";
@@ -149,9 +150,13 @@ export default async function handler(req, res) {
             body: JSON.stringify({ sender: SMS_SENDER, destination: to, content: smsBody }),
           });
           smsResult = sw.ok ? "sent" : "failed";
-          if (!sw.ok) console.error("[approve-send] SMS Works failed:", sw.status, await sw.text().catch(() => ""));
+          if (!sw.ok) {
+            smsError = "HTTP " + sw.status + " " + (await sw.text().catch(() => "")).slice(0, 400);
+            console.error("[approve-send] SMS Works failed:", smsError);
+          }
         } catch (e) {
           smsResult = "failed";
+          smsError = "exception: " + (e.message || String(e));
           console.error("[approve-send] SMS Works error:", e.message || e);
         }
       } else {
@@ -166,7 +171,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({ status: "sent", sent_at: new Date().toISOString() }),
     });
 
-    return res.status(200).json({ ok: true, sms: smsResult });
+    return res.status(200).json({ ok: true, sms: smsResult, sms_error: smsError });
   } catch (e) {
     console.error("[approve-send] Error:", e.message || e);
     return res.status(500).json({ ok: false, error: "Unexpected error" });
