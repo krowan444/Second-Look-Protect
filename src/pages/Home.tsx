@@ -1,6 +1,6 @@
 const PAYMENT_LINK = (import.meta.env.VITE_STRIPE_PAYMENT_LINK as string) || "/check";
-/* Second Look Protect-branded Stripe payment link for the AI Scam Safety Session */
-const SESSION_LINK = (import.meta.env.VITE_SESSION_LINK as string) || "https://buy.stripe.com/dRm6oHei8dlKdfk4i4dby05";
+/* AI Scam Safety Session — booked via cal.com (same as Learn AI Fast); pick a time then pay by card */
+const SESSION_LINK = (import.meta.env.VITE_SESSION_LINK as string) || "https://cal.com/kieran-rowan-tiujdp";
 
 export function Logo({ size = 34 }: { size?: number }) {
   return (
@@ -220,10 +220,10 @@ export default function Home() {
               <li>✓ Create your own Family Safe Word Plan</li>
             </ul>
             <div className="font-display text-4xl font-bold text-gold mb-4">£79.99</div>
-            <a href={SESSION_LINK} className="inline-block bg-gold text-green-deep font-semibold px-6 py-3 rounded-full no-underline">
+            <a href={SESSION_LINK} target="_blank" rel="noopener" className="inline-block bg-gold text-green-deep font-semibold px-6 py-3 rounded-full no-underline">
               Book your session
             </a>
-            <p className="text-sm mt-4 mb-0 text-cream/70">Beginner-friendly · A lovely gift for parents and grandparents</p>
+            <p className="text-sm mt-4 mb-0 text-cream/70">Pick a time that suits you · Secure card payment at booking · A lovely gift for parents and grandparents</p>
           </div>
         </div>
       </section>
