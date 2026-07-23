@@ -241,6 +241,7 @@ export default function Home() {
               ["What if I've already clicked or paid?", "Send it over anyway — straight away. Your report will tell you exactly what to do next, and acting fast makes a real difference."],
               ["What does it cost?", "Your first check is completely free, with no card details. After that, Peace of Mind is £9.99 a month for unlimited checks for your whole household — cancel any time."],
               ["I'm a Peace of Mind member — how do you know it's me?", "There's no login and nothing to remember. Just use the same email address you joined with when you send a check — we recognise it automatically and you go straight to the front of the queue."],
+              ["How do I cancel?", "Any time, in under a minute, with no phone call needed. Use the 'Manage or cancel your plan' link at the bottom of this page — enter the email you joined with and you'll be sent a secure link to cancel instantly. Prefer to just ask? Email hello@learnaifast.co.uk and we'll sort it the same day."],
             ].map(([q, a]) => (
               <details key={q} className="bg-white border border-gold/20 rounded-2xl px-6 py-4 shadow-sm">
                 <summary className="font-bold text-green cursor-pointer">{q}</summary>
@@ -277,11 +278,17 @@ export default function Home() {
               <span className="font-display text-cream text-lg">Second Look <span className="text-gold">Protect</span></span>
             </span>
             <span>
-              hello@learnaifast.co.uk ·
+              📞 07563 887804 · hello@learnaifast.co.uk ·
               part of <a href="https://www.learnaifast.co.uk" className="text-cream/90">Learn AI Fast</a> · © 2026
             </span>
           </div>
-          <p className="text-cream/60 text-xs mt-4 mb-0">
+          <p className="text-cream/70 text-xs mt-4 mb-0">
+            <a href="https://billing.stripe.com/p/login/dRm8wPde41D2a385m8dby00" target="_blank" rel="noopener" className="text-cream/90">
+              Manage or cancel your plan
+            </a>{" "}
+            — takes under a minute, no phone call needed.
+          </p>
+          <p className="text-cream/60 text-xs mt-2 mb-0">
             Your details and anything you send us are kept private — never shared or sold. Reports are guidance,
             not financial or legal advice.
           </p>
