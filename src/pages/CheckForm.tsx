@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
+import { Logo } from "./Home";
+
+const STEP_LABELS = ["What to check", "What happened", "Your details"];
 
 type Phase = "form" | "uploading" | "analyzing" | "done" | "error";
 
@@ -138,18 +141,21 @@ export default function CheckForm() {
   if (phase === "done") {
     return (
       <Shell>
-        <div className="text-center py-16 max-w-xl mx-auto">
-          <div className="text-5xl mb-4">🌱</div>
-          <h1 className="text-3xl font-bold">It's with us — well done for checking first.</h1>
-          <p className="text-lg text-ink/80">
-            Your request is in and Kieran has been notified. You'll get your plain-English
-            report by email — usually the same day, often much sooner.
-          </p>
-          <p className="text-green-soft">
-            Important: until you hear back, don't click any links, don't call any numbers
-            from the message, and don't send any money.
-          </p>
-          <a href="/" className="inline-block mt-4 border-2 border-green text-green font-semibold px-5 py-2.5 rounded-full no-underline">Back to home</a>
+        <div className="max-w-xl mx-auto py-12">
+          <div className="bg-white border border-gold/20 rounded-2xl shadow-md p-8 md:p-10 text-center">
+            <div className="text-5xl mb-4">🌱</div>
+            <h1 className="text-3xl font-bold mt-0">It's with us — well done for checking first.</h1>
+            <p className="text-lg text-ink/80">
+              Your request is in and Kieran is personally reviewing it. A confirmation is on its
+              way to your inbox now{wantsSms ? " (and by text)" : ""}, and your plain-English report
+              will follow — usually the same day, often much sooner.
+            </p>
+            <p className="bg-cream-2 rounded-xl p-4 text-ink/80 text-sm">
+              <strong>While you wait:</strong> it's safest to hold off clicking any links, calling
+              any numbers from the message, or sending any money — just until you have your answer.
+            </p>
+            <a href="/" className="inline-block mt-4 border-2 border-green text-green font-semibold px-6 py-3 rounded-full no-underline hover:bg-green hover:text-cream transition-colors">Back to home</a>
+          </div>
         </div>
       </Shell>
     );
@@ -161,11 +167,18 @@ export default function CheckForm() {
   return (
     <Shell>
       <div className="max-w-xl mx-auto py-8 px-1">
-        {/* progress dots */}
-        <div className="flex justify-center gap-2 mb-6">
-          {[0, 1, 2].map((i) => (
-            <span key={i} className={`w-2.5 h-2.5 rounded-full ${i <= step ? "bg-gold" : "bg-green/15"}`} />
-          ))}
+        {/* progress bar */}
+        <div className="mb-7">
+          <div className="flex justify-between items-baseline mb-2">
+            <span className="text-sm font-bold text-green">Step {step + 1} of 3 · {STEP_LABELS[step]}</span>
+            {step > 0 && <span className="text-xs text-green-soft">nearly there</span>}
+          </div>
+          <div className="h-2 bg-green/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gold rounded-full transition-all duration-500"
+              style={{ width: `${((step + 1) / 3) * 100}%` }}
+            />
+          </div>
         </div>
 
         {/* ── STEP 0: what are you checking? ── */}
@@ -178,7 +191,7 @@ export default function CheckForm() {
                 <button
                   key={t.id}
                   onClick={() => pickType(t.id)}
-                  className="flex items-center gap-4 bg-white border-2 border-green/15 hover:border-gold rounded-2xl px-5 py-4 text-left"
+                  className="flex items-center gap-4 bg-white border-2 border-green/15 hover:border-gold rounded-2xl px-5 py-5 text-left shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
                 >
                   <span className="text-3xl">{t.icon}</span>
                   <span>
@@ -243,9 +256,9 @@ export default function CheckForm() {
               </Field>
               <button
                 onClick={() => description.trim() ? (setStep(2), window.scrollTo({ top: 0 })) : setError("Please tell us what happened first.")}
-                className="w-full bg-green text-cream font-bold text-lg py-3.5 rounded-full"
+                className="w-full bg-green hover:bg-green-deep text-cream font-bold text-lg py-4 rounded-full shadow-sm transition-colors"
               >
-                Continue
+                Continue →
               </button>
               {error && <p className="text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">{error}</p>}
             </div>
@@ -291,8 +304,8 @@ export default function CheckForm() {
                 </span>
               </label>
               {error && <p className="text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">{error}</p>}
-              <button type="submit" disabled={busy} className="w-full bg-gold hover:bg-gold-soft text-green-deep font-bold text-lg py-3.5 rounded-full disabled:opacity-60">
-                {phase === "uploading" ? "Sending securely…" : phase === "analyzing" ? "Analysing — about 30 seconds…" : "Get my second look"}
+              <button type="submit" disabled={busy} className="w-full bg-gold hover:bg-gold-soft text-green-deep font-bold text-lg py-4 rounded-full shadow-sm transition-colors disabled:opacity-60">
+                {phase === "uploading" ? "Sending securely…" : phase === "analyzing" ? "Sending securely…" : "Get my Second Look ✓"}
               </button>
               <p className="text-center text-sm text-green-soft m-0">First check free · Reviewed by a real person · Nothing is shared with anyone else</p>
             </form>
@@ -304,7 +317,7 @@ export default function CheckForm() {
 }
 
 const inputCls =
-  "w-full border-2 border-green/20 focus:border-gold rounded-xl px-4 py-3 bg-white outline-none text-base";
+  "w-full border-2 border-green/20 focus:border-gold focus:ring-4 focus:ring-gold/15 rounded-xl px-4 py-3.5 bg-white outline-none text-base transition-colors";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -320,10 +333,13 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen">
       <header className="bg-white/90 border-b border-green/10">
         <div className="max-w-5xl mx-auto flex items-center justify-between px-5 py-3">
-          <a href="/" className="no-underline font-display font-bold text-xl text-green">
-            Second Look <em className="text-gold not-italic">Protect</em>
+          <a href="/" className="no-underline flex items-center gap-2.5">
+            <Logo size={32} />
+            <span className="font-display font-bold text-xl text-green">
+              Second Look <em className="text-gold not-italic">Protect</em>
+            </span>
           </a>
-          <span className="text-sm font-semibold text-green-soft">A calm second opinion before you act</span>
+          <span className="hidden sm:block text-sm font-semibold text-green-soft">A calm second opinion before you act</span>
         </div>
       </header>
       <main className="px-5">{children}</main>
