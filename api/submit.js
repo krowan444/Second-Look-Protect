@@ -105,6 +105,60 @@ export default async function handler(req, res) {
       whatsappText: `🔍 New scam check from ${row.name} (${badge}). Approve to run the AI: ${caseUrl}`,
     });
 
+    /* 4. Acknowledge to the customer (non-blocking) — email always, SMS if requested */
+    const firstName = String(row.name || "").trim().split(/\s+/)[0] || "there";
+    try {
+      const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      const EMAIL_FROM = process.env.EMAIL_FROM;
+      if (RESEND_API_KEY && EMAIL_FROM) {
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+          body: JSON.stringify({
+            from: EMAIL_FROM,
+            to: [row.email],
+            reply_to: process.env.ADMIN_NOTIFY_EMAIL || "hello@learnaifast.co.uk",
+            subject: `🌱 We've got it, ${firstName} — your Second Look is underway`,
+            html:
+              `<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#26251f">` +
+              `<h2 style="color:#1c3527">It's safely with us — well done for checking first.</h2>` +
+              `<p>Hi ${firstName},</p>` +
+              `<p>Your request has come through and I'm personally looking at it. You'll get your ` +
+              `plain-English report by email${row.details && row.details._wants_sms === "yes" ? " (and a text with the verdict)" : ""} — usually within a few hours, always the same day.</p>` +
+              `<p style="background:#f6f1e4;border-radius:10px;padding:14px"><strong>Until you hear back:</strong> ` +
+              `don't click any links, don't call any numbers from the message, and don't send any money. ` +
+              `If you've already shared bank details, call your bank now using the number on the back of your card.</p>` +
+              `<p>Checking first is exactly the right thing to do — most scams rely on people rushing. You didn't.</p>` +
+              `<p>Kieran<br/><span style="color:#777">Second Look Protect · A calm second opinion before you act</span></p>` +
+              `<p style="font-size:11px;color:#888;border-top:1px solid #eee;padding-top:12px">` +
+              `Our reports are guidance based on the information you provide — not legal or financial advice.</p>` +
+              `</div>`,
+          }),
+        });
+      }
+    } catch (e) {
+      console.error("[submit] Customer ack email failed (non-blocking):", e.message || e);
+    }
+    try {
+      const SMSWORKS_JWT = process.env.SMSWORKS_JWT;
+      const SMS_SENDER = process.env.SMS_SENDER || "SecondLook";
+      if (SMSWORKS_JWT && wants_sms && row.phone) {
+        let to = String(row.phone).replace(/[\s()+-]/g, "");
+        if (to.startsWith("07")) to = "44" + to.slice(1);
+        await fetch("https://api.thesmsworks.co.uk/v1/message/send", {
+          method: "POST",
+          headers: { Authorization: SMSWORKS_JWT, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sender: SMS_SENDER,
+            destination: to,
+            content: `Second Look Protect: got it, ${firstName} - Kieran is personally reviewing your check. Report usually within hours. Until then: no clicking links, no payments.`,
+          }),
+        });
+      }
+    } catch (e) {
+      console.error("[submit] Customer ack SMS failed (non-blocking):", e.message || e);
+    }
+
     return res.status(200).json({ ok: true, id: row.id, member_status: memberStatus });
   } catch (e) {
     console.error("[submit] Error:", e.message || e);
