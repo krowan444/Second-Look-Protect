@@ -172,9 +172,9 @@ export default function Admin() {
     `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/uploads/${p}`;
 
   return (
-    <div className="min-h-screen max-w-6xl mx-auto px-5 py-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold m-0">Second Look — review queue</h1>
+    <div className="min-h-screen max-w-6xl mx-auto px-4 py-6 overflow-x-hidden">
+      <div className="flex items-center justify-between mb-6 gap-3">
+        <h1 className="text-xl md:text-2xl font-bold m-0">Review queue</h1>
         <div className="flex gap-3 items-center">
           <button onClick={loadQueue} className="text-sm border-2 border-green/30 rounded-full px-4 py-1.5">Refresh</button>
           <button onClick={() => supabase.auth.signOut()} className="text-sm text-green-soft">Sign out</button>
@@ -190,14 +190,16 @@ export default function Admin() {
               <button
                 key={s.id}
                 onClick={() => open(s)}
-                className="w-full text-left bg-white border border-gold/20 rounded-xl px-5 py-4 flex flex-wrap items-center gap-3 hover:border-gold"
+                className="w-full text-left bg-white border border-gold/20 rounded-xl px-4 py-3.5 hover:border-gold active:scale-[0.99] transition-all"
               >
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${cls}`}>{label}</span>
-                <span className="font-semibold">{s.name}</span>
-                <span className="text-green-soft text-sm">{s.email}</span>
-                <span className="text-sm text-ink/60">{s.category}</span>
-                <span className="ml-auto text-xs font-bold uppercase tracking-wide text-green-soft">{s.status}</span>
-                <span className="text-xs text-ink/50">{new Date(s.created_at).toLocaleString("en-GB")}</span>
+                <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${cls}`}>{label}</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-green-soft">{s.status}</span>
+                  <span className="text-[11px] text-ink/45 ml-auto">{new Date(s.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                </div>
+                <div className="font-semibold leading-tight">{s.name}</div>
+                <div className="text-green-soft text-sm break-all">{s.email}</div>
+                <div className="text-xs text-ink/50 mt-0.5">{s.category}</div>
               </button>
             );
           })}
@@ -205,13 +207,13 @@ export default function Admin() {
       )}
 
       {selected && (
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 gap-5">
           <div>
-            <button onClick={() => setSelected(null)} className="text-sm text-green-soft mb-3">← Back to queue</button>
-            <div className="bg-white border border-gold/20 rounded-2xl p-6">
-              <h2 className="mt-0 text-xl">What {selected.name} sent</h2>
-              <p className="text-sm text-green-soft m-0">
-                {selected.email} {selected.phone && `· ${selected.phone}`} · {badge(selected.member_status)[0]} · {selected.category}
+            <button onClick={() => setSelected(null)} className="text-sm font-semibold text-green-soft mb-3">← Back to queue</button>
+            <div className="bg-white border border-gold/20 rounded-2xl p-5 md:p-6">
+              <h2 className="mt-0 text-lg md:text-xl">What {selected.name} sent</h2>
+              <p className="text-sm text-green-soft m-0 break-words">
+                <span className="break-all">{selected.email}</span> {selected.phone && `· ${selected.phone}`} · {badge(selected.member_status)[0]} · {selected.category}
               </p>
               {selected.details && Object.keys(selected.details).some((k) => selected.details![k]) && (
                 <div className="bg-cream-2 rounded-xl p-4 mt-4">
@@ -223,11 +225,11 @@ export default function Admin() {
                 </div>
               )}
               <h3 className="text-base mb-1 mt-4">Their description</h3>
-              <p className="whitespace-pre-wrap">{selected.description}</p>
+              <p className="whitespace-pre-wrap break-words">{selected.description}</p>
               {selected.pasted_text && (
                 <>
                   <h3 className="text-base mb-1">Pasted message</h3>
-                  <pre className="whitespace-pre-wrap bg-cream-2 rounded-xl p-4 text-sm font-body">{selected.pasted_text}</pre>
+                  <pre className="whitespace-pre-wrap break-words bg-cream-2 rounded-xl p-4 text-sm font-body">{selected.pasted_text}</pre>
                 </>
               )}
               {selected.image_paths?.length > 0 && (
@@ -247,14 +249,14 @@ export default function Admin() {
 
           <div>
             {!report ? (
-              <div className="bg-white border border-gold/20 rounded-2xl p-6 text-center">
+              <div className="bg-white border border-gold/20 rounded-2xl p-5 md:p-6 text-center">
                 <p>No AI report yet for this one.</p>
                 <button onClick={runAnalysis} disabled={!!busy} className="bg-green text-cream font-bold px-5 py-2.5 rounded-full">
                   {busy || "Run AI analysis"}
                 </button>
               </div>
             ) : (
-              <div className="bg-white border border-gold/20 rounded-2xl p-6 space-y-4">
+              <div className="bg-white border border-gold/20 rounded-2xl p-5 md:p-6 space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-cream-2">{report.verdict}</span>
                   <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-cream-2">risk: {report.risk_level}</span>
