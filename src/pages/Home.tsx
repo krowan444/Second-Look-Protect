@@ -207,24 +207,33 @@ export default function Home() {
 
       {/* AI SAFETY SESSION — cross-sell */}
       <section id="safety-session" className="py-14">
-        <div className="max-w-3xl mx-auto px-5">
-          <div className="bg-green text-cream rounded-2xl p-8 md:p-10 text-center shadow-md">
-            <p className="uppercase tracking-widest text-gold font-bold text-xs mt-0 mb-3">One-to-one with Kieran · 60 minutes · Zoom</p>
-            <h2 className="text-3xl font-bold text-cream mt-0">AI Scam Safety Session</h2>
-            <p className="text-cream/90 text-lg">
-              Learn how modern scams use AI, what to look for, and exactly what to do before you
-              reply, click or pay — calmly explained, no jargon, no scare tactics.
-            </p>
-            <ul className="text-left text-cream/90 space-y-2 my-5 list-none p-0 max-w-md mx-auto">
-              <li>✓ Spot cloned voices and deepfake videos</li>
-              <li>✓ Verify urgent messages safely, step by step</li>
-              <li>✓ Create your own Family Safe Word Plan</li>
-            </ul>
-            <div className="font-display text-4xl font-bold text-gold mb-4">£79.99</div>
-            <a href={SESSION_LINK} target="_blank" rel="noopener" className="inline-block bg-gold text-green-deep font-semibold px-6 py-3 rounded-full no-underline">
-              Book your session
-            </a>
-            <p className="text-sm mt-4 mb-0 text-cream/70">Pick a time that suits you · Secure card payment at booking · A lovely gift for parents and grandparents</p>
+        <div className="max-w-5xl mx-auto px-5">
+          <div className="bg-green text-cream rounded-2xl overflow-hidden shadow-md grid md:grid-cols-2">
+            <img
+              src="/session-kieran.jpg"
+              alt="Kieran teaching an AI scam safety session one-to-one at a laptop"
+              className="w-full h-56 md:h-full object-cover"
+            />
+            <div className="p-8 md:p-10">
+              <p className="uppercase tracking-widest text-gold font-bold text-xs mt-0 mb-3">One-to-one with Kieran · 60 minutes · Zoom</p>
+              <h2 className="text-3xl font-bold text-cream mt-0">AI Scam Safety Session</h2>
+              <p className="text-cream/90 text-lg">
+                Learn how modern scams use AI, what to look for, and exactly what to do before you
+                reply, click or pay — calmly explained, no jargon, no scare tactics.
+              </p>
+              <ul className="text-left text-cream/90 space-y-2 my-5 list-none p-0">
+                <li>✓ Spot cloned voices and deepfake videos</li>
+                <li>✓ Verify urgent messages safely, step by step</li>
+                <li>✓ Create your own Family Safe Word Plan</li>
+              </ul>
+              <div className="flex items-center gap-4 flex-wrap">
+                <span className="font-display text-4xl font-bold text-gold">£79.99</span>
+                <a href={SESSION_LINK} target="_blank" rel="noopener" className="inline-block bg-gold text-green-deep font-semibold px-6 py-3 rounded-full no-underline">
+                  Book your session
+                </a>
+              </div>
+              <p className="text-sm mt-4 mb-0 text-cream/70">Pick a time that suits you · Secure card payment at booking · A lovely gift for parents and grandparents</p>
+            </div>
           </div>
         </div>
       </section>
