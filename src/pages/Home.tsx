@@ -33,7 +33,7 @@ function Nav() {
         <div className="flex items-center gap-4">
           <a href="#safety-session" className="hidden sm:block text-sm font-bold text-green no-underline">AI Safety Session</a>
           <a href="/check" className="bg-gold hover:bg-gold-soft text-green-deep font-semibold text-sm px-4 py-2 rounded-full no-underline">
-            Free scam check
+            Check a scam
           </a>
         </div>
       </div>
@@ -240,6 +240,7 @@ export default function Home() {
               ["How quickly will I hear back?", "Usually the same day. Peace of Mind members go to the front of the queue."],
               ["What if I've already clicked or paid?", "Send it over anyway — straight away. Your report will tell you exactly what to do next, and acting fast makes a real difference."],
               ["What does it cost?", "Your first check is completely free, with no card details. After that, Peace of Mind is £9.99 a month for unlimited checks for your whole household — cancel any time."],
+              ["I'm a Peace of Mind member — how do you know it's me?", "There's no login and nothing to remember. Just use the same email address you joined with when you send a check — we recognise it automatically and you go straight to the front of the queue."],
             ].map(([q, a]) => (
               <details key={q} className="bg-white border border-gold/20 rounded-2xl px-6 py-4 shadow-sm">
                 <summary className="font-bold text-green cursor-pointer">{q}</summary>

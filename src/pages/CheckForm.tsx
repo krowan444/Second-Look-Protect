@@ -263,6 +263,10 @@ export default function CheckForm() {
               </Field>
               <Field label="Your email (we'll send the report here) *">
                 <input required type="email" className={inputCls} autoComplete="email" value={contact.email} onChange={(e) => setContact({ ...contact, email: e.target.value })} />
+                <p className="text-xs text-green-soft mt-1.5 mb-0">
+                  Peace of Mind member? Use the email you joined with — we'll recognise you
+                  automatically and put you at the front of the queue. No login needed.
+                </p>
               </Field>
               <Field label={wantsSms ? "Your mobile number *" : "Phone (optional — if you'd rather talk)"}>
                 <input type="tel" className={inputCls} autoComplete="tel" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} />
