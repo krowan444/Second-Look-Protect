@@ -59,7 +59,7 @@ export default function Home() {
         {/* Soft cream wash so text stays readable over the left of the photo */}
         <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-cream-2 from-25% via-cream-2/80 via-45% to-transparent to-70%" aria-hidden="true" />
 
-        <div className="relative max-w-5xl mx-auto px-5 py-14 md:py-28">
+        <div className="relative max-w-5xl mx-auto px-5 pt-8 pb-14 md:pt-14 md:pb-24">
           <div className="md:max-w-[48%] text-center md:text-left">
             <p className="uppercase tracking-widest text-gold font-bold text-xs mb-4">Independent · UK-based · Human-verified</p>
             <h1 className="text-4xl md:text-5xl font-bold leading-tight m-0">

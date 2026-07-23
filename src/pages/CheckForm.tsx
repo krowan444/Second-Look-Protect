@@ -281,7 +281,7 @@ export default function CheckForm() {
                   automatically and put you at the front of the queue. No login needed.
                 </p>
               </Field>
-              <Field label={wantsSms ? "Your mobile number *" : "Phone (optional — if you'd rather talk)"}>
+              <Field label={wantsSms ? "Your mobile number *" : "Mobile (optional — only used to text you, we never call)"}>
                 <input type="tel" className={inputCls} autoComplete="tel" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} />
               </Field>
               <label className="flex items-start gap-3 bg-white border-2 border-green/15 rounded-xl px-4 py-3 cursor-pointer">
