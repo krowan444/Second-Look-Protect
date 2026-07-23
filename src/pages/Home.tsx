@@ -31,6 +31,7 @@ function Nav() {
           </span>
         </a>
         <div className="flex items-center gap-4">
+          <a href="/about" className="hidden sm:block text-sm font-bold text-green no-underline">About</a>
           <a href="#safety-session" className="hidden sm:block text-sm font-bold text-green no-underline">AI Safety Session</a>
           <a href="/check" className="bg-gold hover:bg-gold-soft text-green-deep font-semibold text-sm px-4 py-2 rounded-full no-underline">
             Check a scam
