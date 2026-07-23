@@ -125,9 +125,9 @@ export default async function handler(req, res) {
               `<p>Hi ${firstName},</p>` +
               `<p>Your request has come through and I'm personally looking at it. You'll get your ` +
               `plain-English report by email${row.details && row.details._wants_sms === "yes" ? " (and a text with the verdict)" : ""} — usually within a few hours, always the same day.</p>` +
-              `<p style="background:#f6f1e4;border-radius:10px;padding:14px"><strong>Until you hear back:</strong> ` +
-              `don't click any links, don't call any numbers from the message, and don't send any money. ` +
-              `If you've already shared bank details, call your bank now using the number on the back of your card.</p>` +
+              `<p style="background:#f6f1e4;border-radius:10px;padding:14px"><strong>While you wait:</strong> ` +
+              `it's safest to hold off clicking any links, calling any numbers from the message, or sending any money — just until you have your answer. ` +
+              `And if you've already shared bank details, it's worth calling your bank now on the number on the back of your card, just to be safe.</p>` +
               `<p>Checking first is exactly the right thing to do — most scams rely on people rushing. You didn't.</p>` +
               `<p>Kieran<br/><span style="color:#777">Second Look Protect · A calm second opinion before you act</span></p>` +
               `<p style="font-size:11px;color:#888;border-top:1px solid #eee;padding-top:12px">` +
@@ -151,7 +151,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             sender: SMS_SENDER,
             destination: to,
-            content: `Second Look Protect: got it, ${firstName} - Kieran is personally reviewing your check. Report usually within hours. Until then: no clicking links, no payments.`,
+            content: `Second Look Protect: your check has arrived safely and I'm taking a look now. Your report should be with you within a few hours. Best to wait before clicking anything or paying. Kieran`,
           }),
         });
       }
