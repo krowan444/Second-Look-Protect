@@ -61,26 +61,29 @@ export default function Home() {
 
         <div className="relative max-w-5xl mx-auto px-5 py-14 md:py-28">
           <div className="md:max-w-[48%] text-center md:text-left">
-            <p className="uppercase tracking-widest text-gold font-bold text-xs mb-4">Stay safe from AI-powered scams</p>
+            <p className="uppercase tracking-widest text-gold font-bold text-xs mb-4">Independent · UK-based · Human-verified</p>
             <h1 className="text-4xl md:text-5xl font-bold leading-tight m-0">
-              Don't face today's scams alone. <span className="text-gold italic">Get a Second Look</span> first.
+              Before you click. Get a calm <span className="text-gold italic">Second Look</span>.
             </h1>
             <p className="mt-5 text-lg text-ink/80">
-              Fake bank calls, cloned voices, perfect phishing emails — AI has made scams harder than
-              ever to spot. Send us anything suspicious and we'll tell you, in plain English:
-              <strong> scam or safe</strong>, and exactly what to do next. A real person, on your side,
-              usually the same day.
+              Cloned voices, perfect phishing emails, fake bank calls — AI has made scams look real.
+              Send us any suspicious text, email, call, letter or website, and we'll tell you in
+              plain English: <strong>what's real, what's risky, and exactly what to do next</strong>.
+              A real person, usually the same day.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center md:justify-start gap-3">
-              <a href="/check" className="bg-green text-cream font-semibold px-7 py-3.5 rounded-full no-underline text-lg">
-                Try your first check free
-              </a>
-              <a href="#peace-of-mind" className="border-2 border-green text-green font-semibold px-6 py-3 rounded-full no-underline">
+            <div className="mt-8 flex flex-wrap justify-center md:justify-start items-center gap-3">
+              <span className="text-center">
+                <a href="/check" className="inline-block bg-green text-cream font-semibold px-7 py-3.5 rounded-full no-underline text-lg">
+                  Try your first check free
+                </a>
+                <span className="block text-xs text-green-soft mt-1.5">takes about 60 seconds</span>
+              </span>
+              <a href="#peace-of-mind" className="border-2 border-green text-green font-semibold px-6 py-3 rounded-full no-underline md:mb-6">
                 Peace of Mind · £9.99/mo
               </a>
             </div>
-            <p className="mt-4 text-sm text-green-soft">
-              First check free · No jargon · No judgement · Nothing to install
+            <p className="mt-4 text-sm text-green-soft font-semibold">
+              No judgement. No pressure. Just clarity.
             </p>
           </div>
         </div>
