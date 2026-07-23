@@ -208,10 +208,11 @@ export default function Admin() {
 
       {selected && (
         <div className="grid lg:grid-cols-2 gap-5">
-          <div>
+          <div className="min-w-0">
             <button onClick={() => setSelected(null)} className="text-sm font-semibold text-green-soft mb-3">← Back to queue</button>
-            <div className="bg-white border border-gold/20 rounded-2xl p-5 md:p-6">
-              <h2 className="mt-0 text-lg md:text-xl">What {selected.name} sent</h2>
+            <div className="bg-white border border-gold/20 rounded-2xl p-5 md:p-6 min-w-0">
+              <p className="uppercase tracking-wide text-gold font-bold text-[11px] mt-0 mb-1">What the customer sent you</p>
+              <h2 className="mt-0 text-lg md:text-xl">{selected.name}</h2>
               <p className="text-sm text-green-soft m-0 break-words">
                 <span className="break-all">{selected.email}</span> {selected.phone && `· ${selected.phone}`} · {badge(selected.member_status)[0]} · {selected.category}
               </p>
@@ -247,59 +248,75 @@ export default function Admin() {
             </div>
           </div>
 
-          <div>
+          <div className="min-w-0">
             {!report ? (
-              <div className="bg-white border border-gold/20 rounded-2xl p-5 md:p-6 text-center">
-                <p>No AI report yet for this one.</p>
-                <button onClick={runAnalysis} disabled={!!busy} className="bg-green text-cream font-bold px-5 py-2.5 rounded-full">
-                  {busy || "Run AI analysis"}
+              <div className="bg-white border border-gold/20 rounded-2xl p-5 md:p-6 text-center min-w-0">
+                <p className="font-semibold m-0">Step 1 — run the AI check</p>
+                <p className="text-sm text-green-soft mt-1">The AI reads everything the customer sent and drafts a report for you to review. Nothing is sent to them yet.</p>
+                <button onClick={runAnalysis} disabled={!!busy} className="bg-green text-cream font-bold px-6 py-3 rounded-full mt-2 disabled:opacity-60">
+                  {busy || "Run AI check"}
                 </button>
               </div>
             ) : (
-              <div className="bg-white border border-gold/20 rounded-2xl p-5 md:p-6 space-y-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-cream-2">{report.verdict}</span>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-cream-2">risk: {report.risk_level}</span>
-                  {report.confidence != null && (
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-cream-2">confidence: {Math.round(report.confidence * 100)}%</span>
-                  )}
+              <div className="bg-white border border-gold/20 rounded-2xl p-5 md:p-6 space-y-4 min-w-0">
+                <div>
+                  <p className="uppercase tracking-wide text-gold font-bold text-[11px] mt-0 mb-2">The AI's draft report — check it, edit if needed, then send</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-green text-cream">Verdict: {report.verdict?.replace(/_/g, " ")}</span>
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-cream-2">Risk: {report.risk_level}</span>
+                    {report.confidence != null && (
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-cream-2">AI confidence: {Math.round(report.confidence * 100)}%</span>
+                    )}
+                  </div>
                 </div>
 
+                <p className="text-sm text-green-soft bg-cream-2 rounded-xl p-3 m-0">
+                  Everything below is what the <strong>customer will receive</strong>. You can edit any of it before sending.
+                </p>
+
                 <label className="block">
-                  <span className="font-semibold text-sm">Headline (customer sees this)</span>
-                  <input className="w-full border-2 border-green/20 rounded-xl px-3 py-2 mt-1" value={report.headline} onChange={(e) => setReport({ ...report, headline: e.target.value })} />
+                  <span className="font-semibold text-sm">The verdict, in one line</span>
+                  <span className="block text-xs text-green-soft mb-1">The big answer they see first — e.g. "This looks like a scam".</span>
+                  <input className="w-full max-w-full border-2 border-green/20 rounded-xl px-3 py-2.5" value={report.headline} onChange={(e) => setReport({ ...report, headline: e.target.value })} />
                 </label>
                 <label className="block">
-                  <span className="font-semibold text-sm">Explanation</span>
-                  <textarea rows={6} className="w-full border-2 border-green/20 rounded-xl px-3 py-2 mt-1" value={report.explanation} onChange={(e) => setReport({ ...report, explanation: e.target.value })} />
+                  <span className="font-semibold text-sm">Why — the plain-English explanation</span>
+                  <span className="block text-xs text-green-soft mb-1">A few sentences explaining what's going on and why.</span>
+                  <textarea rows={6} className="w-full max-w-full border-2 border-green/20 rounded-xl px-3 py-2.5" value={report.explanation} onChange={(e) => setReport({ ...report, explanation: e.target.value })} />
                 </label>
                 <label className="block">
-                  <span className="font-semibold text-sm">Warning signs (one per line)</span>
-                  <textarea rows={4} className="w-full border-2 border-green/20 rounded-xl px-3 py-2 mt-1" value={(report.indicators || []).join("\n")} onChange={(e) => setReport({ ...report, indicators: e.target.value.split("\n").filter(Boolean) })} />
+                  <span className="font-semibold text-sm">Warning signs spotted</span>
+                  <span className="block text-xs text-green-soft mb-1">The red flags — one per line. Shown to them as a tick-list.</span>
+                  <textarea rows={4} className="w-full max-w-full border-2 border-green/20 rounded-xl px-3 py-2.5" value={(report.indicators || []).join("\n")} onChange={(e) => setReport({ ...report, indicators: e.target.value.split("\n").filter(Boolean) })} />
                 </label>
                 <label className="block">
-                  <span className="font-semibold text-sm">What to do now (one per line)</span>
-                  <textarea rows={4} className="w-full border-2 border-green/20 rounded-xl px-3 py-2 mt-1" value={(report.actions || []).join("\n")} onChange={(e) => setReport({ ...report, actions: e.target.value.split("\n").filter(Boolean) })} />
+                  <span className="font-semibold text-sm">What they should do next</span>
+                  <span className="block text-xs text-green-soft mb-1">Clear steps — one per line. Shown as a numbered list.</span>
+                  <textarea rows={4} className="w-full max-w-full border-2 border-green/20 rounded-xl px-3 py-2.5" value={(report.actions || []).join("\n")} onChange={(e) => setReport({ ...report, actions: e.target.value.split("\n").filter(Boolean) })} />
                 </label>
                 <label className="block">
-                  <span className="font-semibold text-sm">Personal note from you (optional)</span>
-                  <textarea rows={2} className="w-full border-2 border-green/20 rounded-xl px-3 py-2 mt-1" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Give me a ring if you'd like to talk this one through." />
+                  <span className="font-semibold text-sm">A personal note from you <span className="text-green-soft font-normal">(optional)</span></span>
+                  <span className="block text-xs text-green-soft mb-1">A friendly line added to the bottom of their email, just from you.</span>
+                  <textarea rows={2} className="w-full max-w-full border-2 border-green/20 rounded-xl px-3 py-2.5" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. You did exactly the right thing checking this one." />
                 </label>
 
                 {report.corroboration?.search_performed && (
-                  <div className="bg-cream-2 rounded-xl p-4 text-sm">
-                    <strong>Web research ({report.corroboration.status}):</strong> {report.corroboration.summary || "No summary"}
+                  <div className="bg-cream-2 rounded-xl p-4 text-sm min-w-0">
+                    <strong>Automatic web check ({report.corroboration.status?.replace(/_/g, " ")}):</strong> {report.corroboration.summary || "No matches found online."}
                     {(report.corroboration.sources || []).map((u: string) => (
-                      <div key={u}><a href={u} target="_blank" rel="noreferrer" className="text-green break-all">{u}</a></div>
+                      <div key={u} className="mt-1"><a href={u} target="_blank" rel="noreferrer" className="text-green break-all">{u}</a></div>
                     ))}
                   </div>
                 )}
 
-                <button onClick={approveSend} disabled={!!busy} className="w-full bg-gold text-green-deep font-bold text-lg py-3 rounded-full disabled:opacity-60">
-                  {busy || `✓ Approve & send to ${selected.name}`}
-                </button>
-                <button onClick={runAnalysis} disabled={!!busy} className="w-full border-2 border-green/30 text-green font-semibold py-2 rounded-full text-sm">
-                  Re-run AI analysis
+                <div className="pt-1">
+                  <button onClick={approveSend} disabled={!!busy} className="w-full bg-gold hover:bg-gold-soft text-green-deep font-bold text-lg py-3.5 rounded-full disabled:opacity-60 transition-colors">
+                    {busy || `✓ Approve & send to ${selected.name}`}
+                  </button>
+                  <p className="text-xs text-green-soft text-center mt-2 mb-0">This emails the report to the customer{selected.phone ? " (and texts them, if they asked)" : ""}. It can't be undone.</p>
+                </div>
+                <button onClick={runAnalysis} disabled={!!busy} className="w-full border-2 border-green/30 text-green font-semibold py-2.5 rounded-full text-sm">
+                  Re-run the AI check
                 </button>
               </div>
             )}
