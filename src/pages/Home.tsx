@@ -14,49 +14,58 @@ export default function Home() {
     <Page>
       {/* ── HERO ───────────────────────────────────────────────────── */}
       <section className="relative bg-cream-2 overflow-hidden">
+        {/* Full-bleed background on tablet/desktop */}
         <div
           className="hidden md:block absolute inset-0 bg-cover"
           style={{ backgroundImage: "url(/hero.jpg)", backgroundPosition: "right center" }}
           aria-hidden="true"
         />
+        {/* Soft cream wash so text stays readable over the left of the photo */}
         <div
           className="hidden md:block absolute inset-0 bg-gradient-to-r from-cream-2 from-25% via-cream-2/80 via-45% to-transparent to-70%"
           aria-hidden="true"
         />
 
-        <div className="relative max-w-5xl mx-auto px-5 pt-8 pb-14 md:pt-16 md:pb-24">
-          <div className="md:max-w-[50%] text-center md:text-left">
-            <p className="uppercase tracking-widest text-gold font-bold text-xs mb-4 mt-0">
-              Independent · UK-based · Checked by a real person
+        <div className="relative max-w-5xl mx-auto px-5 pt-8 pb-14 md:pt-14 md:pb-24">
+          <div className="md:max-w-[48%] text-center md:text-left">
+            <p className="uppercase tracking-widest text-gold font-bold text-xs mb-4">
+              Independent · UK-based · Human-verified
             </p>
             <h1 className="text-4xl md:text-5xl font-bold leading-tight m-0">
-              Not sure if it's real? <span className="text-gold italic">Don't guess.</span>
+              Before you click. Get a calm <span className="text-gold italic">Second Look</span>.
             </h1>
             <p className="mt-5 text-lg text-ink/80">
-              Send us the text, email, call or letter that's worrying you. You'll get a clear answer
-              in plain English — <strong>scam or safe, why, and exactly what to do next</strong> —
-              from a real person, usually the same day.
+              Cloned voices, perfect phishing emails, fake bank calls — AI has made scams look real.
+              Send us any suspicious text, email, call, letter or website, and we'll tell you in
+              plain English: <strong>what's real, what's risky, and exactly what to do next</strong>.
+              A real person, usually the same day.
             </p>
             <div className="mt-8 flex flex-wrap justify-center md:justify-start items-center gap-3">
               <span className="text-center">
                 <a
                   href="/check"
                   onClick={() => track(EVENTS.startCheck, { from: "hero" })}
-                  className="inline-block bg-green hover:bg-green-deep text-cream font-semibold px-8 py-4 rounded-full no-underline text-lg transition-colors"
+                  className="inline-block bg-green text-cream font-semibold px-7 py-3.5 rounded-full no-underline text-lg"
                 >
-                  Check it free — right now
+                  Try your first check free
                 </a>
-                <span className="block text-xs text-green-soft mt-2 font-semibold">
-                  Takes 60 seconds · No card · No account
-                </span>
+                <span className="block text-xs text-green-soft mt-1.5">takes about 60 seconds</span>
               </span>
+              <a
+                href="#peace-of-mind"
+                onClick={() => track(EVENTS.clickMembership, { from: "hero" })}
+                className="border-2 border-green text-green font-semibold px-6 py-3 rounded-full no-underline md:mb-6"
+              >
+                Peace of Mind · {SITE.membershipPrice}/mo
+              </a>
             </div>
-            <p className="mt-6 text-sm text-green-soft font-semibold">
-              No judgement. No pressure. Just a straight answer.
+            <p className="mt-4 text-sm text-green-soft font-semibold">
+              No judgement. No pressure. Just clarity.
             </p>
           </div>
         </div>
 
+        {/* On phones, show the photo below the copy instead of behind it */}
         <img
           src="/hero.jpg"
           alt="A woman smiling at her laptop as a Second Look Protect report tells her a message is safe"
