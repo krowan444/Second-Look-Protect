@@ -48,22 +48,23 @@ export function Nav({ cta = true }: { cta?: boolean }) {
       <div className="max-w-5xl mx-auto flex items-center justify-between px-5 py-3">
         <Wordmark />
         <div className="flex items-center gap-4">
-          <a href="/talks" className="hidden sm:block text-sm font-bold text-green no-underline">
-            Group talks
+          <a href="/protect" className="hidden lg:block text-sm font-bold text-green no-underline">
+            Second Look Protect
+          </a>
+          <a href="/talks" className="hidden md:block text-sm font-bold text-green no-underline">
+            Group Safety Talks
+          </a>
+          <a href="/session" className="hidden md:block text-sm font-bold text-green no-underline">
+            AI Safety Session
           </a>
           <a href="/about" className="hidden sm:block text-sm font-bold text-green no-underline">
             About
-          </a>
-          {/* Points at the real /session page so it works from every page,
-              not just the home page anchor it used to scroll to. */}
-          <a href="/session" className="hidden sm:block text-sm font-bold text-green no-underline">
-            AI Safety Session
           </a>
           {cta && (
             <a
               href="/check"
               onClick={() => track("nav_check_clicked")}
-              className="bg-gold hover:bg-gold-soft text-green-deep font-semibold text-sm px-4 py-2 rounded-full no-underline"
+              className="bg-gold hover:bg-gold-soft text-green-deep font-semibold text-sm px-4 py-2 rounded-full no-underline whitespace-nowrap"
             >
               Check a scam
             </a>
