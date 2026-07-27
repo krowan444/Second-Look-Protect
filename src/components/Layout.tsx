@@ -45,19 +45,19 @@ export function Wordmark({ size = 36 }: { size?: number }) {
 export function Nav({ cta = true }: { cta?: boolean }) {
   return (
     <header className="bg-white/90 backdrop-blur border-b border-green/10 sticky top-0 z-20">
-      <div className="max-w-5xl mx-auto flex items-center justify-between px-5 py-3">
+      <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 px-4 sm:px-5 py-3">
         <Wordmark />
-        <div className="flex items-center gap-4">
-          <a href="/protect" className="hidden lg:block text-sm font-bold text-green no-underline">
+        <nav className="flex items-center gap-3 lg:gap-4">
+          <a href="/protect" className="hidden lg:block text-[13px] font-bold text-green no-underline whitespace-nowrap">
             Second Look Protect
           </a>
-          <a href="/talks" className="hidden md:block text-sm font-bold text-green no-underline">
+          <a href="/talks" className="hidden md:block text-[13px] font-bold text-green no-underline whitespace-nowrap">
             Group Safety Talks
           </a>
-          <a href="/session" className="hidden md:block text-sm font-bold text-green no-underline">
+          <a href="/session" className="hidden md:block text-[13px] font-bold text-green no-underline whitespace-nowrap">
             AI Safety Session
           </a>
-          <a href="/about" className="hidden sm:block text-sm font-bold text-green no-underline">
+          <a href="/about" className="hidden sm:block text-[13px] font-bold text-green no-underline whitespace-nowrap">
             About
           </a>
           {cta && (
@@ -69,7 +69,7 @@ export function Nav({ cta = true }: { cta?: boolean }) {
               Check a scam
             </a>
           )}
-        </div>
+        </nav>
       </div>
     </header>
   );
