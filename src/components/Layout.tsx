@@ -1,4 +1,4 @@
-import { SITE, NAV_LINKS } from "../lib/site";
+import { SITE } from "../lib/site";
 import { track } from "../lib/analytics";
 
 export function Logo({ size = 34 }: { size?: number }) {
@@ -25,47 +25,44 @@ export function Logo({ size = 34 }: { size?: number }) {
   );
 }
 
-export function Wordmark({ size = 36, tagline = true }: { size?: number; tagline?: boolean }) {
+export function Wordmark({ size = 36 }: { size?: number }) {
   return (
     <a href="/" className="no-underline flex items-center gap-2.5">
       <Logo size={size} />
       <span>
-        <span className="font-display font-bold text-lg sm:text-xl text-green">
+        <span className="font-display font-bold text-xl text-green">
           Second Look <em className="text-gold not-italic">Protect</em>
         </span>
-        {tagline && (
-          <span className="hidden sm:block text-[11px] font-semibold text-green-soft">
-            A calm second opinion before you act
-          </span>
-        )}
+        <span className="block text-[11px] font-semibold text-green-soft">
+          A calm second opinion before you act
+        </span>
       </span>
     </a>
   );
 }
 
-/** Sticky top bar used on every page. */
+/** Sticky top bar — the original Second Look Protect header. */
 export function Nav({ cta = true }: { cta?: boolean }) {
   return (
-    <header className="bg-white/90 backdrop-blur border-b border-green/10 sticky top-0 z-30">
-      <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 px-4 sm:px-5 py-3">
+    <header className="bg-white/90 backdrop-blur border-b border-green/10 sticky top-0 z-20">
+      <div className="max-w-5xl mx-auto flex items-center justify-between px-5 py-3">
         <Wordmark />
-        <div className="flex items-center gap-3 sm:gap-5">
-          {NAV_LINKS.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="hidden md:block text-sm font-bold text-green no-underline hover:text-gold transition-colors"
-            >
-              {l.label}
-            </a>
-          ))}
+        <div className="flex items-center gap-4">
+          <a href="/about" className="hidden sm:block text-sm font-bold text-green no-underline">
+            About
+          </a>
+          {/* Points at the real /session page so it works from every page,
+              not just the home page anchor it used to scroll to. */}
+          <a href="/session" className="hidden sm:block text-sm font-bold text-green no-underline">
+            AI Safety Session
+          </a>
           {cta && (
             <a
               href="/check"
               onClick={() => track("nav_check_clicked")}
-              className="bg-gold hover:bg-gold-soft text-green-deep font-semibold text-sm px-4 py-2 rounded-full no-underline whitespace-nowrap transition-colors"
+              className="bg-gold hover:bg-gold-soft text-green-deep font-semibold text-sm px-4 py-2 rounded-full no-underline"
             >
-              Check something free
+              Check a scam
             </a>
           )}
         </div>
