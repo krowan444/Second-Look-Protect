@@ -25,9 +25,3 @@ export const SITE = {
   sessionCalLink:
     (import.meta.env.VITE_SESSION_CAL_LINK as string) || "kieran-rowan-tiujdp/60-minute-ai-scam-safety-session",
 } as const;
-
-export const NAV_LINKS = [
-  { href: "/talks", label: "Group talks" },
-  { href: "/session", label: "1-to-1 session" },
-  { href: "/about", label: "About" },
-] as const;
