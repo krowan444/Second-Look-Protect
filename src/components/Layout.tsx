@@ -48,6 +48,9 @@ export function Nav({ cta = true }: { cta?: boolean }) {
       <div className="max-w-5xl mx-auto flex items-center justify-between px-5 py-3">
         <Wordmark />
         <div className="flex items-center gap-4">
+          <a href="/talks" className="hidden sm:block text-sm font-bold text-green no-underline">
+            Group talks
+          </a>
           <a href="/about" className="hidden sm:block text-sm font-bold text-green no-underline">
             About
           </a>
