@@ -9,6 +9,7 @@ import Session from "./pages/Session";
 import Talks from "./pages/Talks";
 import TalksEnquiry from "./pages/TalksEnquiry";
 import TalksThankYou from "./pages/TalksThankYou";
+import Protect from "./pages/Protect";
 
 /** Tiny path router — Vercel rewrites all non-API paths to index.html. */
 function route(path: string) {
@@ -16,6 +17,7 @@ function route(path: string) {
   if (path.startsWith("/check")) return <CheckForm />;
   if (path.startsWith("/admin")) return <Admin />;
   if (path.startsWith("/about")) return <About />;
+  if (path.startsWith("/protect") || path.startsWith("/what-is")) return <Protect />;
   if (path.startsWith("/session") || path.startsWith("/book")) return <Session />;
   if (path.startsWith("/talks/thank-you")) return <TalksThankYou />;
   if (path.startsWith("/talks/enquire") || path.startsWith("/talks/enquiry")) return <TalksEnquiry />;
