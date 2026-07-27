@@ -1,6 +1,9 @@
 -- ═══════════════════════════════════════════════════════════════════
--- Second Look Protect v2 — fresh Supabase schema
--- Run this once in the SQL Editor of a NEW Supabase project.
+-- Second Look Protect v2 — Supabase schema
+--
+-- Safe to run more than once. If you already have a working database,
+-- just run the whole file again: everything is "if not exists" or an
+-- idempotent add-column, so nothing is dropped and no data is lost.
 -- ═══════════════════════════════════════════════════════════════════
 
 -- ── Scam-check submissions from the public form ─────────────────────
@@ -20,6 +23,13 @@ create table if not exists submissions (
   status        text not null default 'new',        -- new | analyzing | awaiting_review | sent | dismissed
   sent_at       timestamptz
 );
+
+-- Chase reminders: the last nudge stage sent, in minutes (0 = none yet).
+-- Used by api/reminders.js so each of the 30/60/90-minute pings fires once.
+alter table submissions add column if not exists reminder_stage integer not null default 0;
+
+-- Speeds up the reminder sweep, which looks for open, older submissions.
+create index if not exists submissions_open_idx on submissions (created_at) where status not in ('sent', 'dismissed');
 
 -- ── AI-generated draft reports (one per submission) ──────────────────
 create table if not exists ai_reports (
@@ -53,24 +63,57 @@ create table if not exists members (
   updated_at             timestamptz not null default now()
 );
 
+-- ── AI Safety Talk enquiries (charities, community groups, business) ─
+create table if not exists talk_enquiries (
+  id               uuid primary key default gen_random_uuid(),
+  created_at       timestamptz not null default now(),
+  org_name         text not null,
+  org_type         text not null default 'other',   -- charity | community | corporate | school | public_sector | other
+  contact_name     text not null,
+  email            text not null,
+  phone            text,
+  audience_size    text,
+  preferred_format text,                            -- in_person | online | either
+  preferred_date   text,
+  location         text,
+  budget           text,
+  message          text,
+  hear_about       text,
+  status           text not null default 'new',     -- new | contacted | quoted | booked | closed
+  notes            text
+);
+create index if not exists talk_enquiries_created_idx on talk_enquiries (created_at desc);
+
 -- ── Row Level Security ───────────────────────────────────────────────
 -- All public traffic goes through serverless functions using the
 -- service-role key, so tables stay locked to anonymous users.
 -- The authenticated role = Kieran's admin login for the review page.
-alter table submissions enable row level security;
-alter table ai_reports  enable row level security;
-alter table members     enable row level security;
+alter table submissions     enable row level security;
+alter table ai_reports      enable row level security;
+alter table members         enable row level security;
+alter table talk_enquiries  enable row level security;
 
-create policy "Admin read submissions"   on submissions for select to authenticated using (true);
-create policy "Admin update submissions" on submissions for update to authenticated using (true);
-create policy "Admin read reports"       on ai_reports  for select to authenticated using (true);
-create policy "Admin update reports"     on ai_reports  for update to authenticated using (true);
-create policy "Admin read members"       on members     for select to authenticated using (true);
+-- Policies are dropped first so re-running this file never errors.
+drop policy if exists "Admin read submissions"    on submissions;
+drop policy if exists "Admin update submissions"  on submissions;
+drop policy if exists "Admin read reports"        on ai_reports;
+drop policy if exists "Admin update reports"      on ai_reports;
+drop policy if exists "Admin read members"        on members;
+drop policy if exists "Admin read talk enquiries" on talk_enquiries;
+drop policy if exists "Admin update talk enquiries" on talk_enquiries;
+
+create policy "Admin read submissions"      on submissions    for select to authenticated using (true);
+create policy "Admin update submissions"    on submissions    for update to authenticated using (true);
+create policy "Admin read reports"          on ai_reports     for select to authenticated using (true);
+create policy "Admin update reports"        on ai_reports     for update to authenticated using (true);
+create policy "Admin read members"          on members        for select to authenticated using (true);
+create policy "Admin read talk enquiries"   on talk_enquiries for select to authenticated using (true);
+create policy "Admin update talk enquiries" on talk_enquiries for update to authenticated using (true);
 
 -- ═══════════════════════════════════════════════════════════════════
 -- STORAGE (do in the Dashboard, not SQL):
 --   1. Storage → New bucket → name: "uploads" → Public: ON
 --   2. Policy: allow INSERT for role "anon" (uploads only, no listing)
 -- ADMIN LOGIN (do in the Dashboard):
---   Authentication → Users → Add user → hello@learnaifast.co.uk + password
--- ═════════════════════════════════�
+--   Authentication → Users → Add user → hello@secondlookprotect.co.uk + password
+-- ═══════════════════════════════════════════════════════════════════
