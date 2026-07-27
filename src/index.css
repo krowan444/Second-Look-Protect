@@ -13,14 +13,23 @@
   --font-body: "Inter", system-ui, sans-serif;
 }
 
-body {
-  font-family: var(--font-body);
-  background: var(--color-cream);
-  color: var(--color-ink);
-  margin: 0;
-}
+/* These defaults MUST live inside @layer base.
+   Unlayered CSS always beats layered CSS in the cascade, regardless of
+   specificity — so an unlayered `h1 { color: green }` silently overrides
+   Tailwind's `text-cream` utility and headings vanish on dark backgrounds.
+   Inside @layer base, utilities (a later layer) correctly win. */
+@layer base {
+  body {
+    font-family: var(--font-body);
+    background: var(--color-cream);
+    color: var(--color-ink);
+    margin: 0;
+  }
 
-h1, h2, h3 {
-  font-family: var(--font-display);
-  color: var(--color-green);
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    color: var(--color-green);
+  }
 }
