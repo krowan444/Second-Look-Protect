@@ -1,24 +1,15 @@
-import { Logo } from "./Home";
+import { Page } from "../components/Layout";
+import { SITE } from "../lib/site";
+import { track, EVENTS } from "../lib/analytics";
+import { usePageMeta } from "../lib/meta";
 
 export default function About() {
+  usePageMeta(
+    "About Kieran | Second Look Protect",
+    "Why Second Look Protect exists, and the person behind it. AI has made scams convincing — a calm second opinion changes that."
+  );
   return (
-    <div>
-      {/* NAV */}
-      <header className="bg-white/90 backdrop-blur border-b border-green/10 sticky top-0 z-20">
-        <div className="max-w-5xl mx-auto flex items-center justify-between px-5 py-3">
-          <a href="/" className="no-underline flex items-center gap-2.5">
-            <Logo size={36} />
-            <span>
-              <span className="font-display font-bold text-xl text-green">Second Look <em className="text-gold not-italic">Protect</em></span>
-              <span className="block text-[11px] font-semibold text-green-soft">A calm second opinion before you act</span>
-            </span>
-          </a>
-          <a href="/check" className="bg-gold hover:bg-gold-soft text-green-deep font-semibold text-sm px-4 py-2 rounded-full no-underline">
-            Check a scam
-          </a>
-        </div>
-      </header>
-
+    <Page>
       {/* STORY */}
       <section className="bg-cream-2">
         <div className="max-w-5xl mx-auto px-5 py-14 md:py-20 grid md:grid-cols-5 gap-10 items-start">
@@ -61,37 +52,26 @@ export default function About() {
             <p className="text-lg text-ink/80 font-semibold text-green">
               If something doesn't feel right, send it over. That's exactly what I'm here for.
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <a href="/check" className="bg-green text-cream font-semibold px-6 py-3 rounded-full no-underline">
+            <div className="mt-7 flex flex-wrap gap-3">
+              <a
+                href="/check"
+                onClick={() => track(EVENTS.startCheck, { from: "about" })}
+                className="bg-green hover:bg-green-deep text-cream font-semibold px-7 py-3.5 rounded-full no-underline transition-colors"
+              >
                 Get a free Second Look
               </a>
-              <a href="/#peace-of-mind" className="border-2 border-green text-green font-semibold px-6 py-3 rounded-full no-underline">
-                Peace of Mind · £9.99/mo
+              <a
+                href="/#peace-of-mind"
+                onClick={() => track(EVENTS.clickMembership, { from: "about" })}
+                className="border-2 border-green text-green font-semibold px-6 py-3.5 rounded-full no-underline hover:bg-green hover:text-cream transition-colors"
+              >
+                Peace of Mind · {SITE.membershipPrice}/mo
               </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-green-deep text-cream/80 text-sm">
-        <div className="max-w-5xl mx-auto px-5 py-8">
-          <div className="flex flex-wrap justify-between gap-4 items-center">
-            <span className="flex items-center gap-2.5">
-              <Logo size={28} />
-              <span className="font-display text-cream text-lg">Second Look <span className="text-gold">Protect</span></span>
-            </span>
-            <span>
-              📞 07563 887804 · hello@learnaifast.co.uk ·
-              part of <a href="https://www.learnaifast.co.uk" className="text-cream/90">Learn AI Fast</a> · © 2026
-            </span>
-          </div>
-          <p className="text-cream/60 text-xs mt-4 mb-0">
-            Your details and anything you send us are kept private — never shared or sold. Reports are guidance,
-            not financial or legal advice.
-          </p>
-        </div>
-      </footer>
-    </div>
+    </Page>
   );
 }

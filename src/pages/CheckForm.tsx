@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
-import { Logo } from "./Home";
+import { Logo } from "../components/Layout";
+import { SITE } from "../lib/site";
+import { track, EVENTS } from "../lib/analytics";
+import { usePageMeta } from "../lib/meta";
 
 const STEP_LABELS = ["What to check", "What happened", "Your details"];
 
@@ -67,6 +70,10 @@ const DESC_PLACEHOLDER: Record<TypeId, string> = {
 };
 
 export default function CheckForm() {
+  usePageMeta(
+    "Check a scam — free | Second Look Protect",
+    "Send us the message, call or letter that is worrying you and get a plain-English answer, usually the same day. First check free, no card needed."
+  );
   const [step, setStep] = useState(0); // 0 = type, 1 = details, 2 = contact
   const [phase, setPhase] = useState<Phase>("form");
   const [error, setError] = useState("");
@@ -80,6 +87,7 @@ export default function CheckForm() {
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   const pickType = (t: TypeId) => {
+    track(EVENTS.startCheck, { from: "form", category: t });
     setType(t);
     setStep(1);
     window.scrollTo({ top: 0 });
@@ -128,12 +136,13 @@ export default function CheckForm() {
       });
       const subData = await subRes.json().catch(() => ({ ok: false, error: "Something went wrong" }));
       if (!subData.ok) throw new Error(subData.error || "Something went wrong");
+      track(EVENTS.submitCheck, { category: String(type), member: subData.member_status || "unknown" });
 
       /* AI analysis is deliberately NOT triggered here — Kieran approves each
          check in /admin first, so the public form can't burn API credits. */
       setPhase("done");
     } catch (err: any) {
-      setError(err.message || "Something went wrong — please try again, or email hello@learnaifast.co.uk.");
+      setError(err.message || `Something went wrong — please try again, or email ${SITE.email}.`);
       setPhase("error");
     }
   }
