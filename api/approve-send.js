@@ -1,13 +1,14 @@
 // api/approve-send.js — Kieran approves a reviewed report; the customer
 // gets a branded email. Auth: a valid Supabase session token (only the
 // admin account exists).
+import { SUPPORT_EMAIL, EMAIL_FROM, SITE_URL, DISCLAIMER_HTML } from "./_config.js";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ ok: false, error: "Method not allowed" });
 
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
-  const EMAIL_FROM = process.env.EMAIL_FROM;
   if (!SUPABASE_URL || !SERVICE_KEY || !RESEND_API_KEY || !EMAIL_FROM) {
     return res.status(500).json({ ok: false, error: "Server not configured" });
   }
@@ -91,7 +92,7 @@ export default async function handler(req, res) {
     ${personal_note ? `<p style="background:#eef3ee;border-radius:10px;padding:14px"><strong>A note from Kieran:</strong> ${personal_note}</p>` : ""}
     ${upsell}
     <p style="margin-top:22px">If anything else feels off — even something small — you know where I am.</p>
-    <p>Kieran<br/><span style="color:#777">Second Look Protect · part of Learn AI Fast · hello@learnaifast.co.uk</span></p>
+    <p>Kieran<br/><span style="color:#777">Second Look Protect · ${SUPPORT_EMAIL}</span></p>
     <p style="font-size:11px;color:#888;border-top:1px solid #eee;padding-top:12px;margin-top:18px">
       Important: this report is guidance only, based on the information you provided. It is not
       legal or financial advice and cannot guarantee whether something is or isn't a scam.
@@ -108,7 +109,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         from: EMAIL_FROM,
         to: [sub.email],
-        reply_to: process.env.ADMIN_NOTIFY_EMAIL || "hello@learnaifast.co.uk",
+        reply_to: SUPPORT_EMAIL,
         subject: `${verdictLabel.emoji} Your Second Look report — ${verdictLabel.label}`,
         html,
       }),

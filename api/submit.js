@@ -1,6 +1,7 @@
 // api/submit.js — receives a scam-check request from the public form,
 // works out membership status, stores it, and pings Kieran.
 import { notifyKieran } from "./_notify.js";
+import { SUPPORT_EMAIL, EMAIL_FROM, SITE_URL } from "./_config.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ ok: false, error: "Method not allowed" });
@@ -92,7 +93,7 @@ export default async function handler(req, res) {
     /* 3. Ping Kieran (non-blocking failure) */
     const badge =
       memberStatus === "member" ? "🟢 MEMBER" : memberStatus === "free" ? "🔵 Free check" : "🟠 Free check already used";
-    const caseUrl = `https://second-look-protect.vercel.app/admin?case=${row.id}`;
+    const caseUrl = `${SITE_URL}/admin?case=${row.id}`;
     await notifyKieran({
       subject: `🔍 New scam check from ${row.name} (${badge})`,
       html:
@@ -109,7 +110,6 @@ export default async function handler(req, res) {
     const firstName = String(row.name || "").trim().split(/\s+/)[0] || "there";
     try {
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
-      const EMAIL_FROM = process.env.EMAIL_FROM;
       if (RESEND_API_KEY && EMAIL_FROM) {
         await fetch("https://api.resend.com/emails", {
           method: "POST",
@@ -117,7 +117,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             from: EMAIL_FROM,
             to: [row.email],
-            reply_to: process.env.ADMIN_NOTIFY_EMAIL || "hello@learnaifast.co.uk",
+            reply_to: SUPPORT_EMAIL,
             subject: `🌱 We've got it, ${firstName} — your Second Look is underway`,
             html:
               `<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#26251f">` +
